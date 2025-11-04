@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Memory Game & Fast Sequence N Back Task</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+      text-align: center;
+      transition: background-color 0.3s;
+    }
+    /* Pages */
+    .page { display: none; }
+    .active { display: block; }
+
+    /* Header styling for the settings page */
+    #settingsHeader h1 {
+      font-size: 2.5em;
+      margin-bottom: 0.2em;
+    }
+    #settingsHeader p {
+      font-size: 1em;
+      margin-top: 0;
+      color: #555;
+      margin-bottom: 20px;
+    }
+
+    /* Settings Form */
+    #settingsForm label {
+      display: block;
+      margin: 5px 0;
+    }
+    #settingsForm input,
+    #settingsForm select {
+      margin-left: 10px;
+    }
+    #settingsForm button {
+      margin: 10px;
+      padding: 8px 12px;
+      font-size: 16px;
+    }
+
+    /* Game Container for Memory and N-Back (original layout) */
+    .gameContainer {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 20px;
+    }
+
+    /* New wrapper for N-back that places game and stats side by side */
+    .nBackWrapper {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    /* Grid Container (for Memory or N-Back) */
+    .gridContainer {
+      display: grid;
+      gap: 2px;
+      width: 80vmin;
+      height: 80vmin;
+      background-color: inherit;
+    }
+
+    /* Each Grid Cell */
+    .cell {
+      border: 1px solid #ccc;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: inherit;
+      transition: opacity 0.2s, background-color 0.2s;
+      font-size: var(--letter-size, 2em);
+    }
+
+    /* Side Buttons */
+    .sideButtons {
+      margin-top: 0;
+    }
+    .sideButtons button {
+      margin-bottom: 10px;
+      padding: 10px;
+      font-size: 16px;
+    }
+
+    /* Feedback containers for N-back (unchanged) */
+    #letterFeedback,
+    #spatialFeedback {
+      width: 20vmin;
+      height: 80vmin;
+      background-color: transparent;
+      transition: background-color 0.2s;
+      margin: 0 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Revised Score Container for N-back (placed to the right) */
+    .scoreContainer {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 5px;
+      font-size: 16px;
+    }
+
+    /* New Daily Average Score Window (below the N-back area) */
+    .dailyScoreWindow {
+      margin-top: 10px;
+      border: 1px solid #ccc;
+      padding: 10px;
+      font-size: 14px;
+      max-width: 80vmin;
+      margin-left: auto;
+      margin-right: auto;
+      background-color: #f9f9f9;
+    }
+
+    /* --------- Instructions Overlay Styling --------- */
+    #instructionsOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(255, 255, 255, 0.95);
+      overflow-y: auto;
+      z-index: 9999;
+      display: none;
+      padding: 20px;
+      box-sizing: border-box;
+      text-align: left;
+    }
+    #instructionsOverlay.show {
+      display: block;
+    }
+    #instructionsOverlay h2 {
+      margin-top: 0;
+    }
+    #closeInstructionsBtn {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      font-size: 1.4em;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <!-- SETTINGS PAGE -->
+  <div id="settingsPage" class="page active">
+    <div id="settingsHeader">
+      <h1>Fast Sequence Synesthesia N Back</h1>
+      <p>created by @0xfrankensteinx0 (Discord)</p>
+    </div>
+    <form id="settingsForm">
+      <!-- Instructions Button -->
+      <button type="button" id="instructionsBtn">Instructions</button>
+      <!-- Common settings -->
+      <label>Rows: <input type="number" id="rows" min="2" max="20" value="4" required></label>
+      <label>Columns: <input type="number" id="cols" min="2" max="20" value="4" required></label>
+      <label>Number of Squares: <input type="number" id="numSquares" min="1" max="20" value="3" required></label>
+      <label>Flash Time (ms): <input type="number" id="flashTime" min="50" max="1000" value="250" required></label>
+      <label>Grid Color:
+        <select id="gridColor">
+          <option value="rgb(100,100,100)">Grey</option>
+          <option value="yellow">Yellow</option>
+          <option value="green">Green</option>
+          <option value="blue">Blue</option>
+          <option value="red">Red</option>
+          <option value="white">White</option>
+        </select>
+      </label>
+      <label>Square Color:
+        <select id="squareColor">
+          <option value="white" selected>White</option>
+          <option value="black">Black</option>
+          <option value="yellow">Yellow</option>
+          <option value="green">Green</option>
+          <option value="blue">Blue</option>
+          <option value="red">Red</option>
+        </select>
+      </label>
+      <hr>
+      <!-- Memory Task Settings -->
+      <label>Flash Delay (ms): <input type="number" id="flashDelay" min="0" value="25" required></label>
+      <label>Alternate Color for Consecutive Flashes:
+        <input type="checkbox" id="alternateColor">
+      </label>
+      <label>Add Letter Stimulus (Memory Game):
+        <input type="checkbox" id="memoryLetterStimulus" checked>
+      </label>
+      <hr>
+      <!-- N-Back Task Settings -->
+      <label>N Level: <input type="number" id="nLevel" min="1" value="2" required></label>
+      <label>Sec/Trial: <input type="number" id="secTrial" min="1" step="0.1" value="2" required></label>
+      <label>Trial Number/Set: <input type="number" id="trialNum" min="1" value="20" required></label>
+      <label>Percent Match: <input type="number" id="percentMatch" min="0" max="100" value="30" required></label>
+      <label>Interference Control (%): <input type="number" id="interferenceControl" min="0" max="100" value="50" required></label>
+      <label>Add Letter Stimulus:
+        <input type="checkbox" id="letterStimulus" checked>
+      </label>
+      <hr>
+      <!-- Synesthesia Settings -->
+      <h2>Synesthesia</h2>
+      <label>Grapheme-Color:
+        <input type="checkbox" id="graphemeColor" checked>
+      </label>
+      <label>GC-test (%):
+        <input type="number" id="gcTest" min="0" max="100" value="10">
+      </label>
+      <label>uncolored letter (%):
+        <input type="number" id="uncoloredLetter" min="0" max="100" value="10">
+      </label>
+      <!-- Spatial Music as percentage -->
+      <label>Spatial-Music (%):
+        <input type="number" id="spatialMusic" min="0" max="100" value="25">
+      </label>
+      <br><br>
+      <button type="button" id="memoryGameBtn">Save Settings &amp; Play Memory Game</button>
+      <button type="button" id="nBackBtn">Fast Sequence N Back</button>
+    </form>
+  </div>
+
+  <!-- MEMORY GAME PAGE -->
+  <div id="gamePage" class="page" tabindex="0">
+    <h1>Memory Game</h1>
+    <p>Press the spacebar to start the game.<br>Then click the grid cells in the flashed order.</p>
+    <div class="gameContainer">
+      <div id="gridContainer" class="gridContainer"></div>
+      <div class="sideButtons">
+        <button id="retryBtn" style="display: none;">Retry</button>
+        <button id="backBtn">Back to Settings</button>
+      </div>
+    </div>
+    <p id="message"></p>
+  </div>
+
+  <!-- N-BACK TASK PAGE -->
+  <div id="nBackPage" class="page" tabindex="0">
+    <h1>Fast Sequence N Back</h1>
+    <p>
+      Press <strong>L</strong> if the SPATIAL sequence matches the sequence presented N trials back (feedback on RIGHT).<br>
+      Press <strong>K</strong> if the LETTER sequence matches N trials back (feedback on LEFT).
+    </p>
+    <!-- New wrapper with two columns: left (game) and right (stats) -->
+    <div class="nBackWrapper">
+      <div class="gameContainer">
+        <div id="letterFeedback"></div>
+        <div id="nBackGridContainer" class="gridContainer"></div>
+        <div id="spatialFeedback"></div>
+        <div class="sideButtons">
+          <button id="nBackBackBtn">Back to Settings</button>
+        </div>
+      </div>
+      <div class="scoreContainer">
+        <p id="nBackScore"></p>
+        <p id="nBackLetterScore"></p>
+        <p id="nBackOverallScore"></p>
+        <p id="nBackDuration"></p>
+      </div>
+    </div>
+    <p id="nBackMessage"></p>
+    <!-- New Daily Average Score Window -->
+    <div class="dailyScoreWindow" id="dailyScoreWindow"></div>
+  </div>
+
+  <!-- Instructions Overlay -->
+  <div id="instructionsOverlay">
+    <button id="closeInstructionsBtn">x</button>
+    <h2>INSTRUCTIONS</h2>
+    <div>
+      <p><strong>Basics:</strong></p>
+      <p>
+        This website contains two games:
+        <strong>1.</strong> A spatial memory game resembling corsi, which displays a sequence of squares 
+        for you to recall and click the grid spaces in the same sequence.
+        <strong>2.</strong> An N back game, where each “trial” is a sequence of squares instead of a 
+        single square like in standard N back tasks.
+      </p>
+      <p>
+        In both games, a variety of settings can be enabled/adjusted:
+      </p>
+      <ul>
+        <li>synesthesia-like linkages (letter-color links and spatial-music links)</li>
+        <li>number of squares in the grid</li>
+        <li>number of squares in every sequence</li>
+        <li>duration of display of each square in the sequence</li>
+        <li>duration of delay time between each square in the sequence (no squares displayed)</li>
+        <li>typical N back settings like N level, sec/trial, number of trials in the session</li>
+        <li>percent match to determine how many trials will show “matches”</li>
+        <li>interference control for producing more “tricky” sequences</li>
+      </ul>
+      <p><strong>Synesthesia details:</strong></p>
+      <p>
+        Grapheme-color synesthesia is a phenomenon in certain brains where each letter has an 
+        associated color that is automatically processed with the letter. Like your brain perceiving 
+        a red-colored letter “a” when your eyes actually see a normal, black-colored letter “a” on the screen.
+        Spatial-musical synesthesia is less common. This one is where specific spatial movements are 
+        associated with specific musical tones, and in the case of sequences of spatial movements, 
+        melodies. In this program, I assigned each letter a unique color (this can be manually edited 
+        in the code), and each spatial “jump” between squares in the sequence a specific piano key 
+        based on the direction (angle/theta :: musical note) and magnitude (octave) of the “jump”.
+      </p>
+      <p>
+        The “GC-test” setting is the probability by which the program presents only the associated color, 
+        instead of the letter colored by its assigned color, and the “uncolored-letter” setting is the 
+        probability by which the program presents the letter without it being colored. Do not exceed 
+        100% with the sum of these two settings. For beginners, I suggest putting both of these settings 
+        at 0% and gradually start increasing them as you familiarize yourself with the GC-linkages.
+      </p>
+      <p>
+        The spatial-musical synesthetic links are not tested/reinforced through recall, it is all just exposure. You can adjust the rate
+        at which the corresponding musical stimuli is presented with a sequence, by adjusting the “Spatial-Music (%)” setting.
+        More on how exactly it works though: Basically, the 12 keys in an octave are distributed evenly along 
+        the full 0-360° angular range, with 3 different normalized magnitude ranges defined (with 1 
+        = the maximum distance between the centers of any two squares in the grid). For example: 
+        C4 denotes a “jump” vector in polar coordinates = (0.33–0.67, 0–30°); C3 = (0–0.33, 0–30°); 
+        B5 = (0.67–1, 330–360°). This is not manually revisable in the code, or at least not as easily.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      /********** GLOBAL SETTINGS & VARIABLES **********/
+      let settings = {
+        rows: 4,
+        cols: 4,
+        numSquares: 5,
+        flashTime: 150,
+        gridColor: 'black',
+        squareColor: 'white',
+        flashDelay: 50,
+        alternateColor: false
+      };
+
+      // Memory game variables
+      let flashSequence = [];
+      let userSequence = [];
+      let isInputEnabled = false;
+      let memoryLetterSequence = [];
+      let memoryLetterStimulus = false;
+      
+      // For memory game "spatial music" decision
+      let doSpatialMusicForThisMemorySeq = false;
+
+      // N-back variables
+      let nBackTrials = [];
+      let letterTrials = [];
+      let currentTrialIndex = 0;
+      let nBackSpatialResponse = false;
+      let nBackLetterResponse = false;
+      let nBackCorrectCount = 0, nBackIncorrectCount = 0;
+      let nBackLetterCorrectCount = 0, nBackLetterIncorrectCount = 0;
+      let nLevel = 2, secTrialMs = 2000, totalTrials = 15;
+      let percentMatch = 30;
+      let interferenceControl = 50;
+      let letterStimulus = document.getElementById('letterStimulus').checked;
+      let nBackModeActive = false;
+      let trialStartTime = 0;
+      let nBackSessionStartTime = 0;  // NEW: session start time for current session
+
+      // Synesthesia settings
+      let graphemeColor = false;
+      let gcTestPercentage = 50;
+      let uncoloredLetterPercentage = 25;
+      let spatialMusicChance = 50; // numeric chance (0-100)
+
+      // For clearing timeouts
+      let pendingTimeouts = [];
+      function clearPendingTimeouts() {
+        pendingTimeouts.forEach(id => clearTimeout(id));
+        pendingTimeouts = [];
+      }
+
+      // Timers for feedback (N-back)
+      let spatialFeedbackTimer = null;
+      let letterFeedbackTimer = null;
+
+      // Reusable letter set for both games
+      const letterSet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+      // Colors used when alternateColor = true
+      const colorPalette = ["black", "yellow", "green", "blue", "red", "white"];
+
+      // Synesthesia: letter -> rgb() color map
+      const letterColorMap = {
+        A: "rgb(252,3,3)",
+        B: "rgb(135,71,19)",
+        C: "rgb(255,106,0)",
+        D: "rgb(0,0,0)",
+        E: "rgb(171,247,5)",
+        F: "rgb(255,68,0)",
+        G: "rgb(59,145,38)",
+        H: "rgb(250,97,202)",
+        I: "rgb(124,214,247)",
+        J: "rgb(153,0,255)",
+        K: "rgb(0,234,255)",
+        L: "rgb(0,255,55)",
+        M: "rgb(191,0,255)",
+        N: "rgb(115,0,255)",
+        O: "rgb(255,0,187)",
+        P: "rgb(0,114,252)",
+        Q: "rgb(47,255,0)",
+        R: "rgb(150,0,45)",
+        S: "rgb(235,40,79)",
+        T: "rgb(57,1,89)",
+        U: "rgb(0,21,92)",
+        V: "rgb(8,66,1)",
+        W: "rgb(158,121,252)",
+        X: "rgb(0,3,3)",
+        Y: "rgb(0,252,252)",
+        Z: "rgb(0,43,43)"
+      };
+
+      /********** SETTINGS PAGE: Event Handlers **********/
+      const memoryGameBtn = document.getElementById('memoryGameBtn');
+      const nBackBtn = document.getElementById('nBackBtn');
+      const settingsForm = document.getElementById('settingsForm');
+      settingsForm.addEventListener('submit', e => e.preventDefault());
+
+      memoryGameBtn.addEventListener('click', function () {
+        clearPendingTimeouts();
+        document.getElementById('nBackPage').style.backgroundColor = "";
+
+        settings.rows = +document.getElementById('rows').value;
+        settings.cols = +document.getElementById('cols').value;
+        settings.numSquares = +document.getElementById('numSquares').value;
+        settings.flashTime = +document.getElementById('flashTime').value;
+        settings.gridColor = document.getElementById('gridColor').value;
+        settings.squareColor = document.getElementById('squareColor').value;
+        settings.flashDelay = +document.getElementById('flashDelay').value;
+        settings.alternateColor = document.getElementById('alternateColor').checked;
+
+        memoryLetterStimulus = document.getElementById('memoryLetterStimulus').checked;
+
+        graphemeColor = document.getElementById('graphemeColor').checked;
+        gcTestPercentage = +document.getElementById('gcTest').value;
+        uncoloredLetterPercentage = +document.getElementById('uncoloredLetter').value;
+        spatialMusicChance = +document.getElementById('spatialMusic').value;
+
+        document.getElementById('settingsPage').classList.remove('active');
+        document.getElementById('nBackPage').classList.remove('active');
+        document.getElementById('gamePage').classList.add('active');
+
+        buildGrid();
+        document.getElementById('gamePage').focus();
+        document.getElementById('retryBtn').style.display = "none";
+        document.getElementById('message').textContent = "";
+      });
+
+      nBackBtn.addEventListener('click', function () {
+        clearPendingTimeouts();
+        document.getElementById('nBackPage').style.backgroundColor = "";
+
+        settings.rows = +document.getElementById('rows').value;
+        settings.cols = +document.getElementById('cols').value;
+        settings.numSquares = +document.getElementById('numSquares').value;
+        settings.flashTime = +document.getElementById('flashTime').value;
+        settings.gridColor = document.getElementById('gridColor').value;
+        settings.squareColor = document.getElementById('squareColor').value;
+        settings.flashDelay = +document.getElementById('flashDelay').value;
+        settings.alternateColor = document.getElementById('alternateColor').checked;
+
+        nLevel = +document.getElementById('nLevel').value;
+        secTrialMs = +document.getElementById('secTrial').value * 1000;
+        totalTrials = +document.getElementById('trialNum').value;
+        percentMatch = +document.getElementById('percentMatch').value;
+        interferenceControl = +document.getElementById('interferenceControl').value;
+        letterStimulus = document.getElementById('letterStimulus').checked;
+
+        graphemeColor = document.getElementById('graphemeColor').checked;
+        gcTestPercentage = +document.getElementById('gcTest').value;
+        uncoloredLetterPercentage = +document.getElementById('uncoloredLetter').value;
+        spatialMusicChance = +document.getElementById('spatialMusic').value;
+
+        startNBack();
+      });
+
+      /********** Instructions Overlay Logic **********/
+      const instructionsBtn = document.getElementById('instructionsBtn');
+      const instructionsOverlay = document.getElementById('instructionsOverlay');
+      const closeInstructionsBtn = document.getElementById('closeInstructionsBtn');
+
+      instructionsBtn.addEventListener('click', () => {
+        instructionsOverlay.classList.add('show');
+      });
+      closeInstructionsBtn.addEventListener('click', () => {
+        instructionsOverlay.classList.remove('show');
+      });
+
+      window.addEventListener('load', () => {
+        instructionsOverlay.classList.add('show');
+      });
+
+      /********** MEMORY GAME CODE **********/
+      const gridContainer = document.getElementById('gridContainer');
+      const messageEl = document.getElementById('message');
+      const retryBtn = document.getElementById('retryBtn');
+
+      document.getElementById('backBtn').addEventListener('click', function () {
+        clearPendingTimeouts();
+        flashSequence = [];
+        userSequence = [];
+        memoryLetterSequence = [];
+        isInputEnabled = false;
+        messageEl.textContent = "";
+        retryBtn.style.display = "inline-block";
+        document.getElementById('gamePage').classList.remove('active');
+        document.getElementById('settingsPage').classList.add('active');
+      });
+
+      function buildGrid() {
+        gridContainer.innerHTML = '';
+        gridContainer.style.gridTemplateColumns = `repeat(${settings.cols}, 1fr)`;
+        gridContainer.style.gridTemplateRows = `repeat(${settings.rows}, 1fr)`;
+        gridContainer.style.backgroundColor = settings.gridColor;
+        const totalCells = settings.rows * settings.cols;
+        for (let i = 0; i < totalCells; i++) {
+          const cell = document.createElement('div');
+          cell.classList.add('cell');
+          cell.dataset.index = i;
+          cell.addEventListener('click', onCellClick);
+          gridContainer.appendChild(cell);
+        }
+        updateLetterSize();
+      }
+
+      function onCellClick(e) {
+        if (!isInputEnabled) return;
+        const index = +e.target.dataset.index;
+        userSequence.push(index);
+        e.target.style.opacity = 0.5;
+        if (userSequence.length === flashSequence.length) {
+          isInputEnabled = false;
+          checkSequence();
+        }
+      }
+
+      function checkSequence() {
+        const correct = flashSequence.every((val, idx) => val === userSequence[idx]);
+        messageEl.textContent = correct ? "Correct!" : "Incorrect!";
+        retryBtn.style.display = "inline-block";
+      }
+
+      document.addEventListener('keydown', e => {
+        if (e.code === 'Space' &&
+          document.getElementById('gamePage').classList.contains('active') &&
+          !isInputEnabled) {
+          startGame();
+        }
+      });
+
+      /* ---------- SPATIAL-MUSIC FUNCTIONS ---------- */
+      function getSpatialMusicFrequency(fromIndex, toIndex) {
+        let cols = settings.cols;
+        let fromRow = Math.floor(fromIndex / cols);
+        let fromCol = fromIndex % cols;
+        let toRow = Math.floor(toIndex / cols);
+        let toCol = toIndex % cols;
+        let fromX = fromCol + 0.5, fromY = fromRow + 0.5;
+        let toX = toCol + 0.5, toY = toRow + 0.5;
+        let dx = toX - fromX, dy = toY - fromY;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+        let maxDistance = Math.sqrt(Math.pow(settings.cols - 1, 2) + Math.pow(settings.rows - 1, 2));
+        let d = distance / maxDistance;
+        let theta = Math.atan2(dy, dx) * 180 / Math.PI;
+        if (theta < 0) theta += 360;
+        let base;
+        if (d < 0.33) {
+          base = 48; // C3
+        } else if (d < 0.67) {
+          base = 60; // C4
+        } else {
+          base = 72; // C5
+        }
+        let interval = Math.floor(theta / 30);
+        let midiNote = base + interval;
+        let frequency = 440 * Math.pow(2, (midiNote - 69) / 12);
+        return frequency;
+      }
+
+      function playTone(frequency, flashSeconds) {
+        let echoDuration = flashSeconds * 2;
+        if (echoDuration > 1) { echoDuration = 1; }
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const real = new Float32Array([0, 1, 0.6, 0.3, 0.15, 0.1]);
+        const imag = new Float32Array(real.length);
+        const pianoWave = audioCtx.createPeriodicWave(real, imag);
+        oscillator.setPeriodicWave(pianoWave);
+        oscillator.frequency.value = frequency;
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(1500, audioCtx.currentTime);
+        const gainNode = audioCtx.createGain();
+        gainNode.gain.setValueAtTime(0.001, audioCtx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.02);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + echoDuration);
+        oscillator.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + echoDuration);
+      }
+      /* ---------------------------------------------- */
+
+      async function startGame() {
+        clearPendingTimeouts();
+        flashSequence = [];
+        memoryLetterSequence = [];
+        userSequence = [];
+        messageEl.textContent = "";
+        retryBtn.style.display = "none";
+
+        doSpatialMusicForThisMemorySeq = (Math.random() * 100 < spatialMusicChance);
+
+        const cells = document.querySelectorAll('#gridContainer .cell');
+        cells.forEach(cell => {
+          cell.style.opacity = 1;
+          cell.style.backgroundColor = "";
+          cell.innerText = "";
+          cell.style.color = "";
+        });
+
+        const totalCells = settings.rows * settings.cols;
+        for (let i = 0; i < settings.numSquares; i++) {
+          flashSequence.push(Math.floor(Math.random() * totalCells));
+          if (memoryLetterStimulus) {
+            const randomLetter = letterSet[Math.floor(Math.random() * letterSet.length)];
+            memoryLetterSequence.push(randomLetter);
+          } else {
+            memoryLetterSequence.push("");
+          }
+        }
+
+        for (let i = 0; i < flashSequence.length; i++) {
+          let index = flashSequence[i];
+          let flashColor = settings.squareColor;
+          let letter = memoryLetterSequence[i];
+          if (settings.alternateColor && i > 0 && flashSequence[i - 1] === index) {
+            const alternatives = colorPalette.filter(color => color !== settings.squareColor);
+            flashColor = alternatives[Math.floor(Math.random() * alternatives.length)];
+          }
+          if (doSpatialMusicForThisMemorySeq && i > 0) {
+            let freq = getSpatialMusicFrequency(flashSequence[i - 1], flashSequence[i]);
+            playTone(freq, settings.flashTime / 1000);
+          }
+          await flashCell(index, flashColor, letter);
+          await new Promise(r => setTimeout(r, settings.flashDelay));
+        }
+        isInputEnabled = true;
+      }
+
+      function flashCell(index, flashColor = settings.squareColor, letter = "") {
+        return new Promise(resolve => {
+          const cell = document.querySelector(`#gridContainer .cell[data-index='${index}']`);
+          if (cell) {
+            const originalBg = cell.style.backgroundColor;
+            const originalText = cell.innerText;
+            const originalColor = cell.style.color;
+            let useGC = false;
+            if (graphemeColor && letter && gcTestPercentage > 0) {
+              if (Math.random() * 100 < gcTestPercentage) {
+                useGC = true;
+                flashColor = letterColorMap[letter] || flashColor;
+                letter = "";
+              }
+            }
+            cell.innerText = letter;
+            if (!useGC && graphemeColor && letter && letterColorMap[letter]) {
+              if (Math.random() * 100 < uncoloredLetterPercentage) {
+                cell.style.color = "black";
+              } else {
+                cell.style.color = letterColorMap[letter];
+              }
+            }
+            cell.style.backgroundColor = flashColor;
+            let tID = setTimeout(() => {
+              cell.innerText = originalText;
+              cell.style.backgroundColor = originalBg;
+              cell.style.color = originalColor;
+              resolve();
+            }, settings.flashTime);
+            pendingTimeouts.push(tID);
+          } else {
+            console.error("flashCell: Cell not found for index", index);
+            resolve();
+          }
+        });
+      }
+
+      async function retryAttempt() {
+        clearPendingTimeouts();
+        isInputEnabled = false;
+        userSequence = [];
+        const cells = document.querySelectorAll('#gridContainer .cell');
+        cells.forEach(cell => {
+          cell.style.opacity = 1;
+          cell.style.backgroundColor = "";
+          cell.innerText = "";
+          cell.style.color = "";
+        });
+        for (let i = 0; i < flashSequence.length; i++) {
+          let index = flashSequence[i];
+          let flashColor = settings.squareColor;
+          let letter = memoryLetterSequence[i];
+          if (settings.alternateColor && i > 0 && flashSequence[i - 1] === index) {
+            const alternatives = colorPalette.filter(color => color !== settings.squareColor);
+            flashColor = alternatives[Math.floor(Math.random() * alternatives.length)];
+          }
+          if (doSpatialMusicForThisMemorySeq && i > 0) {
+            let freq = getSpatialMusicFrequency(flashSequence[i - 1], flashSequence[i]);
+            playTone(freq, settings.flashTime / 1000);
+          }
+          await flashCell(index, flashColor, letter);
+          await new Promise(r => setTimeout(r, settings.flashDelay));
+        }
+        isInputEnabled = true;
+        messageEl.textContent = "Try again!";
+      }
+      retryBtn.addEventListener('click', retryAttempt);
+
+      /********** N-BACK TASK CODE **********/
+      document.getElementById('nBackBackBtn').addEventListener('click', function () {
+        clearPendingTimeouts();
+        document.getElementById('nBackPage').style.backgroundColor = "";
+        document.getElementById('letterFeedback').style.backgroundColor = "transparent";
+        document.getElementById('spatialFeedback').style.backgroundColor = "transparent";
+        if (spatialFeedbackTimer) { clearTimeout(spatialFeedbackTimer); spatialFeedbackTimer = null; }
+        if (letterFeedbackTimer) { clearTimeout(letterFeedbackTimer); letterFeedbackTimer = null; }
+        nBackModeActive = false;
+        document.getElementById('nBackPage').classList.remove('active');
+        document.getElementById('settingsPage').classList.add('active');
+      });
+
+      function buildNBackGrid() {
+        const nBackGridContainer = document.getElementById('nBackGridContainer');
+        nBackGridContainer.innerHTML = '';
+        nBackGridContainer.style.gridTemplateColumns = `repeat(${settings.cols}, 1fr)`;
+        nBackGridContainer.style.gridTemplateRows = `repeat(${settings.rows}, 1fr)`;
+        nBackGridContainer.style.backgroundColor = settings.gridColor;
+        const totalCells = settings.rows * settings.cols;
+        for (let i = 0; i < totalCells; i++) {
+          const cell = document.createElement('div');
+          cell.classList.add('cell');
+          cell.dataset.index = i;
+          nBackGridContainer.appendChild(cell);
+        }
+        updateLetterSize();
+      }
+
+      function updateLetterSize() {
+        const nBackContainer = document.getElementById('nBackGridContainer');
+        const memoryContainer = document.getElementById('gridContainer');
+        let container = null;
+        if (document.getElementById('nBackPage').classList.contains('active')) {
+          container = nBackContainer;
+        } else if (document.getElementById('gamePage').classList.contains('active')) {
+          container = memoryContainer;
+        }
+        if (!container) return;
+        const gridWidth = container.clientWidth;
+        const cellWidth = gridWidth / settings.cols;
+        const letterSize = cellWidth * 0.8;
+        document.documentElement.style.setProperty('--letter-size', letterSize + 'px');
+      }
+      window.addEventListener('resize', updateLetterSize);
+
+      function generateNBackTrials() {
+        nBackTrials = [];
+        const totalCells = settings.rows * settings.cols;
+        for (let i = 0; i < totalTrials; i++) {
+          let trialSeq = [];
+          if (i < nLevel) {
+            for (let j = 0; j < settings.numSquares; j++) {
+              trialSeq.push(Math.floor(Math.random() * totalCells));
+            }
+          } else {
+            const baseTrial = nBackTrials[i - nLevel];
+            if (Math.random() < (percentMatch / 100)) {
+              trialSeq = baseTrial.slice();
+            } else if (Math.random() < (interferenceControl / 100)) {
+              if (Math.random() < 0.5) {
+                trialSeq = generateInterferenceTrial(baseTrial, totalCells);
+              } else {
+                let candidates = [];
+                if (i - nLevel - 1 >= 0) { candidates.push(nBackTrials[i - nLevel - 1]); }
+                if (i - nLevel + 1 < i) { candidates.push(nBackTrials[i - nLevel + 1]); }
+                if (candidates.length > 0) {
+                  let candidate = candidates[Math.floor(Math.random() * candidates.length)].slice();
+                  if (arraysEqual(candidate, baseTrial)) {
+                    candidate = generateInterferenceTrial(baseTrial, totalCells);
+                  }
+                  trialSeq = candidate;
+                } else {
+                  trialSeq = generateInterferenceTrial(baseTrial, totalCells);
+                }
+              }
+            } else {
+              for (let j = 0; j < settings.numSquares; j++) {
+                trialSeq.push(Math.floor(Math.random() * totalCells));
+              }
+              if (arraysEqual(trialSeq, baseTrial)) {
+                trialSeq[0] = (trialSeq[0] + 1) % totalCells;
+              }
+            }
+          }
+          nBackTrials.push(trialSeq);
+        }
+      }
+
+      function generateInterferenceTrial(baseTrial, totalCells) {
+        let trial = baseTrial.slice();
+        let indexToChange = Math.floor(Math.random() * trial.length);
+        let newValue;
+        do {
+          newValue = Math.floor(Math.random() * totalCells);
+        } while (newValue === baseTrial[indexToChange]);
+        trial[indexToChange] = newValue;
+        if (arraysEqual(trial, baseTrial)) {
+          trial[0] = (trial[0] + 1) % totalCells;
+        }
+        return trial;
+      }
+
+      function generateNBackLetterTrials() {
+        letterTrials = [];
+        for (let i = 0; i < totalTrials; i++) {
+          let letterSeq = [];
+          if (i < nLevel) {
+            for (let j = 0; j < settings.numSquares; j++) {
+              letterSeq.push(letterSet[Math.floor(Math.random() * letterSet.length)]);
+            }
+          } else {
+            const baseSeq = letterTrials[i - nLevel];
+            if (Math.random() < (percentMatch / 100)) {
+              letterSeq = baseSeq.slice();
+            } else if (Math.random() < (interferenceControl / 100)) {
+              if (Math.random() < 0.5) {
+                letterSeq = generateLetterInterference(baseSeq);
+              } else {
+                let candidates = [];
+                if (i - nLevel - 1 >= 0) { candidates.push(letterTrials[i - nLevel - 1]); }
+                if (i - nLevel + 1 < i) { candidates.push(letterTrials[i - nLevel + 1]); }
+                if (candidates.length > 0) {
+                  let candidate = candidates[Math.floor(Math.random() * candidates.length)].slice();
+                  if (candidate.join("") === baseSeq.join("")) {
+                    candidate = generateLetterInterference(baseSeq);
+                  }
+                  letterSeq = candidate;
+                } else {
+                  letterSeq = generateLetterInterference(baseSeq);
+                }
+              }
+            } else {
+              for (let j = 0; j < settings.numSquares; j++) {
+                letterSeq.push(letterSet[Math.floor(Math.random() * letterSet.length)]);
+              }
+              if (letterSeq.join("") === baseSeq.join("")) {
+                const idx = letterSet.indexOf(letterSeq[0]);
+                letterSeq[0] = letterSet[(idx + 1) % letterSet.length];
+              }
+            }
+          }
+          letterTrials.push(letterSeq);
+        }
+      }
+
+      function generateLetterInterference(baseSeq) {
+        let seq = baseSeq.slice();
+        let indexToChange = Math.floor(Math.random() * seq.length);
+        let newLetter;
+        do {
+          newLetter = letterSet[Math.floor(Math.random() * letterSet.length)];
+        } while (newLetter === baseSeq[indexToChange]);
+        seq[indexToChange] = newLetter;
+        if (seq.join("") === baseSeq.join("")) {
+          const idx = letterSet.indexOf(seq[0]);
+          seq[0] = letterSet[(idx + 1) % letterSet.length];
+        }
+        return seq;
+      }
+
+      function nBackFlashCell(index, flashColor = settings.squareColor) {
+        return new Promise(resolve => {
+          const cell = document.querySelector(`#nBackGridContainer .cell[data-index='${index}']`);
+          if (!cell) {
+            console.error("nBackFlashCell: Cell not found for index", index);
+            resolve();
+            return;
+          }
+          const originalBg = cell.style.backgroundColor;
+          cell.style.backgroundColor = flashColor;
+          let tID = setTimeout(() => {
+            cell.style.backgroundColor = originalBg;
+            resolve();
+          }, settings.flashTime);
+          pendingTimeouts.push(tID);
+        });
+      }
+
+      async function flashNBackTrialOnly(spatialTrial) {
+        let doSpatialMusicForTrial = (Math.random() * 100 < spatialMusicChance);
+        let previousIndex = null;
+        for (let index of spatialTrial) {
+          let flashColor = settings.squareColor;
+          if (settings.alternateColor && previousIndex !== null && previousIndex === index) {
+            const alternatives = colorPalette.filter(c => c !== settings.squareColor);
+            flashColor = alternatives[Math.floor(Math.random() * alternatives.length)];
+          }
+          if (doSpatialMusicForTrial && previousIndex !== null) {
+            let freq = getSpatialMusicFrequency(previousIndex, index);
+            playTone(freq, settings.flashTime / 1000);
+          }
+          await nBackFlashCell(index, flashColor);
+          await new Promise(r => setTimeout(r, settings.flashDelay));
+          previousIndex = index;
+        }
+      }
+
+      async function flashNBackTrialCombined(spatialTrial, letterTrial) {
+        let doSpatialMusicForTrial = (Math.random() * 100 < spatialMusicChance);
+        let previousIndex = null;
+        for (let i = 0; i < spatialTrial.length; i++) {
+          let index = spatialTrial[i];
+          const cell = document.querySelector(`#nBackGridContainer .cell[data-index='${index}']`);
+          let letter = letterTrial[i] || "";
+          let useGC = false;
+          if (graphemeColor && letter && gcTestPercentage > 0) {
+            if (Math.random() * 100 < gcTestPercentage) {
+              useGC = true;
+            }
+          }
+          if (letterStimulus && cell) {
+            if (useGC) {
+              cell.innerText = "";
+            } else {
+              cell.innerText = letter;
+              if (graphemeColor && letter && letterColorMap[letter]) {
+                if (Math.random() * 100 < uncoloredLetterPercentage) {
+                  cell.style.color = "black";
+                } else {
+                  cell.style.color = letterColorMap[letter];
+                }
+              } else {
+                cell.style.color = "";
+              }
+            }
+          }
+          if (doSpatialMusicForTrial && i > 0) {
+            let freq = getSpatialMusicFrequency(spatialTrial[i - 1], spatialTrial[i]);
+            playTone(freq, settings.flashTime / 1000);
+          }
+          let flashColor = settings.squareColor;
+          if (useGC && letter && letterColorMap[letter]) {
+            flashColor = letterColorMap[letter];
+          } else if (settings.alternateColor && previousIndex !== null && previousIndex === index) {
+            const alternatives = colorPalette.filter(c => c !== settings.squareColor);
+            flashColor = alternatives[Math.floor(Math.random() * alternatives.length)];
+          }
+          await nBackFlashCell(index, flashColor);
+          if (letterStimulus && cell) {
+            cell.innerText = "";
+            cell.style.color = "";
+          }
+          await new Promise(r => setTimeout(r, settings.flashDelay));
+          previousIndex = index;
+        }
+      }
+
+      async function runNBackTrial() {
+        if (!nBackModeActive) return;
+        nBackSpatialResponse = false;
+        nBackLetterResponse = false;
+
+        const spatialTrial = nBackTrials[currentTrialIndex];
+        let letterTrial = letterStimulus ? letterTrials[currentTrialIndex] : [];
+        trialStartTime = Date.now();
+
+        if (letterStimulus) {
+          await flashNBackTrialCombined(spatialTrial, letterTrial);
+        } else {
+          await flashNBackTrialOnly(spatialTrial);
+        }
+
+        const elapsed = Date.now() - trialStartTime;
+        const remaining = secTrialMs - elapsed;
+        if (remaining > 0) {
+          let leftoverID = setTimeout(() => {}, remaining);
+          pendingTimeouts.push(leftoverID);
+          await new Promise(r => setTimeout(r, remaining));
+        }
+
+        if (!nBackSpatialResponse && currentTrialIndex >= nLevel &&
+            arraysEqual(nBackTrials[currentTrialIndex], nBackTrials[currentTrialIndex - nLevel])) {
+          nBackIncorrectCount++;
+          flashSpatialFeedback(false);
+        }
+        if (letterStimulus && !nBackLetterResponse && currentTrialIndex >= nLevel &&
+            letterTrials[currentTrialIndex].join("") === letterTrials[currentTrialIndex - nLevel].join("")) {
+          nBackLetterIncorrectCount++;
+          flashLetterFeedback(false);
+        }
+
+        currentTrialIndex++;
+        if (currentTrialIndex < totalTrials) {
+          let nextID = setTimeout(runNBackTrial, 500);
+          pendingTimeouts.push(nextID);
+        } else {
+          // End of session.
+          document.getElementById('nBackScore').textContent =
+            `Spatial: ${nBackCorrectCount} correct, ${nBackIncorrectCount} incorrect.`;
+          if (letterStimulus) {
+            document.getElementById('nBackLetterScore').textContent =
+              `Letter: ${nBackLetterCorrectCount} correct, ${nBackLetterIncorrectCount} incorrect.`;
+          }
+          const totalCorrect = nBackCorrectCount + nBackLetterCorrectCount;
+          const totalIncorrect = nBackIncorrectCount + nBackLetterIncorrectCount;
+          const totalResponses = totalCorrect + totalIncorrect;
+          let overallPercent = 0;
+          if (totalResponses > 0) {
+            overallPercent = ((totalCorrect / totalResponses) * 100).toFixed(1);
+          }
+          document.getElementById('nBackOverallScore').textContent =
+            `Overall accuracy: ${overallPercent}%`;
+
+          // NEW: Compute and display session duration.
+          const sessionDurationMs = Date.now() - nBackSessionStartTime;
+          const sessionSeconds = Math.floor(sessionDurationMs / 1000);
+          document.getElementById('nBackDuration').textContent = `Session duration: ${sessionSeconds} seconds`;
+
+          // NEW: Update and display daily average score.
+          const today = new Date().toISOString().slice(0,10);
+          const scoreStorageKey = "nbackScores_" + today;
+          let scores = [];
+          try {
+            scores = JSON.parse(localStorage.getItem(scoreStorageKey)) || [];
+          } catch(e) {
+            scores = [];
+          }
+          scores.push(parseFloat(overallPercent));
+          localStorage.setItem(scoreStorageKey, JSON.stringify(scores));
+          const avg = (scores.reduce((sum, val) => sum + val, 0) / scores.length).toFixed(1);
+
+          // NEW: Update daily training time.
+          const timeStorageKey = "nbackTrainingTime_" + today;
+          let totalTrainingTimeMs = 0;
+          try {
+            totalTrainingTimeMs = parseInt(localStorage.getItem(timeStorageKey)) || 0;
+          } catch(e) {
+            totalTrainingTimeMs = 0;
+          }
+          totalTrainingTimeMs += sessionDurationMs;
+          localStorage.setItem(timeStorageKey, totalTrainingTimeMs.toString());
+          const totalSeconds = Math.floor(totalTrainingTimeMs / 1000);
+          const minutes = Math.floor(totalSeconds / 60);
+          const remSeconds = totalSeconds % 60;
+          const formattedTime = `${minutes} minutes ${remSeconds} seconds`;
+
+          // Update the dailyScoreWindow with both daily average score and daily training time.
+          document.getElementById('dailyScoreWindow').innerHTML =
+            `<strong>Daily Average Score:</strong> ${avg}% &nbsp;&nbsp; <strong>Daily Total Training Time:</strong> ${formattedTime}<br>
+             <em>daily averaged % scores do NOT account for changes in settings etc. For consistency, it is recommended to keep settings the same within each training day</em>`;
+
+          nBackModeActive = false;
+        }
+      }
+
+      function arraysEqual(a, b) {
+        if (a.length !== b.length) return false;
+        for (let i = 0; i < a.length; i++) {
+          if (a[i] !== b[i]) return false;
+        }
+        return true;
+      }
+
+      function flashSpatialFeedback(isCorrect) {
+        const spatialContainer = document.getElementById('spatialFeedback');
+        if (!spatialContainer) return;
+        if (spatialFeedbackTimer) {
+          clearTimeout(spatialFeedbackTimer);
+          spatialFeedbackTimer = null;
+          spatialContainer.style.backgroundColor = "transparent";
+        }
+        spatialContainer.style.backgroundColor = isCorrect ? "lightgreen" : "red";
+        spatialFeedbackTimer = setTimeout(() => {
+          spatialContainer.style.backgroundColor = "transparent";
+          spatialFeedbackTimer = null;
+        }, 300);
+        pendingTimeouts.push(spatialFeedbackTimer);
+      }
+
+      function flashLetterFeedback(isCorrect) {
+        const letterContainer = document.getElementById('letterFeedback');
+        if (!letterContainer) return;
+        if (letterFeedbackTimer) {
+          clearTimeout(letterFeedbackTimer);
+          letterFeedbackTimer = null;
+          letterContainer.style.backgroundColor = "transparent";
+        }
+        letterContainer.style.backgroundColor = isCorrect ? "lightgreen" : "red";
+        letterFeedbackTimer = setTimeout(() => {
+          letterContainer.style.backgroundColor = "transparent";
+          letterFeedbackTimer = null;
+        }, 300);
+        pendingTimeouts.push(letterFeedbackTimer);
+      }
+
+      function startNBack() {
+        clearPendingTimeouts();
+        document.getElementById('letterFeedback').style.backgroundColor = "transparent";
+        document.getElementById('spatialFeedback').style.backgroundColor = "transparent";
+        if (spatialFeedbackTimer) { clearTimeout(spatialFeedbackTimer); spatialFeedbackTimer = null; }
+        if (letterFeedbackTimer) { clearTimeout(letterFeedbackTimer); letterFeedbackTimer = null; }
+        buildNBackGrid();
+        generateNBackTrials();
+        if (letterStimulus) {
+          generateNBackLetterTrials();
+        }
+        currentTrialIndex = 0;
+        nBackCorrectCount = 0;
+        nBackIncorrectCount = 0;
+        nBackLetterCorrectCount = 0;
+        nBackLetterIncorrectCount = 0;
+        nBackModeActive = true;
+        // NEW: Record the session start time.
+        nBackSessionStartTime = Date.now();
+
+        document.getElementById('nBackScore').textContent = "";
+        document.getElementById('nBackLetterScore').textContent = "";
+        document.getElementById('nBackOverallScore').textContent = "";
+        document.getElementById('nBackDuration').textContent = "";
+
+        document.getElementById('settingsPage').classList.remove('active');
+        document.getElementById('gamePage').classList.remove('active');
+        document.getElementById('nBackPage').classList.add('active');
+        document.getElementById('nBackPage').focus();
+        updateLetterSize();
+        runNBackTrial();
+      }
+
+      document.addEventListener('keydown', function (e) {
+        if (!nBackModeActive) return;
+        if (e.code === 'KeyL' && !nBackSpatialResponse) {
+          nBackSpatialResponse = true;
+          let isTarget = false;
+          if (currentTrialIndex >= nLevel) {
+            isTarget = arraysEqual(nBackTrials[currentTrialIndex], nBackTrials[currentTrialIndex - nLevel]);
+          }
+          if (isTarget) {
+            nBackCorrectCount++;
+            flashSpatialFeedback(true);
+          } else {
+            nBackIncorrectCount++;
+            flashSpatialFeedback(false);
+          }
+        }
+        if (letterStimulus && e.code === 'KeyK' && !nBackLetterResponse) {
+          nBackLetterResponse = true;
+          let isLetterTarget = false;
+          if (currentTrialIndex >= nLevel) {
+            isLetterTarget = (letterTrials[currentTrialIndex].join("") === letterTrials[currentTrialIndex - nLevel].join(""));
+          }
+          if (isLetterTarget) {
+            nBackLetterCorrectCount++;
+            flashLetterFeedback(true);
+          } else {
+            nBackLetterIncorrectCount++;
+            flashLetterFeedback(false);
+          }
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
