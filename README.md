@@ -1,105 +1,131 @@
-# Brain Training Games Collection 🧠
+# Brain Training Games Collection
 
-A curated collection of web-based brain training games focusing on working memory, attention, and cognitive flexibility. This repository brings together excellent games from various developers in the cognitive training community.
+A curated collection of advanced brain training games focused on working memory, attention, and cognitive enhancement.
 
-## 🎮 Available Games
+## 🎮 Games Included
 
-### N-Back Training
-- **[Quad Box](quad-box-soamsy/)** - Advanced multi-modal N-back training by [soamsy](https://github.com/soamsy)
-- **[Dichotic Dual N-Back](Dichotic-Dual-N-back/)** - Dichotic audio N-back by [4skinskywalker](https://github.com/4skinskywalker)
-- **[3D Hyper N-Back](3D-Hyper-N-back/)** - Multi-dimensional 3D N-back by [DaggerxMouth](https://github.com/DaggerxMouth)
-- **[Fast Sequence N-Back](FastSequenceNBack/)** - Rapid sequence training
+### 1. Quad-Box
+**Advanced quad n-back training**
+- Multi-dimensional working memory training
+- Customizable difficulty settings
+- Progress tracking and analytics
+- **Play:** `games/quad-box/index.html`
 
-### Spatial & 3D Training
-- **[Jiggle Factorial 3D](Jiggle-Factorial-3D-soamsy/)** - 3D spatial training by [soamsy](https://github.com/soamsy)
+### 2. Dichotic Dual N-Back
+**Dichotic listening cognitive trainer**
+- Dual-channel audio processing
+- Multiple language support
+- Statistical analysis
+- **Play:** `games/dichotic-dual-nback/index.html`
 
-### Memory & Attention
-- **[Memory Training](memory.html)** - General memory exercises
-- **[Subitizing Training](subitizing.html)** - Number recognition practice
-- **[Multiple Choice Training](multiple.html)** - Cognitive flexibility training
+### 3. Jiggle Factorial 3D
+**3D spatial working memory**
+- Three-dimensional n-back
+- Factorial complexity scaling
+- Jiggle mechanics for difficulty
+- **Play:** `games/jiggle-factorial/index.html`
 
-## 🚀 Quick Start
+### 4. 3D Hyper N-Back
+**Advanced spatial training**
+- Multi-dimensional spatial memory
+- Hyper-back mechanics
+- Progressive difficulty
+- **Play:** `games/3d-hyper-nback/index.html`
 
-### For Submodule Games (Recommended)
-1. Clone this repository:
-   ```bash
-   git clone --recursive https://github.com/phyto99/BT.git
-   ```
+### 5. Fast Sequence N-Back
+**Speed-based memory training**
+- Rapid sequence presentation
+- Reaction time tracking
+- **Play:** `FastSequenceNBack/index.html`
+- ⚠️ *Pending creator permission*
 
-2. Navigate to any game folder and follow its specific instructions
+## 🚀 Getting Started
 
-### For Individual Games
-Simply open the HTML files in your web browser for standalone games.
-
-## 📁 Repository Structure
-
-```
-BT/
-├── 3D-Hyper-N-back/          # Git submodule
-├── Dichotic-Dual-N-back/     # Git submodule  
-├── Jiggle-Factorial-3D-soamsy/ # Git submodule
-├── quad-box-soamsy/          # Git submodule
-├── FastSequenceNBack/        # Standalone
-├── Syllogimous-v4/           # Standalone
-├── memory.html               # Standalone
-├── multiple.html             # Standalone
-├── subitizing.html           # Standalone
-├── CREDITS.md               # Full attribution
-└── README.md                # This file
-```
-
-## 🔄 Updating Games
-
-Since most games are included as git submodules, you can update them individually:
-
+### Quick Start
 ```bash
-# Update all submodules
-git submodule update --remote
+# Clone this repository
+git clone https://github.com/phyto99/BT.git
+cd BT
 
-# Update specific game
-cd quad-box-soamsy
-git pull origin main
+# Open any game in your browser
+# Example: open games/quad-box/index.html
 ```
 
-## 🤝 Contributing & Attribution
+### For Developers
+```bash
+# Clone with full history
+git clone https://github.com/phyto99/BT.git
+cd BT
 
-This is a collection repository that brings together games from various creators. Each game maintains its original attribution and licensing.
+# Each game is in its own directory
+cd games/quad-box
 
-### For Game Creators
-If your game is included here and you'd like to:
-- Update attribution information
-- Request changes or removal
-- Add licensing details
+# Make modifications, improvements, etc.
+```
 
-Please open an issue or contact the maintainer.
+## 📊 Game Features Comparison
 
-### For Users
-- Report issues with individual games to their original repositories
-- Suggest new games for inclusion via issues
-- Share feedback on the collection organization
+| Game | 3D Graphics | Audio | Multi-language | Progress Tracking |
+|------|-------------|-------|----------------|-------------------|
+| Quad-Box | ✅ | ✅ | ✅ | ✅ |
+| Dichotic Dual | ❌ | ✅ | ✅ | ✅ |
+| Jiggle Factorial | ✅ | ✅ | ❌ | ⚠️ |
+| 3D Hyper | ✅ | ✅ | ❌ | ✅ |
+| Fast Sequence | ❌ | ✅ | ❌ | ⚠️ |
 
-## 📜 Credits
+## 🔧 Planned Enhancements
 
-Full attribution and licensing information for each game can be found in [CREDITS.md](CREDITS.md).
+- [ ] Unified progress tracking across all games
+- [ ] Dark mode for all games
+- [ ] Mobile-responsive designs
+- [ ] Cloud save functionality
+- [ ] Leaderboards and social features
+- [ ] Customizable themes
+- [ ] Advanced analytics dashboard
+- [ ] Cross-game achievement system
 
-This collection includes work from:
-- [soamsy](https://github.com/soamsy) - Quad Box, Jiggle Factorial 3D
-- [4skinskywalker](https://github.com/4skinskywalker) - Dichotic Dual N-Back
-- [DaggerxMouth](https://github.com/DaggerxMouth) - 3D Hyper N-Back
-- Discord community members - Various standalone games
+## 📝 License & Attribution
 
-## 📄 License
+This collection contains work from multiple creators. See [CREDITS.md](CREDITS.md) for full attribution and licensing information.
 
-The collection structure is MIT licensed. Individual games retain their original licenses - see [CREDITS.md](CREDITS.md) for details.
+**Important:** Each game retains its original license. Modifications and enhancements are clearly documented.
 
-## 🎯 About Brain Training
+## 🤝 Contributing
 
-These games focus on evidence-based cognitive training methods, particularly:
-- **Working Memory**: N-back tasks and variants
-- **Attention Control**: Selective and sustained attention exercises  
-- **Processing Speed**: Rapid decision-making tasks
-- **Spatial Reasoning**: 3D manipulation and visualization
+We welcome contributions! You can:
+
+1. **Improve existing games** - Bug fixes, features, optimizations
+2. **Add new games** - Submit brain training games (with proper licensing)
+3. **Enhance documentation** - Improve guides, add translations
+4. **Report issues** - Found a bug? Let us know!
+
+### Contribution Guidelines
+- Maintain original attribution
+- Respect original licenses
+- Document your changes
+- Test thoroughly
+- Follow existing code style
+
+## 🙏 Acknowledgments
+
+Huge thanks to all the original creators:
+- **soamsy** - Quad-Box, Jiggle Factorial 3D
+- **4skinskywalker** - Dichotic Dual N-Back
+- **DaggerxMouth** - 3D Hyper N-Back
+- **Discord Contributors** - Various games and improvements
+
+This collection wouldn't exist without their amazing work!
+
+## 📞 Contact
+
+- **Repository:** https://github.com/phyto99/BT
+- **Issues:** https://github.com/phyto99/BT/issues
+- **Maintainer:** phyto99
+
+## ⚖️ Legal
+
+All original code maintains its original copyright and license. This collection respects intellectual property rights and provides proper attribution. If you're a creator and have concerns, please contact us immediately.
 
 ---
 
-*Maintained by [phyto99](https://github.com/phyto99) | Community-driven cognitive training tools*
+**Made with 🧠 for cognitive enhancement enthusiasts**
