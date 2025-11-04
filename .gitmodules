@@ -1,0 +1,12 @@
+[submodule "quad-box-soamsy"]
+	path = quad-box-soamsy
+	url = https://github.com/soamsy/quad-box
+[submodule "Dichotic-Dual-N-back"]
+	path = Dichotic-Dual-N-back
+	url = https://github.com/4skinskywalker/Dichotic-Dual-N-back
+[submodule "Jiggle-Factorial-3D-soamsy"]
+	path = Jiggle-Factorial-3D-soamsy
+	url = https://github.com/soamsy/Jiggle-Factorial-3D.git
+[submodule "3D-Hyper-N-back"]
+	path = 3D-Hyper-N-back
+	url = https://github.com/DaggerxMouth/3D-Hyper-N-back.git
