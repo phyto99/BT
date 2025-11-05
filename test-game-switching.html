@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Game Switching</title>
+    <link rel="stylesheet" href="shared/unified-styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.min.js"></script>
+    <script src="shared/unified-core.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #202020;
+            color: #eee;
+        }
+        
+        .test-controls {
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #333;
+            border-radius: 5px;
+        }
+        
+        button {
+            margin: 5px;
+            padding: 10px 15px;
+            background: #555;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background: #666;
+        }
+        
+        #game-container {
+            width: 100%;
+            height: 70vh;
+            border: 2px solid #555;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            font-size: 24px;
+            color: #eee;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-controls">
+        <h2>Game Switching Test</h2>
+        <p>Test the blob URL game loading system:</p>
+        <button onclick="testLoadGame('jiggle-factorial')">Load Jiggle Factorial</button>
+        <button onclick="testLoadGame('3d-hyper-nback')">Load 3D Hyper N-back</button>
+        <button onclick="testLoadGame('dichotic-dual-nback')">Load Dichotic Dual N-back</button>
+        <button onclick="testLoadGame('quad-box')">Load Quad Box</button>
+        <br>
+        <button onclick="showCurrentGame()">Show Current Game</button>
+        <button onclick="showCache()">Show Cache Status</button>
+        <button onclick="testAllGames()">Test All Game Access</button>
+        <div id="status" style="margin-top: 10px; padding: 10px; background: #444; border-radius: 3px;"></div>
+    </div>
+
+    <div id="game-container">
+        <div class="loading">Click a button to load a game...</div>
+    </div>
+
+    <script>
+        function testLoadGame(gameId) {
+            const status = document.getElementById('status');
+            let loadingMethod = 'Blob URL';
+            if (window.unifiedBrainTraining?.needsDirectIframeLoading(gameId)) {
+                loadingMethod = gameId === 'quad-box' ? 'Blob URL (Fixed Paths)' : 'Direct Iframe';
+            }
+            status.innerHTML = `Loading game: ${gameId} (${loadingMethod})...`;
+            
+            if (window.unifiedBrainTraining) {
+                window.unifiedBrainTraining.loadGame(gameId).then(() => {
+                    status.innerHTML = `Successfully loaded: ${gameId} via ${loadingMethod}`;
+                }).catch(error => {
+                    status.innerHTML = `Failed to load ${gameId}: ${error.message}`;
+                });
+            } else {
+                status.innerHTML = 'Unified Brain Training system not initialized';
+            }
+        }
+        
+        function showCurrentGame() {
+            const status = document.getElementById('status');
+            if (window.unifiedBrainTraining) {
+                status.innerHTML = `Current game: ${window.unifiedBrainTraining.currentGameId || 'None'}`;
+            } else {
+                status.innerHTML = 'System not initialized';
+            }
+        }
+        
+        function showCache() {
+            const status = document.getElementById('status');
+            if (window.unifiedBrainTraining && window.unifiedBrainTraining.gameCache) {
+                const cached = Array.from(window.unifiedBrainTraining.gameCache.keys());
+                status.innerHTML = `Cached games: ${cached.join(', ') || 'None'}`;
+            } else {
+                status.innerHTML = 'No cache available';
+            }
+        }
+        
+        async function testAllGames() {
+            const status = document.getElementById('status');
+            const games = ['jiggle-factorial', '3d-hyper-nback', 'dichotic-dual-nback', 'quad-box'];
+            status.innerHTML = 'Testing game access...';
+            
+            if (window.unifiedBrainTraining) {
+                const results = [];
+                for (const gameId of games) {
+                    const accessible = await window.unifiedBrainTraining.testGameAccess(gameId);
+                    results.push(`${gameId}: ${accessible ? 'OK' : 'FAIL'}`);
+                }
+                status.innerHTML = `Game access test results:<br>${results.join('<br>')}`;
+            } else {
+                status.innerHTML = 'System not initialized';
+            }
+        }
+
+        // Initialize the system
+        document.addEventListener('DOMContentLoaded', () => {
+            window.unifiedBrainTraining = new UnifiedBrainTraining();
+            document.getElementById('status').innerHTML = 'System initialized. Ready to test!';
+        });
+    </script>
+</body>
+</html>
