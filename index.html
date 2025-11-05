@@ -7,6 +7,9 @@
     
     <!-- Unified Brain Training System -->
     <link rel="stylesheet" href="shared/unified-styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.min.js"></script>
     <script src="shared/unified-core.js"></script>
     
@@ -61,6 +64,117 @@
         .unified-info-btn:hover, .unified-stats-btn:hover {
             background-color: rgba(60, 60, 60, 0.9);
         }
+
+        /* Custom Modal Styling - Sharp Text Style */
+        .custom-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 2px;
+            background: #999999;
+            z-index: 2000;
+            color: white;
+            font-family: 'Oswald', sans-serif;
+            font-size: 24px;
+            overflow: hidden;
+            transition: width 0.3s ease;
+            letter-spacing: 0.5px;
+            line-height: 1.2;
+        }
+        
+        .custom-modal.expanded {
+            width: var(--modal-width);
+        }
+        
+        .modal-content {
+            padding: 45px;
+            opacity: 0;
+            transition: opacity 0.3s ease 0.2s;
+            position: relative;
+        }
+        
+        .modal-content.visible {
+            opacity: 1;
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 36px;
+            cursor: pointer;
+            text-shadow: 1px 1px 0px rgba(0, 0, 0, 1);
+            font-family: 'Oswald', sans-serif;
+            font-weight: 300;
+        }
+        
+        .modal-close:hover {
+            opacity: 0.7;
+        }
+        
+        .modal-title {
+            margin-top: 0;
+            margin-bottom: 8px;
+            text-shadow: 1px 1px 0px rgba(0, 0, 0, 1);
+            letter-spacing: 1px;
+            font-size: 30px;
+            font-family: 'Oswald', sans-serif;
+            font-weight: 300;
+            line-height: 1.0;
+        }
+        
+        .modal-text {
+            text-shadow: 1px 1px 0px rgba(0, 0, 0, 1);
+            margin-bottom: 5px;
+            letter-spacing: 0.5px;
+            font-family: 'Oswald', sans-serif;
+            font-weight: 300;
+            line-height: 1.1;
+        }
+        
+        .modal-text strong {
+            text-shadow: 1px 1px 0px rgba(0, 0, 0, 1);
+            letter-spacing: 0.5px;
+            font-family: 'Oswald', sans-serif;
+            font-weight: 400;
+        }
+        
+        .modal-list {
+            text-align: left;
+            margin: 4px 0;
+            font-family: 'Oswald', sans-serif;
+            font-weight: 300;
+            line-height: 1.1;
+        }
+        
+        .modal-list li {
+            text-shadow: 1px 1px 0px rgba(0, 0, 0, 1);
+            margin: 1px 0;
+            letter-spacing: 0.5px;
+            font-family: 'Oswald', sans-serif;
+            font-weight: 300;
+            line-height: 1.1;
+        }
+        
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.25);
+            z-index: 1999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .modal-backdrop.visible {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -106,60 +220,102 @@
         });
 
         function showInfoPopup() {
-            const popup = document.createElement('div');
-            popup.style.cssText = `
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: rgba(40, 40, 40, 0.95);
-                border: 1px solid #555;
-                border-radius: 8px;
-                padding: 20px;
-                max-width: 400px;
-                z-index: 2000;
-                color: #eee;
-                font-family: Arial, sans-serif;
-            `;
+            const currentGame = window.unifiedBrainTraining?.currentGameId || 'none';
+            const gameInfo = getGameInfo(currentGame);
             
-            popup.innerHTML = `
-                <h3 style="margin-top: 0; color: #fff;">Unified Brain Training</h3>
-                <p>Switch between different cognitive training games using the settings panel.</p>
-                <p><strong>Available Games:</strong></p>
-                <ul>
-                    <li>Jiggle Factorial 3D</li>
-                    <li>3D Hyper N-back</li>
-                    <li>Dichotic Dual N-back</li>
-                    <li>Quad Box</li>
-                </ul>
-                <p><strong>Features:</strong></p>
-                <ul>
-                    <li>Fast game switching with blob URL system</li>
-                    <li>Unified settings panel</li>
-                    <li>Session tracking</li>
-                </ul>
-                <button onclick="this.parentElement.remove()" style="
-                    background: #555;
-                    border: none;
-                    color: #eee;
-                    padding: 8px 16px;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    margin-top: 10px;
-                ">Close</button>
-            `;
-            
-            document.body.appendChild(popup);
-            
-            // Close on outside click
-            setTimeout(() => {
-                document.addEventListener('click', function closePopup(e) {
-                    if (!popup.contains(e.target)) {
-                        popup.remove();
-                        document.removeEventListener('click', closePopup);
-                    }
-                });
-            }, 100);
+            createCustomModal({
+                width: 900,
+                height: 450,
+                title: gameInfo.title,
+                content: gameInfo.content
+            });
+        }
+
+        function getGameInfo(gameId) {
+            const gameInfos = {
+                'quad-box': {
+                    title: 'Quad Box - How to Play',
+                    content: `
+                        <p class="modal-text">3D Quad N-Back is a working memory game. A cube will repeatedly flash in a 3D grid, and you must remember cues that appeared <strong>n steps ago</strong> across four different modalities:</p>
+                        <ul class="modal-list">
+                            <li><strong>Position:</strong> where the cube appeared</li>
+                            <li><strong>Color:</strong> the color of the cube</li>
+                            <li><strong>Shape:</strong> the shape inside the cube</li>
+                            <li><strong>Audio:</strong> what was spoken</li>
+                        </ul>
+                        <p class="modal-text">For each new item, press the corresponding key if it matches the item shown <strong>n steps back</strong> in the sequence:</p>
+                        <ul class="modal-list">
+                            <li><strong>A</strong> – position match</li>
+                            <li><strong>F</strong> – color match</li>
+                            <li><strong>J</strong> – shape match</li>
+                            <li><strong>L</strong> – audio match</li>
+                        </ul>
+                        <p class="modal-text">You can press multiple keys if more than one aspect matches. The game continues with a new cube every few seconds. After a set amount of trials, you'll be scored on your accuracy. If you do well enough, you're n-back level will be advanced by 1. Stay focused and try to get as high a score as possible!</p>
+                    `
+                },
+                'jiggle-factorial': {
+                    title: 'Jiggle Factorial 3D - How to Play',
+                    content: `
+                        <p class="modal-text">3D Multiple Object Tracking game with rotating objects and factorial complexity.</p>
+                        <p class="modal-text"><strong>Objective:</strong> Track multiple moving objects in 3D space</p>
+                        <ul class="modal-list">
+                            <li>Objects will be highlighted at the start</li>
+                            <li>Track the highlighted objects as they move</li>
+                            <li>Click on the correct objects when prompted</li>
+                            <li>Level increases with more objects to track</li>
+                        </ul>
+                        <p class="modal-text"><strong>Controls:</strong> Use mouse to interact with objects</p>
+                    `
+                },
+                '3d-hyper-nback': {
+                    title: '3D Hyper N-back - How to Play',
+                    content: `
+                        <p class="modal-text">Advanced N-back training with 3D spatial memory challenges.</p>
+                        <p class="modal-text"><strong>Objective:</strong> Remember positions from N steps back</p>
+                        <ul class="modal-list">
+                            <li>Watch cubes appear in 3D space</li>
+                            <li>Press keys when position matches N steps back</li>
+                            <li>Multiple modalities: position, audio, visual</li>
+                            <li>Level increases difficulty</li>
+                        </ul>
+                        <p class="modal-text"><strong>Controls:</strong> Use keyboard for responses</p>
+                    `
+                },
+                'dichotic-dual-nback': {
+                    title: 'Dichotic Dual N-back - How to Play',
+                    content: `
+                        <p class="modal-text">Dual N-back training with audio and visual stimuli.</p>
+                        <p class="modal-text"><strong>Objective:</strong> Track both audio and visual sequences</p>
+                        <ul class="modal-list">
+                            <li>Remember both sound and position from N steps back</li>
+                            <li>Press keys for audio matches and visual matches</li>
+                            <li>Dual-task training for working memory</li>
+                            <li>Progressive difficulty levels</li>
+                        </ul>
+                        <p class="modal-text"><strong>Controls:</strong> Use keyboard for audio/visual responses</p>
+                    `
+                }
+            };
+
+            return gameInfos[gameId] || {
+                title: 'Unified Brain Training',
+                content: `
+                    <p class="modal-text">Switch between different cognitive training games using the settings panel.</p>
+                    <p class="modal-text"><strong>Available Games:</strong></p>
+                    <ul class="modal-list">
+                        <li>Jiggle Factorial 3D</li>
+                        <li>3D Hyper N-back</li>
+                        <li>Dichotic Dual N-back</li>
+                        <li>Quad Box</li>
+                    </ul>
+                    <p class="modal-text"><strong>Features:</strong></p>
+                    <ul class="modal-list">
+                        <li>Fast game switching with blob URL system</li>
+                        <li>Unified settings panel</li>
+                        <li>Professional loading screens</li>
+                    </ul>
+                `
+            };
         }
 
         function showStatsPopup() {
@@ -171,56 +327,85 @@
                 'quad-box': 'Quad Box'
             };
             
-            const popup = document.createElement('div');
-            popup.style.cssText = `
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: rgba(40, 40, 40, 0.95);
-                border: 1px solid #555;
-                border-radius: 8px;
-                padding: 20px;
-                max-width: 400px;
-                z-index: 2000;
-                color: #eee;
-                font-family: Arial, sans-serif;
+            createCustomModal({
+                width: 750,
+                height: 375,
+                title: 'Training Statistics',
+                content: `
+                    <p class="modal-text"><strong>Current Game:</strong> ${gameNames[currentGame] || 'None'}</p>
+                    <p class="modal-text"><strong>Session Info:</strong></p>
+                    <ul class="modal-list">
+                        <li>Games available: 4</li>
+                        <li>System: Blob URL loading</li>
+                        <li>Status: Active</li>
+                    </ul>
+                    <p class="modal-text" style="font-size: 14px; color: rgba(255,255,255,0.8); margin-top: 15px;">
+                        Detailed statistics and progress tracking coming soon!
+                    </p>
+                `
+            });
+        }
+
+        // Optimized Custom Modal Function (~1KB)
+        function createCustomModal({width, height, title, content}) {
+            // Create backdrop
+            const backdrop = document.createElement('div');
+            backdrop.className = 'modal-backdrop';
+            
+            // Create modal
+            const modal = document.createElement('div');
+            modal.className = 'custom-modal';
+            modal.style.setProperty('--modal-width', width + 'px');
+            modal.style.height = height + 'px';
+            
+            // Close function
+            function closeModal() {
+                modal.style.width = '2px';
+                modal.querySelector('.modal-content').classList.remove('visible');
+                backdrop.classList.remove('visible');
+                document.removeEventListener('keydown', handleEscape);
+                setTimeout(() => {
+                    backdrop.remove();
+                    modal.remove();
+                }, 300);
+            }
+            
+            function handleEscape(e) {
+                if (e.key === 'Escape') {
+                    closeModal();
+                }
+            }
+            
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <button class="modal-close" aria-label="Close">&times;</button>
+                    <h2 class="modal-title">${title}</h2>
+                    ${content}
+                </div>
             `;
             
-            popup.innerHTML = `
-                <h3 style="margin-top: 0; color: #fff;">Training Statistics</h3>
-                <p><strong>Current Game:</strong> ${gameNames[currentGame] || 'None'}</p>
-                <p><strong>Session Info:</strong></p>
-                <ul>
-                    <li>Games available: 4</li>
-                    <li>System: Blob URL loading</li>
-                    <li>Status: Active</li>
-                </ul>
-                <p style="font-size: 12px; color: #aaa; margin-top: 15px;">
-                    Detailed statistics and progress tracking coming soon!
-                </p>
-                <button onclick="this.parentElement.remove()" style="
-                    background: #555;
-                    border: none;
-                    color: #eee;
-                    padding: 8px 16px;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    margin-top: 10px;
-                ">Close</button>
-            `;
+            document.body.appendChild(backdrop);
+            document.body.appendChild(modal);
             
-            document.body.appendChild(popup);
+            // Set up event listeners
+            const closeButton = modal.querySelector('.modal-close');
+            closeButton.addEventListener('click', closeModal);
+            backdrop.addEventListener('click', closeModal);
+            document.addEventListener('keydown', handleEscape);
             
-            // Close on outside click
+            // Prevent modal content clicks from closing modal
+            modal.querySelector('.modal-content').addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+            
+            // Animate in
             setTimeout(() => {
-                document.addEventListener('click', function closePopup(e) {
-                    if (!popup.contains(e.target)) {
-                        popup.remove();
-                        document.removeEventListener('click', closePopup);
-                    }
-                });
-            }, 100);
+                backdrop.classList.add('visible');
+                modal.classList.add('expanded');
+                setTimeout(() => {
+                    modal.querySelector('.modal-content').classList.add('visible');
+                }, 200);
+            }, 10);
         }
     </script>
 </body>
