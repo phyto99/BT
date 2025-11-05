@@ -86,8 +86,11 @@
     </div>
     
     <script>
-        // Initialize with default game
+        // Initialize exactly like the test version
         document.addEventListener('DOMContentLoaded', () => {
+            // Create the unified system instance
+            window.unifiedBrainTraining = new UnifiedBrainTraining();
+            
             // Info button handler
             document.getElementById('unified-info-btn').addEventListener('click', () => {
                 showInfoPopup();
@@ -98,9 +101,8 @@
                 showStatsPopup();
             });
             
-            if (window.unifiedBrainTraining) {
-                window.unifiedBrainTraining.loadGame('jiggle-factorial');
-            }
+            // Load default game
+            window.unifiedBrainTraining.loadGame('jiggle-factorial');
         });
 
         function showInfoPopup() {

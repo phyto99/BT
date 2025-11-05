@@ -26,7 +26,7 @@ class UnifiedBrainTraining {
       if (!container) {
         throw new Error('Game container not found');
       }
-      container.innerHTML = '<div class="loading">Loading game...</div>';
+      container.innerHTML = '<div class="loading" style="background: #000;"><img src="Syn_Logo_A_1.gif" style="width: 333px; height: 333px;"></div>';
       
       console.log('Loading game:', gameId);
       
@@ -96,7 +96,7 @@ class UnifiedBrainTraining {
       console.log('HTML loaded, length:', html.length);
       
       // Update loading message
-      container.innerHTML = '<div class="loading">Processing game assets...</div>';
+      container.innerHTML = '<div class="loading" style="background: #000;"><img src="Syn_Logo_A_1.gif" style="width: 333px; height: 333px;"></div>';
       
       // Modify script and asset paths to be absolute using the improved method
       const baseURL = this.getGameBaseURL(gameId);
@@ -132,7 +132,11 @@ class UnifiedBrainTraining {
       console.error('Failed to load game:', error);
       const errorMsg = error.name === 'AbortError' ? 'Game loading timed out' : error.message;
       document.getElementById('game-container').innerHTML = 
-        `<div class="loading">Failed to load game: ${errorMsg}<br><button onclick="window.unifiedBrainTraining.loadGame('${gameId}')">Retry</button></div>`;
+        `<div class="loading" style="flex-direction: column; align-items: center;">
+          <div style="color: #F44336; font-size: 14px; margin-bottom: 10px;">Failed to load game</div>
+          <div style="color: #F44336; font-size: 12px; opacity: 0.8; margin-bottom: 20px;">${errorMsg}</div>
+          <button onclick="window.unifiedBrainTraining.loadGame('${gameId}')" style="background: #555; border: none; color: #eee; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Retry</button>
+        </div>`;
     }
   }
 
@@ -345,7 +349,10 @@ class UnifiedBrainTraining {
     iframe.onerror = (error) => {
       console.error('Iframe failed to load:', error);
       document.getElementById('game-container').innerHTML = 
-        `<div class="loading">Failed to load game iframe<br><button onclick="window.unifiedBrainTraining.loadGame('${gameId}')">Retry</button></div>`;
+        `<div class="loading" style="flex-direction: column; align-items: center;">
+          <div style="color: #F44336; font-size: 14px; margin-bottom: 20px;">Failed to load game iframe</div>
+          <button onclick="window.unifiedBrainTraining.loadGame('${gameId}')" style="background: #555; border: none; color: #eee; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Retry</button>
+        </div>`;
     };
     
     return iframe;
@@ -524,13 +531,130 @@ class UnifiedBrainTraining {
     }
   }
 
+  loadGameWithStatus(gameId) {
+    // Determine loading method like in test version
+    let loadingMethod = 'Blob URL';
+    if (this.needsDirectIframeLoading(gameId)) {
+      loadingMethod = gameId === 'quad-box' ? 'Blob URL (Fixed Paths)' : 'Direct Iframe';
+    }
+    
+    // Show loading notification (logo only)
+    this.showStatusNotification('', 'loading');
+    
+    // Load the game
+    this.loadGame(gameId).then(() => {
+      this.showStatusNotification(`Loaded via ${loadingMethod}`, 'success');
+    }).catch(error => {
+      this.showErrorNotification(error.message);
+    });
+  }
+
+  showErrorNotification(errorMessage) {
+    // Remove existing notification
+    const existing = document.getElementById('status-notification');
+    if (existing) {
+      existing.remove();
+    }
+
+    // Create error notification with just red error text
+    const notification = document.createElement('div');
+    notification.id = 'status-notification';
+    notification.innerHTML = `
+      <div style="color: #F44336; font-size: 12px; font-family: Arial, sans-serif;">
+        Failed to load<br>
+        <span style="font-size: 10px; opacity: 0.8;">${errorMessage}</span>
+      </div>
+    `;
+    
+    notification.style.cssText = `
+      position: fixed;
+      top: 15px;
+      left: 60px;
+      z-index: 999;
+      max-width: 300px;
+      display: flex;
+      align-items: flex-start;
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-hide after longer delay for errors
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.style.opacity = '0';
+        notification.style.transition = 'opacity 0.3s';
+        setTimeout(() => notification.remove(), 300);
+      }
+    }, 5000);
+  }
+
+  showStatusNotification(message, type = 'info') {
+    // Remove existing notification
+    const existing = document.getElementById('status-notification');
+    if (existing) {
+      existing.remove();
+    }
+
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.id = 'status-notification';
+    
+    if (type === 'loading') {
+      // Don't show anything for loading - logo is in center
+      notification.style.display = 'none';
+      return;
+    } else {
+      // Show colored text for success/error
+      notification.textContent = message;
+    }
+    
+    // Style the notification - no background, just colored text
+    notification.style.cssText = `
+      position: fixed;
+      top: 15px;
+      left: 60px;
+      color: ${type === 'success' ? '#4CAF50' : 
+               type === 'error' ? '#F44336' : '#eee'};
+      font-size: 12px;
+      font-family: Arial, sans-serif;
+      z-index: 999;
+      max-width: 300px;
+      display: flex;
+      align-items: center;
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-hide after delay (except for loading messages)
+    if (type !== 'loading') {
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.style.opacity = '0';
+          notification.style.transition = 'opacity 0.3s';
+          setTimeout(() => notification.remove(), 300);
+        }
+      }, 3000);
+    }
+  }
+
   updateGameSelectorGUI(gameId) {
     if (this.settings && this.gui) {
+      // Update the settings object
       this.settings.currentGame = gameId;
-      // Find the game selector controller and update it
+      
+      // Find the game selector controller and update it without triggering onChange
       this.gui.__controllers.forEach(controller => {
         if (controller.property === 'currentGame') {
+          // Temporarily disable onChange to prevent infinite loop
+          const originalOnChange = controller.__onChange;
+          controller.__onChange = [];
+          
+          // Update the display
           controller.updateDisplay();
+          
+          // Restore onChange
+          controller.__onChange = originalOnChange;
+          
           console.log('Updated GUI game selector to:', gameId);
         }
       });
@@ -594,7 +718,11 @@ class UnifiedBrainTraining {
       console.error('Failed to load game directly:', error);
       const container = document.getElementById('game-container');
       container.innerHTML = 
-        `<div class="loading">Failed to load game: ${error.message}<br><button onclick="window.unifiedBrainTraining.loadGame('${gameId}')">Retry</button></div>`;
+        `<div class="loading" style="flex-direction: column; align-items: center;">
+          <div style="color: #F44336; font-size: 14px; margin-bottom: 10px;">Failed to load game</div>
+          <div style="color: #F44336; font-size: 12px; opacity: 0.8; margin-bottom: 20px;">${error.message}</div>
+          <button onclick="window.unifiedBrainTraining.loadGame('${gameId}')" style="background: #555; border: none; color: #eee; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Retry</button>
+        </div>`;
     }
   }
 
@@ -667,7 +795,10 @@ class UnifiedBrainTraining {
     iframe.onerror = (error) => {
       console.error('Direct iframe failed to load:', error);
       container.innerHTML = 
-        `<div class="loading">Failed to load game<br><button onclick="window.unifiedBrainTraining.loadGame('${gameId}')">Retry</button></div>`;
+        `<div class="loading" style="flex-direction: column; align-items: center;">
+          <div style="color: #F44336; font-size: 14px; margin-bottom: 20px;">Failed to load game</div>
+          <button onclick="window.unifiedBrainTraining.loadGame('${gameId}')" style="background: #555; border: none; color: #eee; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Retry</button>
+        </div>`;
     };
     
     // Clear container and add iframe
@@ -835,22 +966,29 @@ class UnifiedBrainTraining {
     this.gui = new dat.GUI({ autoPlace: false });
     document.getElementById('unified-gui-container').appendChild(this.gui.domElement);
 
-    // Add game selector dropdown at the top
-    this.settings.currentGame = this.detectCurrentGame();
-    console.log('Initial game setting:', this.settings.currentGame);
+    // Remove status from GUI - will be shown as notification instead
+
+    // Test buttons for each game (since dropdown doesn't work)
+    this.settings.loadJiggleFactorial = () => {
+      this.loadGameWithStatus('jiggle-factorial');
+    };
     
-    const gameSelector = this.gui.add(this.settings, 'currentGame', {
-      'Dichotic Dual N-back': 'dichotic-dual-nback',
-      'Jiggle Factorial 3D': 'jiggle-factorial', 
-      '3D Hyper N-back': '3d-hyper-nback',
-      'Quad Box': 'quad-box'
-    }).name('Training Method');
+    this.settings.loadHyperNBack = () => {
+      this.loadGameWithStatus('3d-hyper-nback');
+    };
     
-    gameSelector.onChange((value) => {
-      if (value && value !== this.currentGameId) {
-        this.switchToGame(value);
-      }
-    });
+    this.settings.loadDichoticDualNBack = () => {
+      this.loadGameWithStatus('dichotic-dual-nback');
+    };
+    
+    this.settings.loadQuadBox = () => {
+      this.loadGameWithStatus('quad-box');
+    };
+    
+    this.gui.add(this.settings, 'loadJiggleFactorial').name('Load Jiggle Factorial 3D');
+    this.gui.add(this.settings, 'loadHyperNBack').name('Load 3D Hyper N-back');
+    this.gui.add(this.settings, 'loadDichoticDualNBack').name('Load Dichotic Dual N-back');
+    this.gui.add(this.settings, 'loadQuadBox').name('Load Quad Box');
 
     // Add separator after Training Method
     const separator = document.createElement('div');
@@ -974,39 +1112,27 @@ class UnifiedBrainTraining {
   }
 }
 
-// Initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-  // Initialize game stats system
-  window.gameStats = {
-    init: () => {
-      console.log('Game stats initialized for:', window.unifiedBrainTraining?.currentGameId);
-    },
-    recordScore: (score) => {
-      const gameId = window.unifiedBrainTraining?.currentGameId;
-      if (gameId) {
-        const stats = JSON.parse(localStorage.getItem('brainTrainingStats') || '{}');
-        if (!stats[gameId]) stats[gameId] = [];
-        stats[gameId].push({
-          score: score,
-          timestamp: Date.now(),
-          date: new Date().toISOString().split('T')[0]
-        });
-        localStorage.setItem('brainTrainingStats', JSON.stringify(stats));
-        console.log('Score recorded:', score, 'for game:', gameId);
-      }
-    },
-    getStats: (gameId) => {
+// Initialize game stats system
+window.gameStats = {
+  init: () => {
+    console.log('Game stats initialized for:', window.unifiedBrainTraining?.currentGameId);
+  },
+  recordScore: (score) => {
+    const gameId = window.unifiedBrainTraining?.currentGameId;
+    if (gameId) {
       const stats = JSON.parse(localStorage.getItem('brainTrainingStats') || '{}');
-      return stats[gameId] || [];
+      if (!stats[gameId]) stats[gameId] = [];
+      stats[gameId].push({
+        score: score,
+        timestamp: Date.now(),
+        date: new Date().toISOString().split('T')[0]
+      });
+      localStorage.setItem('brainTrainingStats', JSON.stringify(stats));
+      console.log('Score recorded:', score, 'for game:', gameId);
     }
-  };
-  
-  window.unifiedBrainTraining = new UnifiedBrainTraining();
-  
-  // Ensure the GUI reflects the initially loaded game after a short delay
-  setTimeout(() => {
-    if (window.unifiedBrainTraining && window.unifiedBrainTraining.currentGameId) {
-      window.unifiedBrainTraining.updateGameSelectorGUI(window.unifiedBrainTraining.currentGameId);
-    }
-  }, 1000);
-});
+  },
+  getStats: (gameId) => {
+    const stats = JSON.parse(localStorage.getItem('brainTrainingStats') || '{}');
+    return stats[gameId] || [];
+  }
+};
