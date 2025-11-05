@@ -847,17 +847,22 @@ class UnifiedBrainTraining {
     }).name('Training Method');
     
     gameSelector.onChange((value) => {
-      console.log('Game selector changed to:', value);
-      console.log('Current game before switch:', this.currentGameId);
-      this.switchToGame(value);
+      if (value && value !== this.currentGameId) {
+        this.switchToGame(value);
+      }
     });
 
-    // Add separator/spacing
+    // Add separator after Training Method
     const separator = document.createElement('div');
-    separator.style.height = '10px';
+    separator.style.height = '15px';
     separator.style.borderBottom = '1px solid #2c2c2c';
-    separator.style.margin = '10px 0';
+    separator.style.margin = '15px 0';
     this.gui.domElement.appendChild(separator);
+
+    // Add empty space
+    const spacer = document.createElement('div');
+    spacer.style.height = '10px';
+    this.gui.domElement.appendChild(spacer);
 
     // Add all controls exactly like Jiggle Factorial does
     this.gui.add(this.settings, 'level').name('Level');
