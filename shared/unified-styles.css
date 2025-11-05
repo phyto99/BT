@@ -1,0 +1,101 @@
+/* Minimal Unified Brain Training System Styles */
+/* This file provides optional styling enhancements without breaking existing games */
+
+/* Only add styles that don't conflict with existing game styles */
+.unified-enhancement {
+  /* Placeholder for future unified enhancements */
+}
+
+/* Optional: Improved dat.GUI styling (only if games want to use it) */
+.unified-gui .dg.main {
+  background: rgba(40, 40, 40, 0.9) !important;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.unified-gui .dg .cr.string input[type=text],
+.unified-gui .dg .cr.number input[type=text] {
+  background: rgba(60, 60, 60, 0.8);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.unified-gui .dg .cr.boolean {
+  background: rgba(50, 50, 50, 0.8);
+}
+
+.unified-gui .dg .cr.function {
+  background: rgba(70, 70, 70, 0.8);
+  border-radius: 4px;
+  margin: 2px 0;
+}
+
+.unified-gui .dg .cr.function:hover {
+  background: rgba(90, 90, 90, 0.8);
+}
+
+.unified-gui .dg li:not(.folder) {
+  background: rgba(50, 50, 50, 0.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.unified-gui .dg li.folder {
+  background: rgba(60, 60, 60, 0.8);
+}
+
+.unified-gui .dg .c {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Top Bar - just button area */
+.unified-top-bar {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 1000;
+}
+
+.unified-top-bar-left {
+  display: flex;
+}
+
+.unified-panel-btn {
+  width: 40px;
+  height: 40px;
+  background: rgba(40, 40, 40, 0.8);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: #eee;
+  transition: background-color 0.2s;
+}
+
+.unified-panel-btn:hover {
+  background-color: rgba(60, 60, 60, 0.9);
+}
+
+/* Sidebar */
+.unified-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 300px;
+  height: 100vh;
+  background: rgba(40, 40, 40, 0.9);
+  transform: translateX(-300px);
+  transition: transform 0.3s ease;
+  z-index: 999;
+  overflow-y: auto;
+  padding-top: 60px;
+}
+
+.unified-sidebar.open {
+  transform: translateX(0);
+}
+
+#unified-gui-container {
+  padding: 20px;
+}
