@@ -298,6 +298,220 @@ class UnifiedBrainTraining {
       console.warn('⚙️ [SET-SETTINGS] Failed to apply settings');
     }
   }
+
+  // Show keybinds popup
+  showKeybinds() {
+    console.log('🎮 [KEYBINDS] Showing keybinds popup');
+    
+    // Get current hotkeys from settings or use defaults
+    const currentHotkeys = this.reactiveSettings?.hotkeys || {
+      'position': 'A',
+      'color': 'F', 
+      'shape': 'J',
+      'audio': 'L'
+    };
+    
+    const keybindsHTML = `
+      <div id="keybinds-popup" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+           background: #1a1a1a; border: 1px solid #444; border-radius: 4px; padding: 0; z-index: 10000; 
+           color: #fff; font-family: 'Lucida Grande', sans-serif; width: 400px; box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+           font-size: 11px;">
+        <div style="background: #2a2a2a; padding: 8px 12px; border-bottom: 1px solid #444; display: flex; justify-content: space-between; align-items: center;">
+          <span style="color: #ddd; font-weight: bold;">Customize Keybindings</span>
+          <button id="close-keybinds" style="background: none; border: none; color: #999; cursor: pointer; font-size: 14px; padding: 2px 6px;">✕</button>
+        </div>
+        <div style="padding: 12px;">
+          <div style="margin-bottom: 12px;">
+            <div style="color: #aaa; font-size: 10px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">N-Back Controls</div>
+            ${Object.entries(currentHotkeys).map(([action, key]) => `
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; padding: 4px 0;">
+                <span style="color: #ddd; text-transform: capitalize;">${action}:</span>
+                <button class="keybind-edit-btn" data-action="${action}" 
+                        style="background: #333; border: 1px solid #555; color: #fff; padding: 4px 12px; 
+                               border-radius: 2px; cursor: pointer; min-width: 40px; font-family: monospace;">
+                  ${key}
+                </button>
+              </div>
+            `).join('')}
+          </div>
+          
+          <div style="border-top: 1px solid #333; padding-top: 12px; margin-top: 12px;">
+            <div style="color: #aaa; font-size: 10px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Game Controls</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 10px; color: #bbb;">
+              <div><span style="color: #fff;">Space:</span> Start Game</div>
+              <div><span style="color: #fff;">Esc:</span> End Game</div>
+              <div><span style="color: #fff;">PgDown:</span> Next Mode</div>
+              <div><span style="color: #fff;">PgUp:</span> Previous Mode</div>
+            </div>
+          </div>
+          
+          <div style="margin-top: 16px; text-align: center;">
+            <button id="reset-keybinds" style="background: #444; border: 1px solid #666; color: #fff; 
+                    padding: 6px 16px; border-radius: 2px; cursor: pointer; font-size: 10px;">
+              Reset to Default
+            </button>
+          </div>
+        </div>
+      </div>
+      <div id="keybinds-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+           background: rgba(0,0,0,0.6); z-index: 9999;"></div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', keybindsHTML);
+    
+    // Setup event handlers
+    this.setupKeybindHandlers(currentHotkeys);
+  }
+  
+  setupKeybindHandlers(currentHotkeys) {
+    let editingKey = null;
+    
+    const closeKeybinds = () => {
+      const popup = document.getElementById('keybinds-popup');
+      const overlay = document.getElementById('keybinds-overlay');
+      if (popup) popup.remove();
+      if (overlay) overlay.remove();
+      if (editingKey) {
+        document.removeEventListener('keydown', handleKeyDown);
+        editingKey = null;
+      }
+    };
+    
+    const handleKeyDown = (event) => {
+      if (!editingKey || event.key === 'Escape' || event.key === ' ') {
+        return;
+      }
+      
+      event.preventDefault();
+      event.stopPropagation();
+      
+      const keyCombo = event.key.length === 1 ? event.key.toUpperCase() : event.key;
+      currentHotkeys[editingKey] = keyCombo;
+      
+      // Update reactive settings
+      if (this.reactiveSettings) {
+        this.reactiveSettings.hotkeys = { ...currentHotkeys };
+      }
+      
+      // Update button text
+      const button = document.querySelector(`[data-action="${editingKey}"]`);
+      if (button) {
+        button.textContent = keyCombo;
+        button.style.background = '#333';
+        button.textContent = keyCombo;
+      }
+      
+      // Send to game
+      if (this.currentGameId) {
+        this.sendSettingToGame('hotkeys', currentHotkeys);
+      }
+      
+      this.showSettingChangeIndicator('Keybind Updated', `${editingKey}: ${keyCombo}`);
+      console.log(`🎮 [KEYBINDS] Updated ${editingKey} to ${keyCombo}`);
+      
+      editingKey = null;
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+    
+    // Close button handler
+    const closeBtn = document.getElementById('close-keybinds');
+    if (closeBtn) closeBtn.addEventListener('click', closeKeybinds);
+    
+    // Overlay click handler
+    const overlay = document.getElementById('keybinds-overlay');
+    if (overlay) overlay.addEventListener('click', closeKeybinds);
+    
+    // Edit button handlers
+    document.querySelectorAll('.keybind-edit-btn').forEach(button => {
+      button.addEventListener('click', () => {
+        const action = button.getAttribute('data-action');
+        editingKey = action;
+        button.textContent = 'Press key...';
+        button.style.background = '#555';
+        document.addEventListener('keydown', handleKeyDown);
+      });
+    });
+    
+    // Reset button handler
+    const resetBtn = document.getElementById('reset-keybinds');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        const defaultHotkeys = {
+          'position': 'A',
+          'color': 'F',
+          'shape': 'J', 
+          'audio': 'L'
+        };
+        
+        // Update reactive settings
+        if (this.reactiveSettings) {
+          this.reactiveSettings.hotkeys = { ...defaultHotkeys };
+        }
+        
+        // Update button texts
+        Object.entries(defaultHotkeys).forEach(([action, key]) => {
+          const button = document.querySelector(`[data-action="${action}"]`);
+          if (button) {
+            button.textContent = key;
+            button.style.background = '#333';
+          }
+        });
+        
+        // Send to game
+        if (this.currentGameId) {
+          this.sendSettingToGame('hotkeys', defaultHotkeys);
+        }
+        
+        this.showSettingChangeIndicator('Keybinds Reset', 'Restored to default');
+        console.log('🎮 [KEYBINDS] Reset to default hotkeys');
+      });
+    }
+    
+    // Close on Escape key
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && !editingKey) {
+        closeKeybinds();
+        document.removeEventListener('keydown', handleEscape);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+  }
+
+  // Toggle theme between dark and light
+  toggleTheme() {
+    console.log('🌙 [THEME] Toggling theme');
+    
+    // Get current theme from settings or default to dark
+    const currentTheme = this.reactiveSettings?.theme || 'dark';
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    
+    // Update the theme in reactive settings if available
+    if (this.reactiveSettings) {
+      this.reactiveSettings.theme = newTheme;
+    }
+    
+    // Update the button icon
+    const themeBtn = document.getElementById('theme-toggle-btn');
+    if (themeBtn) {
+      themeBtn.textContent = newTheme === 'dark' ? '🌙' : '☀️';
+      themeBtn.style.background = newTheme === 'dark' ? '#333' : '#f39c12';
+    }
+    
+    // Apply theme to the unified sidebar
+    const sidebar = document.getElementById('unified-sidebar');
+    if (sidebar) {
+      sidebar.style.background = newTheme === 'dark' ? '#1a1a1a' : '#f5f5f5';
+      sidebar.style.color = newTheme === 'dark' ? '#eee' : '#333';
+    }
+    
+    // Send theme change to current game
+    if (this.currentGameId) {
+      this.sendSettingToGame('theme', newTheme);
+    }
+    
+    this.showSettingChangeIndicator('Theme Changed', `Switched to ${newTheme} mode`);
+    console.log(`🌙 [THEME] Theme changed to: ${newTheme}`);
+  }
   
   // Setup test button handlers (Task 4)
   setupTestButtons() {
@@ -306,6 +520,8 @@ class UnifiedBrainTraining {
       const testReactiveBtn = document.getElementById('test-reactive-btn');
       const testSyncBtn = document.getElementById('test-sync-btn');
       const setSettingsBtn = document.getElementById('set-settings-btn');
+      const keybindsBtn = document.getElementById('keybinds-btn');
+      const themeToggleBtn = document.getElementById('theme-toggle-btn');
       
       if (testReactiveBtn) {
         testReactiveBtn.addEventListener('click', () => {
@@ -322,6 +538,18 @@ class UnifiedBrainTraining {
       if (setSettingsBtn) {
         setSettingsBtn.addEventListener('click', () => {
           this.setCurrentSettings();
+        });
+      }
+      
+      if (keybindsBtn) {
+        keybindsBtn.addEventListener('click', () => {
+          this.showKeybinds();
+        });
+      }
+      
+      if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', () => {
+          this.toggleTheme();
         });
       }
     }, 100);
@@ -1362,7 +1590,9 @@ class UnifiedBrainTraining {
           <div id="reactive-test-buttons" style="margin-top: 8px;">
             <button id="test-reactive-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 4px 8px; margin-right: 4px; cursor: pointer; font-size: 11px;">Test Reactive</button>
             <button id="test-sync-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 4px 8px; margin-right: 4px; cursor: pointer; font-size: 11px;">Test Sync</button>
-            <button id="set-settings-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 4px 8px; cursor: pointer; font-size: 11px;">Set Settings</button>
+            <button id="set-settings-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 4px 8px; margin-right: 4px; cursor: pointer; font-size: 11px;">Set Settings</button>
+            <button id="keybinds-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 4px 8px; margin-right: 4px; cursor: pointer; font-size: 11px;">Keybinds</button>
+            <button id="theme-toggle-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 4px 8px; cursor: pointer; font-size: 11px;">🌙</button>
           </div>
         </div>
         <div id="unified-gui-container"></div>
@@ -1441,7 +1671,7 @@ class UnifiedBrainTraining {
         sceneDimmer: 0.5,
         zoom: 0.7,
         perspective: 15,
-        targetStimuli: 5,
+        targetNumOfStimuli: 5,
         baseDelay: 5000,
         maxAllowedMistakes: 3,
         previousLevelThreshold: 0.5,
@@ -1449,23 +1679,46 @@ class UnifiedBrainTraining {
       },
       'dichotic-dual-nback': {
         nLevel: 2,
-        duration: 3000,
-        interval: 3000,
+        stimulusTime: 4000,
+        matchingClues: 10,
+        soundsLeft: 'Letters English (USA)',
+        soundsRight: 'Numbers English (USA)',
         feedback: true,
-        audioEnabled: true,
-        visualEnabled: true,
-        trials: 20
+        dailyGoal: 20
       },
       'quad-box': {
-        nLevel: 2,
-        positionEnabled: true,
-        colorEnabled: true,
-        shapeEnabled: true,
-        audioEnabled: true,
-        stimulusDuration: 500,
-        interStimulusInterval: 2500,
-        trials: 20,
-        autoAdvance: true
+        mode: 'quad',
+        theme: 'dark',
+        nBack: 2,
+        numTrials: 35,
+        trialTime: 2500,
+        matchChance: 25,
+        interference: 20,
+        enableAudio: true,
+        enableShape: true,
+        enableColor: true,
+        enableImage: false,
+        grid: 'rotate3D',
+        rules: 'none',
+        audioSource: 'letters2',
+        colorSource: 'basic',
+        shapeSource: 'basic',
+        imageSource: 'voronoi',
+        feedback: 'show',
+        rotationSpeed: 35,
+        enableAutoProgression: true,
+        successCriteria: 80,
+        successComboRequired: 1,
+        failureCriteria: 50,
+        failureComboRequired: 3,
+        positionWidth: 2,
+        enablePositionWidthSequence: false,
+        hotkeys: {
+          'position': 'A',
+          'color': 'F',
+          'shape': 'J',
+          'audio': 'L'
+        }
       }
     };
 
@@ -1610,7 +1863,7 @@ class UnifiedBrainTraining {
     this.gui.add(this.settings, 'sceneDimmer').name('Scene Dimmer');
     this.gui.add(this.settings, 'zoom').name('Zoom');
     this.gui.add(this.settings, 'perspective').name('Perspective');
-    this.gui.add(this.settings, 'targetStimuli').name('Target Number of Matches');
+    this.gui.add(this.settings, 'targetNumOfStimuli').name('Target Number of Matches');
     this.gui.add(this.settings, 'baseDelay').name('Base Delay (ms)');
     this.gui.add(this.settings, 'maxAllowedMistakes').name('Maximum Allowed Mistakes');
     this.gui.add(this.settings, 'previousLevelThreshold').name('Level Down Correct Stimuli %');
@@ -1618,30 +1871,86 @@ class UnifiedBrainTraining {
   }
 
   buildDichoticDualNBackGUI() {
-    this.gui.add(this.settings, 'nLevel').name('N-Back Level');
-    this.gui.add(this.settings, 'duration').name('Duration (ms)');
-    this.gui.add(this.settings, 'interval').name('Interval (ms)');
-    this.gui.add(this.settings, 'feedback').name('Feedback');
-    this.gui.add(this.settings, 'audioEnabled').name('Audio Enabled');
-    this.gui.add(this.settings, 'visualEnabled').name('Visual Enabled');
-    this.gui.add(this.settings, 'trials').name('Number of Trials');
+    // Core game settings
+    this.gui.add(this.settings, 'nLevel', 1, 9, 1).name('N-Back Level');
+    this.gui.add(this.settings, 'stimulusTime', 1500, 15000, 250).name('Stimulus Time (ms)');
+    this.gui.add(this.settings, 'matchingClues', 5, 30, 5).name('Matching Clues');
+    
+    // Sound settings
+    const soundOptions = [
+      'Letters English (USA)',
+      'Letters English (UK)', 
+      'Letters German',
+      'Letters Russian',
+      'Letters Italian',
+      'Numbers English (USA)',
+      'Numbers English (UK)',
+      'Numbers German', 
+      'Numbers Russian',
+      'Numbers Italian',
+      'Piano',
+      'Shapes English',
+      'Shapes Italian'
+    ];
+    
+    this.gui.add(this.settings, 'soundsLeft', soundOptions).name('Sounds Left');
+    this.gui.add(this.settings, 'soundsRight', soundOptions).name('Sounds Right');
+    
+    // Game options
+    this.gui.add(this.settings, 'feedback').name('Clue Feedback');
+    this.gui.add(this.settings, 'dailyGoal', 1, 50, 1).name('Daily Goal');
   }
 
   buildQuadBoxGUI() {
-    this.gui.add(this.settings, 'nLevel').name('N-Back Level');
+    // Game mode selection
+    this.gui.add(this.settings, 'mode', ['quad', 'dual', 'custom', 'customB', 'tally', 'vtally']).name('Game Mode');
+    
+    // Theme selection
+    this.gui.add(this.settings, 'theme', ['dark', 'light']).name('Theme');
+    
+    // Core N-Back settings
+    this.gui.add(this.settings, 'nBack', 1, 12, 1).name('N-Back Level');
+    this.gui.add(this.settings, 'numTrials', 10, 999, 1).name('Number of Trials');
+    this.gui.add(this.settings, 'trialTime', 1000, 5000, 100).name('Trial Time (ms)');
+    
+    // Game difficulty settings
+    this.gui.add(this.settings, 'matchChance', 5, 75, 1).name('Match Chance (%)');
+    this.gui.add(this.settings, 'interference', 0, 75, 1).name('Interference (%)');
     
     // Modalities folder
     const modalitiesFolder = this.gui.addFolder('Modalities');
-    modalitiesFolder.add(this.settings, 'positionEnabled').name('Position');
-    modalitiesFolder.add(this.settings, 'colorEnabled').name('Color');
-    modalitiesFolder.add(this.settings, 'shapeEnabled').name('Shape');
-    modalitiesFolder.add(this.settings, 'audioEnabled').name('Audio');
-
-    // Timing settings
-    this.gui.add(this.settings, 'stimulusDuration').name('Stimulus Duration (ms)');
-    this.gui.add(this.settings, 'interStimulusInterval').name('Inter-Stimulus Interval (ms)');
-    this.gui.add(this.settings, 'trials').name('Number of Trials');
-    this.gui.add(this.settings, 'autoAdvance').name('Auto Advance Level');
+    modalitiesFolder.add(this.settings, 'enableAudio').name('Audio Enabled');
+    modalitiesFolder.add(this.settings, 'audioSource', ['letters2', 'letters3', 'letters5', 'letters4', 'letters', 'numbers', 'nato', 'syl5', 'syl10']).name('Audio Source');
+    modalitiesFolder.add(this.settings, 'enableColor').name('Color Enabled');
+    modalitiesFolder.add(this.settings, 'colorSource', ['basic', 'gradient', 'voronoi', 'generative']).name('Color Source');
+    modalitiesFolder.add(this.settings, 'enableShape').name('Shape Enabled');
+    modalitiesFolder.add(this.settings, 'shapeSource', ['basic', 'tetris', 'iconsA', 'iconsB', 'all']).name('Shape Source');
+    modalitiesFolder.add(this.settings, 'enableImage').name('Image Enabled');
+    modalitiesFolder.add(this.settings, 'imageSource', ['voronoi', 'generative']).name('Image Source');
+    modalitiesFolder.open();
+    
+    // Visual settings folder
+    const visualFolder = this.gui.addFolder('Visual Settings');
+    visualFolder.add(this.settings, 'grid', ['rotate3D', 'static2D']).name('Grid Type');
+    visualFolder.add(this.settings, 'rotationSpeed', 0, 140, 1).name('Rotation Speed');
+    visualFolder.add(this.settings, 'feedback', ['show', 'hide', 'hide-counter']).name('Feedback');
+    
+    // Advanced rules folder
+    const rulesFolder = this.gui.addFolder('Advanced Rules');
+    rulesFolder.add(this.settings, 'rules', ['none', 'variable', 'tally', 'vtally']).name('Rules Type');
+    
+    // Auto progression folder
+    const progressionFolder = this.gui.addFolder('Auto Progression');
+    progressionFolder.add(this.settings, 'enableAutoProgression').name('Enable Auto Progression');
+    progressionFolder.add(this.settings, 'successCriteria', 0, 100, 1).name('Success Criteria (%)');
+    progressionFolder.add(this.settings, 'successComboRequired', 1, 9, 1).name('Success Combo Required');
+    progressionFolder.add(this.settings, 'failureCriteria', 0, 100, 1).name('Failure Criteria (%)');
+    progressionFolder.add(this.settings, 'failureComboRequired', 1, 9, 1).name('Failure Combo Required');
+    
+    // Tally mode settings folder
+    const tallyFolder = this.gui.addFolder('Tally Mode Settings');
+    tallyFolder.add(this.settings, 'positionWidth', 1, 4, 1).name('Position Width');
+    tallyFolder.add(this.settings, 'enablePositionWidthSequence').name('Enable Position Width Sequence');
   }
 
 

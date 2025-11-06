@@ -100,4 +100,65 @@
 /* Ensure dat.GUI doesn't add extra margins */
 #unified-gui-container .dg.main {
   margin: 0 !important;
+}/* 
+Reactive Settings Button Styling */
+#reactive-test-buttons button {
+  transition: all 0.2s ease;
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+#reactive-test-buttons button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+
+
+#theme-toggle-btn {
+  font-size: 14px !important;
+  min-width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#theme-toggle-btn:hover {
+  background: #555 !important;
+}
+
+/* Keybinds popup styling */
+#keybinds-popup code {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  color: #f39c12;
+}
+
+#keybinds-popup strong {
+  color: #4CAF50;
+}/* K
+eybinds popup dat.gui style */
+#keybinds-popup .keybind-edit-btn {
+  transition: all 0.1s ease;
+  font-size: 10px !important;
+}
+
+#keybinds-popup .keybind-edit-btn:hover {
+  background: #444 !important;
+  border-color: #777 !important;
+}
+
+#keybinds-popup .keybind-edit-btn:active {
+  background: #555 !important;
+}
+
+#reset-keybinds:hover {
+  background: #555 !important;
+  border-color: #777 !important;
+}
+
+#close-keybinds:hover {
+  color: #fff !important;
 }
