@@ -533,6 +533,9 @@ class UnifiedBrainTraining {
   }
 
   loadGameWithStatus(gameId) {
+    // Close the sidebar/menu immediately when loading a game
+    this.closeSidebar();
+    
     // Determine loading method like in test version
     let loadingMethod = 'Blob URL';
     if (this.needsDirectIframeLoading(gameId)) {
@@ -1060,13 +1063,6 @@ class UnifiedBrainTraining {
     this.gui.add(this.settings, 'loadHyperNBack').name('Load 3D Hyper N-back');
     this.gui.add(this.settings, 'loadDichoticDualNBack').name('Load Dichotic Dual N-back');
     this.gui.add(this.settings, 'loadQuadBox').name('Load Quad Box');
-
-    // Add separator after game loading buttons
-    const separator = document.createElement('div');
-    separator.style.height = '15px';
-    separator.style.borderBottom = '1px solid #2c2c2c';
-    separator.style.margin = '15px 0';
-    this.gui.domElement.appendChild(separator);
 
     // Add ONLY the settings for the currently loaded game
     const currentGame = this.currentGameId || 'jiggle-factorial';

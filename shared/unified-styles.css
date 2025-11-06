@@ -79,14 +79,14 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: 300px;
+  width: 265px;
   height: 100vh;
   background: rgba(40, 40, 40, 0.9);
-  transform: translateX(-300px);
+  transform: translateX(-265px);
   transition: transform 0.3s ease;
   z-index: 999;
   overflow-y: auto;
-  padding-top: 60px;
+  padding-top: 45px;
 }
 
 .unified-sidebar.open {
@@ -94,5 +94,10 @@
 }
 
 #unified-gui-container {
-  padding: 20px;
+  padding: 10px 15px 20px 10px; /* top right bottom left - more right margin to match left */
+}
+
+/* Ensure dat.GUI doesn't add extra margins */
+#unified-gui-container .dg.main {
+  margin: 0 !important;
 }
