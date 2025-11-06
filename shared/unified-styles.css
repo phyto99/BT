@@ -2,9 +2,6 @@
 /* This file provides optional styling enhancements without breaking existing games */
 
 /* Only add styles that don't conflict with existing game styles */
-.unified-enhancement {
-  /* Placeholder for future unified enhancements */
-}
 
 /* Optional: Improved dat.GUI styling (only if games want to use it) */
 .unified-gui .dg.main {
