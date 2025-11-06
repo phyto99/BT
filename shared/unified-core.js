@@ -4,7 +4,327 @@ class UnifiedBrainTraining {
   constructor() {
     this.sidebarOpen = false;
     this.currentGameId = null;
+    this.reactiveSettings = null;
+    this.settingsListeners = new Map();
     this.init();
+  }
+
+  // Simple Reactive Settings System (Tasks 1, 2, 3 integrated)
+  createReactiveSettings(gameId) {
+    const defaultSettings = this.getGameSpecificSettings(gameId);
+    
+    // Load saved settings from localStorage
+    const savedSettings = this.loadSettingsFromStorage(gameId);
+    const gameSettings = { ...defaultSettings, ...savedSettings };
+    
+    console.log(`🔄 [REACTIVE] Creating settings for ${gameId}:`, gameSettings);
+    
+    // Add game loading functions to the target object BEFORE creating proxy
+    gameSettings.loadJiggleFactorial = () => {
+      this.loadGameWithStatus('jiggle-factorial');
+    };
+    gameSettings.loadHyperNBack = () => {
+      this.loadGameWithStatus('3d-hyper-nback');
+    };
+    gameSettings.loadDichoticDualNBack = () => {
+      this.loadGameWithStatus('dichotic-dual-nback');
+    };
+    gameSettings.loadQuadBox = () => {
+      this.loadGameWithStatus('quad-box');
+    };
+    
+    // Create a simple reactive proxy
+    this.reactiveSettings = new Proxy(gameSettings, {
+      set: (target, prop, value) => {
+        // Functions: store but don't sync to game
+        if (typeof value === 'function') {
+          target[prop] = value;
+          return true;
+        }
+        
+        // SAFETY: Don't overwrite functions with undefined
+        if (typeof target[prop] === 'function' && value === undefined) {
+          console.warn(`⚠️ [SAFETY] Blocked undefined from overwriting function: ${prop}`);
+          return true;
+        }
+        
+        // Settings: store AND sync to game
+        const oldValue = target[prop];
+        target[prop] = value;
+        
+        // Notify listeners for setting changes
+        if (this.settingsListeners.has(prop)) {
+          this.settingsListeners.get(prop).forEach(callback => {
+            try {
+              callback(value, oldValue);
+            } catch (error) {
+              console.error('Settings listener error:', error);
+            }
+          });
+        }
+        
+        // Send to game immediately
+        if (oldValue !== value && this.currentGameId) {
+          this.sendSettingToGame(prop, value);
+          
+          // Save settings to localStorage when they change
+          this.saveSettingsToStorage(this.currentGameId, target);
+        }
+        
+        console.log(`[ReactiveSettings] ${prop}: ${oldValue} → ${value}`);
+        return true;
+      },
+      
+      get: (target, prop) => {
+        return target[prop];
+      },
+      
+      has: (target, prop) => {
+        return prop in target;
+      },
+      
+      ownKeys: (target) => {
+        return Object.keys(target);
+      },
+      
+      getOwnPropertyDescriptor: (target, prop) => {
+        return Object.getOwnPropertyDescriptor(target, prop);
+      }
+    });
+    
+    return this.reactiveSettings;
+  }
+  
+  // Add onChange listener for settings
+  onSettingChange(property, callback) {
+    if (!this.settingsListeners.has(property)) {
+      this.settingsListeners.set(property, []);
+    }
+    this.settingsListeners.get(property).push(callback);
+  }
+  
+  // Load settings from localStorage
+  loadSettingsFromStorage(gameId) {
+    try {
+      const key = `unified-brain-training-${gameId}`;
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        console.log(`💾 [STORAGE] Loaded saved settings for ${gameId}:`, parsed);
+        return parsed;
+      }
+    } catch (error) {
+      console.warn(`💾 [STORAGE] Failed to load settings for ${gameId}:`, error);
+    }
+    return {};
+  }
+  
+  // Save settings to localStorage
+  saveSettingsToStorage(gameId, settings) {
+    try {
+      const key = `unified-brain-training-${gameId}`;
+      // Filter out functions before saving
+      const settingsToSave = {};
+      Object.keys(settings).forEach(prop => {
+        if (typeof settings[prop] !== 'function') {
+          settingsToSave[prop] = settings[prop];
+        }
+      });
+      localStorage.setItem(key, JSON.stringify(settingsToSave));
+      console.log(`💾 [STORAGE] Saved settings for ${gameId}:`, settingsToSave);
+    } catch (error) {
+      console.warn(`💾 [STORAGE] Failed to save settings for ${gameId}:`, error);
+    }
+  }
+  
+  // Send individual setting to game with visual feedback (Task 4)
+  sendSettingToGame(property, value) {
+    if (!this.currentGameId) return;
+    
+    // Skip function properties - they can't be cloned in postMessage
+    if (typeof value === 'function') {
+      return;
+    }
+    
+    const iframe = document.getElementById(`game-iframe-${this.currentGameId}`);
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage({
+        type: 'settingsUpdate',
+        gameId: this.currentGameId,
+        settings: { [property]: value }
+      }, '*');
+      
+      // Visual feedback - console logging with distinctive prefix (Requirement 3.2)
+      console.log(`🔄 [REACTIVE-SYNC] ${property} = ${value} → ${this.currentGameId}`);
+      
+      // Show visual indicator (Requirement 3.1)
+      this.showSettingChangeIndicator(property, value);
+    }
+  }
+  
+  // Visual feedback for setting changes (Task 4 - Requirement 3.1)
+  showSettingChangeIndicator(property, value) {
+    // Create or update visual indicator
+    let indicator = document.getElementById('setting-change-indicator');
+    if (!indicator) {
+      indicator = document.createElement('div');
+      indicator.id = 'setting-change-indicator';
+      indicator.style.cssText = `
+        position: fixed;
+        top: 50px;
+        left: 60px;
+        background: rgba(76, 175, 80, 0.9);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-family: Arial, sans-serif;
+        z-index: 1001;
+        transition: opacity 0.3s;
+        pointer-events: none;
+      `;
+      document.body.appendChild(indicator);
+    }
+    
+    indicator.textContent = `${property}: ${value}`;
+    indicator.style.opacity = '1';
+    
+    // Auto-hide after 2 seconds
+    clearTimeout(this.indicatorTimeout);
+    this.indicatorTimeout = setTimeout(() => {
+      indicator.style.opacity = '0';
+    }, 2000);
+  }
+  
+  // Test reactive functionality (Task 4 - Requirements 6.1, 6.2)
+  testReactiveSettings() {
+    console.log('🧪 [REACTIVE-TEST] Testing reactive settings functionality...');
+    
+    if (!this.reactiveSettings) {
+      console.warn('🧪 [REACTIVE-TEST] No reactive settings available');
+      return;
+    }
+    
+    // Test with ball speed if available
+    if ('ballSpeed' in this.reactiveSettings) {
+      const originalValue = this.reactiveSettings.ballSpeed;
+      const testValue = originalValue === 0.5 ? 1.0 : 0.5;
+      
+      console.log(`🧪 [REACTIVE-TEST] Changing ballSpeed: ${originalValue} → ${testValue}`);
+      this.reactiveSettings.ballSpeed = testValue;
+      
+      // Restore after 2 seconds
+      setTimeout(() => {
+        this.reactiveSettings.ballSpeed = originalValue;
+        console.log(`🧪 [REACTIVE-TEST] Restored ballSpeed to: ${originalValue}`);
+      }, 2000);
+    } else {
+      console.log('🧪 [REACTIVE-TEST] No ballSpeed setting available for testing');
+    }
+  }
+  
+  // Force sync all current settings to game
+  syncAllCurrentSettingsToGame() {
+    if (!this.currentGameId) {
+      console.warn('🔄 [SYNC] No game loaded for settings sync');
+      return;
+    }
+    
+    if (!this.reactiveSettings) {
+      console.warn('🔄 [SYNC] No reactive settings available');
+      return;
+    }
+    
+    // Get all current settings (excluding functions)
+    const currentSettings = {};
+    Object.keys(this.reactiveSettings).forEach(key => {
+      if (typeof this.reactiveSettings[key] !== 'function') {
+        currentSettings[key] = this.reactiveSettings[key];
+      }
+    });
+    
+    const iframe = document.getElementById(`game-iframe-${this.currentGameId}`);
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage({
+        type: 'settingsUpdate',
+        gameId: this.currentGameId,
+        settings: currentSettings
+      }, '*');
+      
+      console.log(`🔄 [SYNC] Sent ${Object.keys(currentSettings).length} current settings to ${this.currentGameId}:`, currentSettings);
+      return currentSettings;
+    }
+    
+    return null;
+  }
+  
+  // Test settings sync with game (Task 4 - Requirements 6.1, 6.2)
+  testSettingsSync() {
+    console.log('🧪 [REACTIVE-TEST] Testing settings sync with game...');
+    
+    const syncedSettings = this.syncAllCurrentSettingsToGame();
+    if (syncedSettings) {
+      this.showSettingChangeIndicator('Sync Test', `${Object.keys(syncedSettings).length} settings`);
+    }
+  }
+  
+  // Apply current settings and start game (like Start Game button in sidebar)
+  setCurrentSettings() {
+    if (!this.currentGameId) {
+      console.warn('⚙️ [SET-SETTINGS] No game loaded');
+      return;
+    }
+    
+    console.log(`⚙️ [SET-SETTINGS] Applying current settings and starting ${this.currentGameId}`);
+    
+    // First, sync all current settings to the game
+    const syncedSettings = this.syncAllCurrentSettingsToGame();
+    
+    if (syncedSettings) {
+      // Then call the game's startGame function (like the Start Game button does)
+      const iframe = document.getElementById(`game-iframe-${this.currentGameId}`);
+      if (iframe && iframe.contentWindow) {
+        // Send a special message to call startGame
+        iframe.contentWindow.postMessage({
+          type: 'startGame',
+          gameId: this.currentGameId
+        }, '*');
+        
+        this.showSettingChangeIndicator('Starting Game', `${Object.keys(syncedSettings).length} settings applied`);
+        console.log(`⚙️ [SET-SETTINGS] Called startGame() with ${Object.keys(syncedSettings).length} settings`);
+      }
+    } else {
+      this.showSettingChangeIndicator('Settings Failed', 'No game found');
+      console.warn('⚙️ [SET-SETTINGS] Failed to apply settings');
+    }
+  }
+  
+  // Setup test button handlers (Task 4)
+  setupTestButtons() {
+    // Wait for DOM to be ready
+    setTimeout(() => {
+      const testReactiveBtn = document.getElementById('test-reactive-btn');
+      const testSyncBtn = document.getElementById('test-sync-btn');
+      const setSettingsBtn = document.getElementById('set-settings-btn');
+      
+      if (testReactiveBtn) {
+        testReactiveBtn.addEventListener('click', () => {
+          this.testReactiveSettings();
+        });
+      }
+      
+      if (testSyncBtn) {
+        testSyncBtn.addEventListener('click', () => {
+          this.testSettingsSync();
+        });
+      }
+      
+      if (setSettingsBtn) {
+        setSettingsBtn.addEventListener('click', () => {
+          this.setCurrentSettings();
+        });
+      }
+    }, 100);
   }
 
   detectCurrentGame() {
@@ -141,28 +461,54 @@ class UnifiedBrainTraining {
   }
 
   cleanupCurrentGame() {
+    console.log('🧹 [CLEANUP] Starting thorough game cleanup...');
+    
     // Cleanup blob URL if exists
     if (this.currentBlobUrl) {
       URL.revokeObjectURL(this.currentBlobUrl);
       this.currentBlobUrl = null;
+      console.log('🧹 [CLEANUP] Blob URL revoked');
     }
     
     // Remove message handler
     if (this.currentMessageHandler) {
       window.removeEventListener('message', this.currentMessageHandler);
       this.currentMessageHandler = null;
+      console.log('🧹 [CLEANUP] Message handler removed');
+    }
+    
+    // Get iframe before destroying it
+    const iframe = document.getElementById(`game-iframe-${this.currentGameId}`);
+    if (iframe) {
+      // Try to cleanup game resources if possible
+      try {
+        if (iframe.contentWindow && iframe.contentWindow.cleanup) {
+          iframe.contentWindow.cleanup();
+        }
+      } catch (e) {
+        // Ignore cross-origin errors
+      }
+      console.log('🧹 [CLEANUP] Iframe cleaned up');
     }
     
     // Clear container content (this will destroy the iframe)
     const container = document.getElementById('game-container');
     if (container) {
       container.innerHTML = '';
+      console.log('🧹 [CLEANUP] Container cleared');
+    }
+    
+    // Clear any cached game data
+    if (this.gameCache && this.currentGameId) {
+      // Keep cache but could clear it here if memory is a concern
+      // this.gameCache.delete(this.currentGameId);
     }
     
     // Reset current game reference
+    const previousGame = this.currentGameId;
     this.currentGameId = null;
     
-    console.log('Game cleanup completed');
+    console.log(`🧹 [CLEANUP] Game cleanup completed for: ${previousGame}`);
   }
 
   // Test if a game file is accessible
@@ -184,24 +530,29 @@ class UnifiedBrainTraining {
     }
   }
 
-  // Optional: Preload games for faster switching
+  // Optional: Preload games for faster switching (disabled for performance)
   async preloadGame(gameId) {
-    try {
-      console.log('Preloading game:', gameId);
-      const gamePath = this.getGamePath(gameId);
-      const response = await fetch(gamePath);
-      if (response.ok) {
-        const html = await response.text();
-        // Store in cache for faster loading
-        if (!this.gameCache) this.gameCache = new Map();
-        this.gameCache.set(gameId, html);
-        console.log('Game preloaded:', gameId);
-      } else {
-        console.warn('Failed to preload game:', gameId, response.status, response.statusText);
-      }
-    } catch (error) {
-      console.warn('Failed to preload game:', gameId, error);
+    console.log(`🎮 [PERFORMANCE] Preloading disabled for ${gameId} - will load on-demand`);
+  }
+  
+  // Clear game cache to free memory
+  clearGameCache() {
+    if (this.gameCache) {
+      const cacheSize = this.gameCache.size;
+      this.gameCache.clear();
+      console.log(`🧹 [CLEANUP] Cleared game cache (${cacheSize} games)`);
     }
+  }
+  
+  // Get memory usage info
+  getMemoryInfo() {
+    const info = {
+      cachedGames: this.gameCache ? this.gameCache.size : 0,
+      currentGame: this.currentGameId || 'none',
+      hasActiveIframe: !!document.getElementById(`game-iframe-${this.currentGameId}`)
+    };
+    console.log('📊 [MEMORY] Current usage:', info);
+    return info;
   }
 
   // Enhanced loadGame that uses cache if available
@@ -400,14 +751,100 @@ class UnifiedBrainTraining {
           }
         };
         
-        // Listen for messages from parent
-        window.addEventListener('message', (event) => {
-          if (event.data.type === 'settingsUpdate' && event.data.gameId === '${gameId}') {
+        // Enhanced Reactive Settings Bridge (Task 3) with feedback (Task 4)
+        window.reactiveSettingsBridge = {
+          updateSettings: function(newSettings) {
+            console.log('🎮 [GAME-BRIDGE] Received settings update:', newSettings);
+            
+            // Update window.settings object
+            if (window.settings) {
+              Object.assign(window.settings, newSettings);
+              console.log('🎮 [GAME-BRIDGE] Updated window.settings');
+            } else {
+              // Create settings object if it doesn't exist
+              window.settings = { ...newSettings };
+              console.log('🎮 [GAME-BRIDGE] Created window.settings');
+            }
+            
+            // Call legacy update functions for backward compatibility
             if (window.updateSettings) {
-              window.updateSettings(event.data.settings);
+              console.log('🎮 [GAME-BRIDGE] Calling updateSettings()');
+              // Some games expect no parameters, just read from window.settings
+              try {
+                window.updateSettings(newSettings);
+              } catch (e) {
+                // Try without parameters
+                window.updateSettings();
+              }
+            }
+            
+            if (window.repopulateGui) {
+              console.log('🎮 [GAME-BRIDGE] Calling repopulateGui()');
+              window.repopulateGui();
+            }
+            
+            // Try additional common update functions
+            if (window.applySettings) {
+              console.log('🎮 [GAME-BRIDGE] Calling applySettings()');
+              window.applySettings(newSettings);
+            }
+            
+            if (window.refreshSettings) {
+              console.log('🎮 [GAME-BRIDGE] Calling refreshSettings()');
+              window.refreshSettings();
+            }
+            
+            // Force GUI update if dat.GUI exists
+            if (window.gui && window.gui.__controllers) {
+              console.log('🎮 [GAME-BRIDGE] Updating dat.GUI controllers');
+              window.gui.__controllers.forEach(controller => {
+                if (controller.updateDisplay) {
+                  controller.updateDisplay();
+                }
+              });
+            }
+            
+            // Enhanced logging with distinctive prefix (Task 4 - Requirement 3.2)
+            console.log('🎮 [GAME-BRIDGE] Settings applied successfully:', newSettings);
+            
+            // Notify parent that settings were received (Task 4 - visual feedback)
+            if (window.parent !== window) {
+              window.parent.postMessage({
+                type: 'settingsReceived',
+                gameId: '${gameId}',
+                settingsCount: Object.keys(newSettings).length,
+                timestamp: Date.now()
+              }, '*');
+            }
+          }
+        };
+        
+        // Enhanced message listener for settings updates and game control
+        window.addEventListener('message', (event) => {
+          if (event.data.gameId === '${gameId}') {
+            if (event.data.type === 'settingsUpdate') {
+              console.log('🎮 [GAME-BRIDGE] Received settingsUpdate message');
+              window.reactiveSettingsBridge.updateSettings(event.data.settings);
+            } else if (event.data.type === 'startGame') {
+              console.log('🎮 [GAME-BRIDGE] Received startGame message');
+              if (window.startGame) {
+                console.log('🎮 [GAME-BRIDGE] Calling startGame() function');
+                window.startGame();
+              } else {
+                console.warn('🎮 [GAME-BRIDGE] No startGame() function found');
+              }
             }
           }
         });
+        
+        // Auto-initialize bridge when DOM is ready
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', () => {
+            console.log('🎮 [GAME-BRIDGE] DOM ready, bridge initialized');
+          });
+        } else {
+          console.log('🎮 [GAME-BRIDGE] Bridge initialized immediately');
+        }
         
         // Auto-notify when game is ready
         document.addEventListener('DOMContentLoaded', () => {
@@ -444,6 +881,10 @@ class UnifiedBrainTraining {
           this.syncSettingsFromGame(event.data.settings);
           break;
           
+        case 'settingsReceived':
+          console.log('🎮 [GAME-BRIDGE] Game confirmed settings received:', event.data.settingsCount, 'settings');
+          break;
+          
         case 'gameError':
           console.error('Game error:', gameId, event.data.error);
           this.handleGameError(gameId, event.data.error);
@@ -465,8 +906,22 @@ class UnifiedBrainTraining {
   }
 
   onGameReady(gameId) {
-    // Sync current settings to the game
-    if (this.settings) {
+    console.log(`🎮 [GAME-READY] ${gameId} is ready, sending current settings`);
+    
+    // Send current reactive settings to the game (not defaults)
+    if (this.reactiveSettings) {
+      // Get current values from reactive settings
+      const currentSettings = {};
+      Object.keys(this.reactiveSettings).forEach(key => {
+        if (typeof this.reactiveSettings[key] !== 'function') {
+          currentSettings[key] = this.reactiveSettings[key];
+        }
+      });
+      
+      console.log(`🎮 [GAME-READY] Sending ${Object.keys(currentSettings).length} current settings:`, currentSettings);
+      this.sendSettingsToGame(gameId, currentSettings);
+    } else if (this.settings) {
+      // Fallback to regular settings
       this.sendSettingsToGame(gameId, this.settings);
     }
   }
@@ -474,11 +929,21 @@ class UnifiedBrainTraining {
   sendSettingsToGame(gameId, settings) {
     const iframe = document.getElementById(`game-iframe-${gameId}`);
     if (iframe && iframe.contentWindow) {
+      // Filter out function properties to avoid postMessage cloning error
+      const cleanSettings = {};
+      Object.keys(settings).forEach(key => {
+        if (typeof settings[key] !== 'function') {
+          cleanSettings[key] = settings[key];
+        }
+      });
+      
       iframe.contentWindow.postMessage({
         type: 'settingsUpdate',
         gameId: gameId,
-        settings: settings
+        settings: cleanSettings
       }, '*');
+      
+      console.log(`🔄 [REACTIVE-SYNC] Sent ${Object.keys(cleanSettings).length} settings to ${gameId}`);
     }
   }
 
@@ -646,30 +1111,14 @@ class UnifiedBrainTraining {
       // Set the current game ID FIRST
       this.currentGameId = gameId;
       
-      // Get game-specific settings
-      const gameSettings = this.getGameSpecificSettings(gameId);
-      
-      // Preserve the loading functions and merge with game settings
-      this.settings = {
-        ...gameSettings,
-        loadJiggleFactorial: () => {
-          this.loadGameWithStatus('jiggle-factorial');
-        },
-        loadHyperNBack: () => {
-          this.loadGameWithStatus('3d-hyper-nback');
-        },
-        loadDichoticDualNBack: () => {
-          this.loadGameWithStatus('dichotic-dual-nback');
-        },
-        loadQuadBox: () => {
-          this.loadGameWithStatus('quad-box');
-        }
-      };
+      // Create new reactive settings for the new game (functions already included)
+      this.settings = this.createReactiveSettings(gameId);
       
       // Rebuild the GUI with game-specific controls for THIS game only
       this.buildGameSpecificGUI();
+      this.setupReactiveSync();
       
-      console.log('Updated GUI for game:', gameId, 'Current game ID:', this.currentGameId);
+      console.log('🔄 [REACTIVE-SYNC] Updated reactive GUI for game:', gameId);
     }
   }
 
@@ -880,15 +1329,9 @@ class UnifiedBrainTraining {
   }
 
   initializeGamePreloading() {
-    // Preload games after a short delay to not block initial load
-    setTimeout(() => {
-      const commonGames = ['jiggle-factorial', '3d-hyper-nback'];
-      commonGames.forEach(gameId => {
-        if (gameId !== this.currentGameId) {
-          this.preloadGame(gameId);
-        }
-      });
-    }, 2000);
+    // Disabled preloading for better performance
+    // Games will be loaded on-demand only
+    console.log('🎮 [PERFORMANCE] Game preloading disabled - loading on-demand only');
   }
 
   createToggleButton() {
@@ -909,13 +1352,26 @@ class UnifiedBrainTraining {
   }
 
   createSidebar() {
-    // Use the same sidebar system as before
+    // Enhanced sidebar with reactive settings status and test buttons (Task 4)
     const sidebarHTML = `
       <div class="unified-sidebar" id="unified-sidebar">
+        <div id="reactive-settings-status" style="padding: 10px; border-bottom: 1px solid #444; font-size: 12px; color: #aaa;">
+          <div id="reactive-status-indicator">
+            Reactive Settings: <span id="reactive-status-text" style="color: #4CAF50;">Connected</span>
+          </div>
+          <div id="reactive-test-buttons" style="margin-top: 8px;">
+            <button id="test-reactive-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 4px 8px; margin-right: 4px; cursor: pointer; font-size: 11px;">Test Reactive</button>
+            <button id="test-sync-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 4px 8px; margin-right: 4px; cursor: pointer; font-size: 11px;">Test Sync</button>
+            <button id="set-settings-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 4px 8px; cursor: pointer; font-size: 11px;">Set Settings</button>
+          </div>
+        </div>
         <div id="unified-gui-container"></div>
       </div>
     `;
     document.body.insertAdjacentHTML('beforeend', sidebarHTML);
+    
+    // Setup test button handlers
+    this.setupTestButtons();
     
     // Create the actual dat.GUI
     this.createDatGUI();
@@ -1023,28 +1479,16 @@ class UnifiedBrainTraining {
       return;
     }
 
-    // Use game-specific settings
-    this.settings = this.getGameSpecificSettings(this.currentGameId || 'jiggle-factorial');
-    
-    // Add game loading functions
-    this.settings.loadJiggleFactorial = () => {
-      this.loadGameWithStatus('jiggle-factorial');
-    };
-    this.settings.loadHyperNBack = () => {
-      this.loadGameWithStatus('3d-hyper-nback');
-    };
-    this.settings.loadDichoticDualNBack = () => {
-      this.loadGameWithStatus('dichotic-dual-nback');
-    };
-    this.settings.loadQuadBox = () => {
-      this.loadGameWithStatus('quad-box');
-    };
+    // Create reactive settings for current game (functions already included)
+    const currentGame = this.currentGameId || 'jiggle-factorial';
+    this.settings = this.createReactiveSettings(currentGame);
 
     // Create dat.GUI
     this.gui = new dat.GUI({ autoPlace: false });
     document.getElementById('unified-gui-container').appendChild(this.gui.domElement);
 
     this.buildGameSpecificGUI();
+    this.setupReactiveSync();
   }
 
   buildGameSpecificGUI() {
@@ -1202,8 +1646,35 @@ class UnifiedBrainTraining {
 
 
 
+  // Setup reactive synchronization with dat.GUI (Task 2)
+  setupReactiveSync() {
+    // Sync GUI changes to reactive settings with visual feedback
+    this.gui.__controllers.forEach(controller => {
+      const originalOnChange = controller.__onChange;
+      
+      controller.onChange((value) => {
+        // Call original onChange if it exists
+        if (originalOnChange) {
+          originalOnChange.call(controller, value);
+        }
+        
+        // Update reactive settings (this will trigger sendSettingToGame automatically)
+        if (this.reactiveSettings && controller.property in this.reactiveSettings) {
+          // Skip if this is a function button (value will be undefined)
+          if (typeof this.reactiveSettings[controller.property] === 'function') {
+            return; // Don't overwrite functions with undefined
+          }
+          // The proxy will handle the update and send to game
+          this.reactiveSettings[controller.property] = value;
+        }
+      });
+    });
+    
+    console.log('🔄 [REACTIVE-SYNC] Reactive synchronization setup complete');
+  }
+  
   setupSync() {
-    // Sync changes to original game settings
+    // Legacy sync method - kept for backward compatibility
     this.gui.__controllers.forEach(controller => {
       controller.onChange((value) => {
         if (window.settings && window.settings.hasOwnProperty(controller.property)) {

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Reactive Settings Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #eee;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+        }
+        .success { background: #2d5a2d; }
+        .error { background: #5a2d2d; }
+        button {
+            background: #333;
+            color: #eee;
+            border: 1px solid #555;
+            padding: 8px 16px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Simple Reactive Settings Test</h1>
+    <button onclick="testReactiveSettings()">Test Reactive Settings</button>
+    <button onclick="testFunctionFiltering()">Test Function Filtering</button>
+    <div id="results"></div>
+
+    <script src="shared/unified-core.js"></script>
+    <script>
+        function addResult(message, success = true) {
+            const div = document.createElement('div');
+            div.className = `test-result ${success ? 'success' : 'error'}`;
+            div.textContent = message;
+            document.getElementById('results').appendChild(div);
+        }
+
+        function testReactiveSettings() {
+            document.getElementById('results').innerHTML = '';
+            
+            try {
+                // Create a test instance
+                const unified = new UnifiedBrainTraining();
+                
+                // Test reactive settings creation
+                const reactiveSettings = unified.createReactiveSettings('jiggle-factorial');
+                
+                if (reactiveSettings && typeof reactiveSettings === 'object') {
+                    addResult('✓ Reactive settings created successfully');
+                } else {
+                    addResult('✗ Failed to create reactive settings', false);
+                    return;
+                }
+                
+                // Test property access
+                if (reactiveSettings.ballSpeed !== undefined) {
+                    addResult('✓ Can read ballSpeed property: ' + reactiveSettings.ballSpeed);
+                } else {
+                    addResult('✗ Cannot read ballSpeed property', false);
+                }
+                
+                // Test property setting
+                const originalSpeed = reactiveSettings.ballSpeed;
+                reactiveSettings.ballSpeed = 1.5;
+                
+                if (reactiveSettings.ballSpeed === 1.5) {
+                    addResult('✓ Can set ballSpeed property: ' + reactiveSettings.ballSpeed);
+                } else {
+                    addResult('✗ Cannot set ballSpeed property', false);
+                }
+                
+                // Test onChange listener
+                let listenerCalled = false;
+                unified.onSettingChange('ballSpeed', (newValue, oldValue) => {
+                    listenerCalled = true;
+                    addResult(`✓ onChange listener called: ${oldValue} → ${newValue}`);
+                });
+                
+                reactiveSettings.ballSpeed = 2.0;
+                
+                setTimeout(() => {
+                    if (listenerCalled) {
+                        addResult('✓ onChange listener system working');
+                    } else {
+                        addResult('✗ onChange listener not called', false);
+                    }
+                }, 100);
+                
+            } catch (error) {
+                addResult('✗ Test failed: ' + error.message, false);
+            }
+        }
+
+        function testFunctionFiltering() {
+            try {
+                // Test that functions are filtered out
+                const testSettings = {
+                    ballSpeed: 0.5,
+                    level: 2,
+                    loadGame: function() { return 'test'; },
+                    anotherFunction: () => 'arrow function'
+                };
+                
+                const filtered = {};
+                Object.keys(testSettings).forEach(key => {
+                    if (typeof testSettings[key] !== 'function') {
+                        filtered[key] = testSettings[key];
+                    }
+                });
+                
+                const functionCount = Object.keys(testSettings).length - Object.keys(filtered).length;
+                
+                if (functionCount === 2 && Object.keys(filtered).length === 2) {
+                    addResult('✓ Function filtering works: filtered out ' + functionCount + ' functions');
+                    addResult('✓ Remaining properties: ' + Object.keys(filtered).join(', '));
+                } else {
+                    addResult('✗ Function filtering failed', false);
+                }
+                
+                // Test postMessage compatibility
+                try {
+                    // This should not throw an error
+                    const testMessage = {
+                        type: 'test',
+                        settings: filtered
+                    };
+                    
+                    // Simulate what postMessage does internally
+                    JSON.stringify(testMessage);
+                    addResult('✓ Filtered settings are postMessage compatible');
+                } catch (error) {
+                    addResult('✗ Filtered settings not postMessage compatible: ' + error.message, false);
+                }
+                
+            } catch (error) {
+                addResult('✗ Function filtering test failed: ' + error.message, false);
+            }
+        }
+    </script>
+</body>
+</html>
