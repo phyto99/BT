@@ -132,10 +132,10 @@ class UnifiedBrainTraining {
       console.error('Failed to load game:', error);
       const errorMsg = error.name === 'AbortError' ? 'Game loading timed out' : error.message;
       document.getElementById('game-container').innerHTML = 
-        `<div class="loading" style="flex-direction: column; align-items: center;">
-          <div style="color: #F44336; font-size: 14px; margin-bottom: 10px;">Failed to load game</div>
-          <div style="color: #F44336; font-size: 12px; opacity: 0.8; margin-bottom: 20px;">${errorMsg}</div>
-          <button onclick="window.unifiedBrainTraining.loadGame('${gameId}')" style="background: #555; border: none; color: #eee; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Retry</button>
+        `<div class="loading" style="flex-direction: column; align-items: center; background: #000;">
+          <img src="Syn_Logo_A_1.gif" style="width: 333px; height: 333px; margin-bottom: 20px;">
+          <div style="color: #eee; font-size: 14px; margin-bottom: 20px; text-align: center;">${errorMsg}</div>
+          <button onclick="window.unifiedBrainTraining.loadGame('${gameId}')" style="background: #000; border: 2px solid #fff; color: #fff; padding: 8px 16px; cursor: pointer; font-family: Arial, sans-serif;">Retry</button>
         </div>`;
     }
   }
@@ -349,9 +349,10 @@ class UnifiedBrainTraining {
     iframe.onerror = (error) => {
       console.error('Iframe failed to load:', error);
       document.getElementById('game-container').innerHTML = 
-        `<div class="loading" style="flex-direction: column; align-items: center;">
-          <div style="color: #F44336; font-size: 14px; margin-bottom: 20px;">Failed to load game iframe</div>
-          <button onclick="window.unifiedBrainTraining.loadGame('${gameId}')" style="background: #555; border: none; color: #eee; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Retry</button>
+        `<div class="loading" style="flex-direction: column; align-items: center; background: #000;">
+          <img src="Syn_Logo_A_1.gif" style="width: 333px; height: 333px; margin-bottom: 20px;">
+          <div style="color: #eee; font-size: 14px; margin-bottom: 20px; text-align: center;">Failed to load game iframe</div>
+          <button onclick="window.unifiedBrainTraining.loadGame('${gameId}')" style="background: #000; border: 2px solid #fff; color: #fff; padding: 8px 16px; cursor: pointer; font-family: Arial, sans-serif;">Retry</button>
         </div>`;
     };
     
@@ -639,25 +640,33 @@ class UnifiedBrainTraining {
 
   updateGameSelectorGUI(gameId) {
     if (this.settings && this.gui) {
-      // Update the settings object
-      this.settings.currentGame = gameId;
+      // Set the current game ID FIRST
+      this.currentGameId = gameId;
       
-      // Find the game selector controller and update it without triggering onChange
-      this.gui.__controllers.forEach(controller => {
-        if (controller.property === 'currentGame') {
-          // Temporarily disable onChange to prevent infinite loop
-          const originalOnChange = controller.__onChange;
-          controller.__onChange = [];
-          
-          // Update the display
-          controller.updateDisplay();
-          
-          // Restore onChange
-          controller.__onChange = originalOnChange;
-          
-          console.log('Updated GUI game selector to:', gameId);
+      // Get game-specific settings
+      const gameSettings = this.getGameSpecificSettings(gameId);
+      
+      // Preserve the loading functions and merge with game settings
+      this.settings = {
+        ...gameSettings,
+        loadJiggleFactorial: () => {
+          this.loadGameWithStatus('jiggle-factorial');
+        },
+        loadHyperNBack: () => {
+          this.loadGameWithStatus('3d-hyper-nback');
+        },
+        loadDichoticDualNBack: () => {
+          this.loadGameWithStatus('dichotic-dual-nback');
+        },
+        loadQuadBox: () => {
+          this.loadGameWithStatus('quad-box');
         }
-      });
+      };
+      
+      // Rebuild the GUI with game-specific controls for THIS game only
+      this.buildGameSpecificGUI();
+      
+      console.log('Updated GUI for game:', gameId, 'Current game ID:', this.currentGameId);
     }
   }
 
@@ -718,10 +727,10 @@ class UnifiedBrainTraining {
       console.error('Failed to load game directly:', error);
       const container = document.getElementById('game-container');
       container.innerHTML = 
-        `<div class="loading" style="flex-direction: column; align-items: center;">
-          <div style="color: #F44336; font-size: 14px; margin-bottom: 10px;">Failed to load game</div>
-          <div style="color: #F44336; font-size: 12px; opacity: 0.8; margin-bottom: 20px;">${error.message}</div>
-          <button onclick="window.unifiedBrainTraining.loadGame('${gameId}')" style="background: #555; border: none; color: #eee; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Retry</button>
+        `<div class="loading" style="flex-direction: column; align-items: center; background: #000;">
+          <img src="Syn_Logo_A_1.gif" style="width: 333px; height: 333px; margin-bottom: 20px;">
+          <div style="color: #eee; font-size: 14px; margin-bottom: 20px; text-align: center;">${error.message}</div>
+          <button onclick="window.unifiedBrainTraining.loadGame('${gameId}')" style="background: #000; border: 2px solid #fff; color: #fff; padding: 8px 16px; cursor: pointer; font-family: Arial, sans-serif;">Retry</button>
         </div>`;
     }
   }
@@ -795,9 +804,10 @@ class UnifiedBrainTraining {
     iframe.onerror = (error) => {
       console.error('Direct iframe failed to load:', error);
       container.innerHTML = 
-        `<div class="loading" style="flex-direction: column; align-items: center;">
-          <div style="color: #F44336; font-size: 14px; margin-bottom: 20px;">Failed to load game</div>
-          <button onclick="window.unifiedBrainTraining.loadGame('${gameId}')" style="background: #555; border: none; color: #eee; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Retry</button>
+        `<div class="loading" style="flex-direction: column; align-items: center; background: #000;">
+          <img src="Syn_Logo_A_1.gif" style="width: 333px; height: 333px; margin-bottom: 20px;">
+          <div style="color: #eee; font-size: 14px; margin-bottom: 20px; text-align: center;">Failed to load game</div>
+          <button onclick="window.unifiedBrainTraining.loadGame('${gameId}')" style="background: #000; border: 2px solid #fff; color: #fff; padding: 8px 16px; cursor: pointer; font-family: Arial, sans-serif;">Retry</button>
         </div>`;
     };
     
@@ -908,6 +918,101 @@ class UnifiedBrainTraining {
     this.createDatGUI();
   }
 
+
+
+  getGameSpecificSettings(gameId) {
+    const settingsMap = {
+      'jiggle-factorial': {
+        level: 2,
+        movementMode: 'Combination',
+        verticalRotationGroups: 2,
+        horizontalRotationGroups: 2,
+        rotationSpeed: 0.01,
+        isRandomMode: false,
+        orderMode: 'Combined',
+        isNonConsecutiveMode: true,
+        autoProgression: true,
+        showAnswers: true,
+        isRegular3DMOT: false,
+        numBlueDistractors: 5,
+        numColoredDistractors: 5,
+        ballSpeed: 0.1,
+        ballOpacity: 1.0,
+        boxX: 50,
+        boxY: 50,
+        boxZ: 50,
+        screenRotation: true,
+        screenRotationSpeed: 0.002,
+        screenRotationDistance: 60,
+        rotateX: true,
+        rotateY: true,
+        rotateZ: true,
+        varyRotationDistance: false,
+        highlightDuration: 1000,
+        highlightSimultaneously: false,
+        delayAfterSequence: 1000,
+        numberSize: 3,
+        dotSize: 5,
+        blinkDot: false,
+        flashMode: false,
+        flashDurationMin: 160,
+        flashDurationMax: 400,
+        intervalDurationMin: 2000,
+        intervalDurationMax: 3000,
+        levelChangeByCorrect: 1,
+        everyCorrectLevel: 1,
+        levelChangeByIncorrect: -1,
+        everyIncorrectLevel: 1,
+        trialStartDelay: 2000
+      },
+      '3d-hyper-nback': {
+        wallsEnabled: true,
+        cameraEnabled: true,
+        faceEnabled: true,
+        positionEnabled: true,
+        rotationEnabled: false,
+        wordEnabled: true,
+        shapeEnabled: true,
+        cornerEnabled: true,
+        soundEnabled: true,
+        colorEnabled: true,
+        randomizeEnabled: false,
+        nLevel: 2,
+        numStimuliSelect: 2,
+        sceneDimmer: 0.5,
+        zoom: 0.7,
+        perspective: 15,
+        targetStimuli: 5,
+        baseDelay: 5000,
+        maxAllowedMistakes: 3,
+        previousLevelThreshold: 0.5,
+        nextLevelThreshold: 0.8
+      },
+      'dichotic-dual-nback': {
+        nLevel: 2,
+        duration: 3000,
+        interval: 3000,
+        feedback: true,
+        audioEnabled: true,
+        visualEnabled: true,
+        trials: 20
+      },
+      'quad-box': {
+        nLevel: 2,
+        positionEnabled: true,
+        colorEnabled: true,
+        shapeEnabled: true,
+        audioEnabled: true,
+        stimulusDuration: 500,
+        interStimulusInterval: 2500,
+        trials: 20,
+        autoAdvance: true
+      }
+    };
+
+    return settingsMap[gameId] || settingsMap['jiggle-factorial'];
+  }
+
   createDatGUI() {
     // Wait for dat.GUI to be available
     if (typeof dat === 'undefined') {
@@ -915,93 +1020,75 @@ class UnifiedBrainTraining {
       return;
     }
 
-    // Use the exact same settings structure as Jiggle Factorial
-    this.settings = {
-      level: 2,
-      movementMode: 'Combination',
-      verticalRotationGroups: 2,
-      horizontalRotationGroups: 2,
-      rotationSpeed: 0.01,
-      isRandomMode: false,
-      orderMode: 'Combined',
-      isNonConsecutiveMode: true,
-      autoProgression: true,
-      showAnswers: true,
-      isRegular3DMOT: false,
-      numBlueDistractors: 5,
-      numColoredDistractors: 5,
-      ballSpeed: 0.1,
-      ballOpacity: 1.0,
-      boxX: 50,
-      boxY: 50,
-      boxZ: 50,
-      screenRotation: true,
-      screenRotationSpeed: 0.002,
-      screenRotationDistance: 60,
-      rotateX: true,
-      rotateY: true,
-      rotateZ: true,
-      varyRotationDistance: false,
-      highlightDuration: 1000,
-      highlightSimultaneously: false,
-      delayAfterSequence: 1000,
-      numberSize: 3,
-      dotSize: 5,
-      blinkDot: false,
-      flashMode: false,
-      flashDurationMin: 160,
-      flashDurationMax: 400,
-      intervalDurationMin: 2000,
-      intervalDurationMax: 3000,
-      levelChangeByCorrect: 1,
-      everyCorrectLevel: 1,
-      levelChangeByIncorrect: -1,
-      everyIncorrectLevel: 1,
-      trialStartDelay: 2000,
-      startGame: () => { if (window.startGame) window.startGame(); },
-      resetApp: () => { if (window.resetApp) window.resetApp(); }
-    };
-
-    // Create dat.GUI exactly like Jiggle Factorial
-    this.gui = new dat.GUI({ autoPlace: false });
-    document.getElementById('unified-gui-container').appendChild(this.gui.domElement);
-
-    // Remove status from GUI - will be shown as notification instead
-
-    // Test buttons for each game (since dropdown doesn't work)
+    // Use game-specific settings
+    this.settings = this.getGameSpecificSettings(this.currentGameId || 'jiggle-factorial');
+    
+    // Add game loading functions
     this.settings.loadJiggleFactorial = () => {
       this.loadGameWithStatus('jiggle-factorial');
     };
-    
     this.settings.loadHyperNBack = () => {
       this.loadGameWithStatus('3d-hyper-nback');
     };
-    
     this.settings.loadDichoticDualNBack = () => {
       this.loadGameWithStatus('dichotic-dual-nback');
     };
-    
     this.settings.loadQuadBox = () => {
       this.loadGameWithStatus('quad-box');
     };
+
+    // Create dat.GUI
+    this.gui = new dat.GUI({ autoPlace: false });
+    document.getElementById('unified-gui-container').appendChild(this.gui.domElement);
+
+    this.buildGameSpecificGUI();
+  }
+
+  buildGameSpecificGUI() {
+    // Clear existing controllers and folders instead of destroying the whole GUI
+    while (this.gui.__controllers.length > 0) {
+      this.gui.remove(this.gui.__controllers[0]);
+    }
     
+    // Clear existing folders
+    for (let folderName in this.gui.__folders) {
+      this.gui.removeFolder(this.gui.__folders[folderName]);
+    }
+
+    // Add game loading buttons
     this.gui.add(this.settings, 'loadJiggleFactorial').name('Load Jiggle Factorial 3D');
     this.gui.add(this.settings, 'loadHyperNBack').name('Load 3D Hyper N-back');
     this.gui.add(this.settings, 'loadDichoticDualNBack').name('Load Dichotic Dual N-back');
     this.gui.add(this.settings, 'loadQuadBox').name('Load Quad Box');
 
-    // Add separator after Training Method
+    // Add separator after game loading buttons
     const separator = document.createElement('div');
     separator.style.height = '15px';
     separator.style.borderBottom = '1px solid #2c2c2c';
     separator.style.margin = '15px 0';
     this.gui.domElement.appendChild(separator);
 
-    // Add empty space
-    const spacer = document.createElement('div');
-    spacer.style.height = '10px';
-    this.gui.domElement.appendChild(spacer);
+    // Add ONLY the settings for the currently loaded game
+    const currentGame = this.currentGameId || 'jiggle-factorial';
+    
+    if (currentGame === 'jiggle-factorial') {
+      this.buildJiggleFactorialGUI();
+    } else if (currentGame === '3d-hyper-nback') {
+      this.build3DHyperNBackGUI();
+    } else if (currentGame === 'dichotic-dual-nback') {
+      this.buildDichoticDualNBackGUI();
+    } else if (currentGame === 'quad-box') {
+      this.buildQuadBoxGUI();
+    } else {
+      // Default message if no specific game is loaded
+      const note = document.createElement('div');
+      note.style.cssText = 'color: #aaa; font-size: 12px; text-align: center; margin: 20px; line-height: 1.4;';
+      note.textContent = 'Load a game to see its settings';
+      this.gui.domElement.appendChild(note);
+    }
+  }
 
+  buildJiggleFactorialGUI() {
     // Add all controls exactly like Jiggle Factorial does
     this.gui.add(this.settings, 'level').name('Level');
     this.gui.add(this.settings, 'movementMode', ['Non-Rotating', 'Rotating', 'Combination']).name('Movement Mode');
@@ -1060,15 +1147,64 @@ class UnifiedBrainTraining {
     levelAdjustmentFolder.add(this.settings, 'everyIncorrectLevel').name('Every Incorrect').min(1).step(1);
 
     this.gui.add(this.settings, 'trialStartDelay').name('Trial Start Delay (ms)');
-
-    const resetFolder = this.gui.addFolder('Reset App');
-    resetFolder.add(this.settings, 'resetApp').name('Reset to default');
-
-    this.gui.add(this.settings, 'startGame').name('Start Game');
-
-    // Sync with original game settings
-    this.setupSync();
   }
+
+  build3DHyperNBackGUI() {
+    // Enable Stimuli folder
+    const stimuliFolder = this.gui.addFolder('Enable Stimuli');
+    stimuliFolder.add(this.settings, 'wallsEnabled').name('Walls');
+    stimuliFolder.add(this.settings, 'cameraEnabled').name('Camera');
+    stimuliFolder.add(this.settings, 'faceEnabled').name('Face');
+    stimuliFolder.add(this.settings, 'positionEnabled').name('Position');
+    stimuliFolder.add(this.settings, 'rotationEnabled').name('Rotation');
+    stimuliFolder.add(this.settings, 'wordEnabled').name('Word');
+    stimuliFolder.add(this.settings, 'shapeEnabled').name('Shape');
+    stimuliFolder.add(this.settings, 'cornerEnabled').name('Corner');
+    stimuliFolder.add(this.settings, 'soundEnabled').name('Sound');
+    stimuliFolder.add(this.settings, 'colorEnabled').name('Color');
+
+    // Game Settings
+    this.gui.add(this.settings, 'randomizeEnabled').name('Randomize Stimuli');
+    this.gui.add(this.settings, 'nLevel').name('N Back Level');
+    this.gui.add(this.settings, 'numStimuliSelect').name('Number of Stimuli');
+    this.gui.add(this.settings, 'sceneDimmer').name('Scene Dimmer');
+    this.gui.add(this.settings, 'zoom').name('Zoom');
+    this.gui.add(this.settings, 'perspective').name('Perspective');
+    this.gui.add(this.settings, 'targetStimuli').name('Target Number of Matches');
+    this.gui.add(this.settings, 'baseDelay').name('Base Delay (ms)');
+    this.gui.add(this.settings, 'maxAllowedMistakes').name('Maximum Allowed Mistakes');
+    this.gui.add(this.settings, 'previousLevelThreshold').name('Level Down Correct Stimuli %');
+    this.gui.add(this.settings, 'nextLevelThreshold').name('Level Up Correct Stimuli %');
+  }
+
+  buildDichoticDualNBackGUI() {
+    this.gui.add(this.settings, 'nLevel').name('N-Back Level');
+    this.gui.add(this.settings, 'duration').name('Duration (ms)');
+    this.gui.add(this.settings, 'interval').name('Interval (ms)');
+    this.gui.add(this.settings, 'feedback').name('Feedback');
+    this.gui.add(this.settings, 'audioEnabled').name('Audio Enabled');
+    this.gui.add(this.settings, 'visualEnabled').name('Visual Enabled');
+    this.gui.add(this.settings, 'trials').name('Number of Trials');
+  }
+
+  buildQuadBoxGUI() {
+    this.gui.add(this.settings, 'nLevel').name('N-Back Level');
+    
+    // Modalities folder
+    const modalitiesFolder = this.gui.addFolder('Modalities');
+    modalitiesFolder.add(this.settings, 'positionEnabled').name('Position');
+    modalitiesFolder.add(this.settings, 'colorEnabled').name('Color');
+    modalitiesFolder.add(this.settings, 'shapeEnabled').name('Shape');
+    modalitiesFolder.add(this.settings, 'audioEnabled').name('Audio');
+
+    // Timing settings
+    this.gui.add(this.settings, 'stimulusDuration').name('Stimulus Duration (ms)');
+    this.gui.add(this.settings, 'interStimulusInterval').name('Inter-Stimulus Interval (ms)');
+    this.gui.add(this.settings, 'trials').name('Number of Trials');
+    this.gui.add(this.settings, 'autoAdvance').name('Auto Advance Level');
+  }
+
+
 
   setupSync() {
     // Sync changes to original game settings
