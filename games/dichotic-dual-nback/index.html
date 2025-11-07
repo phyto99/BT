@@ -155,8 +155,20 @@
           safeUpdate('set-level', window.settings.nLevel, 'set-level-span', 'n');
           safeUpdate('set-time', window.settings.stimulusTime, 'set-time-span', 'time');
           safeUpdate('set-clues', window.settings.matchingClues, 'set-clues-span', 'clues');
-          safeUpdate('select-sound-left', window.settings.soundsLeft, null, 'soundsLeft');
-          safeUpdate('select-sound-right', window.settings.soundsRight, null, 'soundsRight');
+          
+          // Update sound dropdowns
+          safeUpdate('select-sound-left', window.settings.soundsLeft, null, null);
+          safeUpdate('select-sound-right', window.settings.soundsRight, null, null);
+          
+          // Reload audio files when sound settings change
+          if (window.game) {
+            if (newSettings?.soundsLeft !== undefined) {
+              window.game.updateSoundsLeft();
+            }
+            if (newSettings?.soundsRight !== undefined) {
+              window.game.updateSoundsRight();
+            }
+          }
           
           const feedbackEl = document.getElementById('feedback');
           const feedbackSpan = document.getElementById('feedback-span');
