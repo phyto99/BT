@@ -1652,6 +1652,24 @@
       return Math.random() * (max - min) + min;
     }
 
+    // Listen for settings updates from unified system
+    window.addEventListener('message', function(event) {
+      if (event.data && event.data.type === 'settingsUpdate') {
+        console.log('🎮 Received settings update:', event.data.settings);
+        
+        // Update settings object
+        if (event.data.settings) {
+          Object.assign(settings, event.data.settings);
+          
+          // Apply the settings
+          updateSettings();
+          repopulateGui();
+          
+          console.log('🎮 Settings applied to game');
+        }
+      }
+    });
+
   </script>
 </body>
 </html>

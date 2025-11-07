@@ -267,6 +267,22 @@ class UnifiedBrainTraining {
       this.showSettingChangeIndicator('Sync Test', `${Object.keys(syncedSettings).length} settings`);
     }
   }
+
+  // Test direct connection to game
+  testDirectConnection() {
+    console.log('🧪 Testing direct connection to game...');
+    
+    if (!this.currentGameId) {
+      console.warn('No game loaded');
+      return;
+    }
+    
+    // Send test settings
+    this.sendSettingToGame('level', 5);
+    this.sendSettingToGame('ballSpeed', 0.3);
+    
+    console.log('Test settings sent to game');
+  }
   
   // Apply current settings and start game (like Start Game button in sidebar)
   setCurrentSettings() {

@@ -206,6 +206,9 @@
             // Create the unified system instance
             window.unifiedBrainTraining = new UnifiedBrainTraining();
             
+            // Add test function for debugging
+            window.testConnection = () => window.unifiedBrainTraining.testDirectConnection();
+            
             // Info button handler
             document.getElementById('unified-info-btn').addEventListener('click', () => {
                 showInfoPopup();
