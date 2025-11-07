@@ -5101,3 +5101,21 @@ function startGame() {
 
 // Initialize settings object with current values
 updateSettings();
+
+// Listen for settings updates from unified system
+window.addEventListener('message', function(event) {
+  if (event.data && event.data.type === 'settingsUpdate') {
+    console.log('🎮 [3D-HYPER-NBACK] Received settings update:', event.data.settings);
+    
+    // Update settings object
+    if (event.data.settings) {
+      Object.assign(window.settings, event.data.settings);
+      
+      // Apply the settings
+      updateSettings();
+      repopulateGui();
+      
+      console.log('🎮 [3D-HYPER-NBACK] Settings applied to game');
+    }
+  }
+});
