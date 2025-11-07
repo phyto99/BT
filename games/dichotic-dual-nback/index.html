@@ -197,24 +197,15 @@
     <script src="js/main.js"></script>
     <script src="js/game.js"></script>
     <script>
-      // Safe audio loading wrapper
-      const origMakePlaybleSounds = window.makePlaybleSounds;
-      window.makePlaybleSounds = (arr, dir) => {
-        try { return origMakePlaybleSounds(arr, dir); }
-        catch { return []; }
-      };
+      enviroment.init();
+      game.init();
       
-      // Initialize game when ready
-      const initGame = () => {
-        try { enviroment?.init?.(); } catch (e) {}
-        try { game?.init?.(); } catch (e) {}
-        window.updateSettings();
-      };
-      
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initGame);
-      } else {
-        setTimeout(initGame, 50);
+      // Signal to unified system that game is ready to receive settings
+      if (window.parent !== window) {
+        window.parent.postMessage({
+          type: 'gameReady',
+          gameId: 'dichotic-dual-nback'
+        }, '*');
       }
     </script>
   </body>

@@ -1400,7 +1400,9 @@ class UnifiedBrainTraining {
 
   needsDirectIframeLoading(gameId) {
     // Games that need special handling due to dynamic resource loading or compilation
-    const specialHandlingGames = ['quad-box'];
+    // dichotic-dual-nback: Howler.js can't load audio from blob URLs
+    // quad-box: Compiled Svelte app with dynamic imports
+    const specialHandlingGames = ['quad-box', 'dichotic-dual-nback'];
     return specialHandlingGames.includes(gameId);
   }
 
