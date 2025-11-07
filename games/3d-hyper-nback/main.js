@@ -4982,3 +4982,122 @@ const speedDisplay = document.querySelector("#speed-display");
 if (speedDisplay) {
   speedDisplay.innerHTML = getSpeedTarget(currentMicroLevel);
 }
+
+// Reactive Settings Integration for Unified System
+window.settings = {
+  wallsEnabled: wallsEnableTrig.checked,
+  cameraEnabled: cameraEnableTrig.checked,
+  faceEnabled: faceEnableTrig.checked,
+  positionEnabled: positionEnableTrig.checked,
+  rotationEnabled: rotationEnableTrig.checked,
+  wordEnabled: wordEnableTrig.checked,
+  shapeEnabled: shapeEnableTrig.checked,
+  cornerEnabled: cornerEnableTrig.checked,
+  soundEnabled: soundEnableTrig.checked,
+  colorEnabled: colorEnableTrig.checked,
+  randomizeEnabled: randomizeEnableTrig.checked,
+  nLevel: parseInt(nLevelInput.value),
+  numStimuliSelect: parseInt(numStimuliSelectInput.value),
+  sceneDimmer: parseFloat(sceneDimmerInput.value),
+  zoom: parseFloat(zoomInput.value),
+  perspective: parseFloat(perspectiveInput.value),
+  targetNumOfStimuli: parseInt(targetStimuliInput.value),
+  baseDelay: parseInt(baseDelayInput.value),
+  maxAllowedMistakes: parseInt(maxAllowedMistakesInput.value),
+  previousLevelThreshold: parseFloat(previousLevelThresholdInput.value),
+  nextLevelThreshold: parseFloat(nextLevelThresholdInput.value)
+};
+
+function updateSettings(newSettings) {
+  console.log('🎮 [3D-HYPER-NBACK] Updating settings:', newSettings);
+  
+  if (newSettings) {
+    // Update settings object
+    Object.assign(window.settings, newSettings);
+  }
+  
+  // Apply settings to UI elements
+  if (window.settings.wallsEnabled !== undefined) wallsEnableTrig.checked = window.settings.wallsEnabled;
+  if (window.settings.cameraEnabled !== undefined) cameraEnableTrig.checked = window.settings.cameraEnabled;
+  if (window.settings.faceEnabled !== undefined) faceEnableTrig.checked = window.settings.faceEnabled;
+  if (window.settings.positionEnabled !== undefined) positionEnableTrig.checked = window.settings.positionEnabled;
+  if (window.settings.rotationEnabled !== undefined) rotationEnableTrig.checked = window.settings.rotationEnabled;
+  if (window.settings.wordEnabled !== undefined) wordEnableTrig.checked = window.settings.wordEnabled;
+  if (window.settings.shapeEnabled !== undefined) shapeEnableTrig.checked = window.settings.shapeEnabled;
+  if (window.settings.cornerEnabled !== undefined) cornerEnableTrig.checked = window.settings.cornerEnabled;
+  if (window.settings.soundEnabled !== undefined) soundEnableTrig.checked = window.settings.soundEnabled;
+  if (window.settings.colorEnabled !== undefined) colorEnableTrig.checked = window.settings.colorEnabled;
+  if (window.settings.randomizeEnabled !== undefined) randomizeEnableTrig.checked = window.settings.randomizeEnabled;
+  
+  if (window.settings.nLevel !== undefined) nLevelInput.value = window.settings.nLevel;
+  if (window.settings.numStimuliSelect !== undefined) numStimuliSelectInput.value = window.settings.numStimuliSelect;
+  if (window.settings.sceneDimmer !== undefined) sceneDimmerInput.value = window.settings.sceneDimmer;
+  if (window.settings.zoom !== undefined) zoomInput.value = window.settings.zoom;
+  if (window.settings.perspective !== undefined) perspectiveInput.value = window.settings.perspective;
+  if (window.settings.targetNumOfStimuli !== undefined) targetStimuliInput.value = window.settings.targetNumOfStimuli;
+  if (window.settings.baseDelay !== undefined) baseDelayInput.value = window.settings.baseDelay;
+  if (window.settings.maxAllowedMistakes !== undefined) maxAllowedMistakesInput.value = window.settings.maxAllowedMistakes;
+  if (window.settings.previousLevelThreshold !== undefined) previousLevelThresholdInput.value = window.settings.previousLevelThreshold;
+  if (window.settings.nextLevelThreshold !== undefined) nextLevelThresholdInput.value = window.settings.nextLevelThreshold;
+  
+  // Trigger the existing handler functions to apply the changes
+  if (newSettings && newSettings.wallsEnabled !== undefined) wallsEnableTrigHandler();
+  if (newSettings && newSettings.cameraEnabled !== undefined) cameraEnableTrigHandler();
+  if (newSettings && newSettings.faceEnabled !== undefined) faceEnableTrigHandler();
+  if (newSettings && newSettings.positionEnabled !== undefined) positionEnableTrigHandler();
+  if (newSettings && newSettings.rotationEnabled !== undefined) rotationEnableTrigHandler();
+  if (newSettings && newSettings.wordEnabled !== undefined) wordEnableTrigHandler();
+  if (newSettings && newSettings.shapeEnabled !== undefined) shapeEnableTrigHandler();
+  if (newSettings && newSettings.cornerEnabled !== undefined) cornerEnableTrigHandler();
+  if (newSettings && newSettings.soundEnabled !== undefined) soundEnableTrigHandler();
+  if (newSettings && newSettings.colorEnabled !== undefined) colorEnableTrigHandler();
+  if (newSettings && newSettings.randomizeEnabled !== undefined) randomizeEnableTrigHandler();
+  
+  if (newSettings && newSettings.nLevel !== undefined) nLevelInputHandler();
+  if (newSettings && newSettings.numStimuliSelect !== undefined) numStimuliSelectInputHandler();
+  if (newSettings && newSettings.sceneDimmer !== undefined) sceneDimmerInputHandler();
+  if (newSettings && newSettings.zoom !== undefined) zoomInputHandler();
+  if (newSettings && newSettings.perspective !== undefined) perspectiveInputHandler();
+  if (newSettings && newSettings.targetNumOfStimuli !== undefined) targetStimuliInputHandler();
+  if (newSettings && newSettings.baseDelay !== undefined) baseDelayInputHandler();
+  if (newSettings && newSettings.maxAllowedMistakes !== undefined) maxAllowedMistakesInputHandler();
+  if (newSettings && newSettings.previousLevelThreshold !== undefined) previousLevelThresholdInputHandler();
+  if (newSettings && newSettings.nextLevelThreshold !== undefined) nextLevelThresholdInputHandler();
+  
+  console.log('🎮 [3D-HYPER-NBACK] Settings updated successfully');
+}
+
+function repopulateGui() {
+  // Update the settings object with current values
+  window.settings.wallsEnabled = wallsEnableTrig.checked;
+  window.settings.cameraEnabled = cameraEnableTrig.checked;
+  window.settings.faceEnabled = faceEnableTrig.checked;
+  window.settings.positionEnabled = positionEnableTrig.checked;
+  window.settings.rotationEnabled = rotationEnableTrig.checked;
+  window.settings.wordEnabled = wordEnableTrig.checked;
+  window.settings.shapeEnabled = shapeEnableTrig.checked;
+  window.settings.cornerEnabled = cornerEnableTrig.checked;
+  window.settings.soundEnabled = soundEnableTrig.checked;
+  window.settings.colorEnabled = colorEnableTrig.checked;
+  window.settings.randomizeEnabled = randomizeEnableTrig.checked;
+  window.settings.nLevel = parseInt(nLevelInput.value);
+  window.settings.numStimuliSelect = parseInt(numStimuliSelectInput.value);
+  window.settings.sceneDimmer = parseFloat(sceneDimmerInput.value);
+  window.settings.zoom = parseFloat(zoomInput.value);
+  window.settings.perspective = parseFloat(perspectiveInput.value);
+  window.settings.targetNumOfStimuli = parseInt(targetStimuliInput.value);
+  window.settings.baseDelay = parseInt(baseDelayInput.value);
+  window.settings.maxAllowedMistakes = parseInt(maxAllowedMistakesInput.value);
+  window.settings.previousLevelThreshold = parseFloat(previousLevelThresholdInput.value);
+  window.settings.nextLevelThreshold = parseFloat(nextLevelThresholdInput.value);
+  
+  console.log('🎮 [3D-HYPER-NBACK] GUI repopulated with current settings');
+}
+
+function startGame() {
+  console.log('🎮 [3D-HYPER-NBACK] Starting game via unified system');
+  play();
+}
+
+// Initialize settings object with current values
+updateSettings();

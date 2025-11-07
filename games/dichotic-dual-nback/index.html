@@ -133,6 +133,86 @@
     <script>
       enviroment.init();
       game.init();
+      
+      // Reactive Settings Integration for Unified System
+      window.settings = {
+        nLevel: parseInt(document.getElementById('set-level').value),
+        stimulusTime: parseInt(document.getElementById('set-time').value),
+        matchingClues: parseInt(document.getElementById('set-clues').value),
+        soundsLeft: document.getElementById('select-sound-left').value,
+        soundsRight: document.getElementById('select-sound-right').value,
+        feedback: parseInt(document.getElementById('feedback').value) === 1,
+        dailyGoal: 20 // Default value
+      };
+      
+      function updateSettings(newSettings) {
+        console.log('🎮 [DICHOTIC-DUAL-NBACK] Updating settings:', newSettings);
+        
+        if (newSettings) {
+          // Update settings object
+          Object.assign(window.settings, newSettings);
+        }
+        
+        // Apply settings to UI elements
+        if (window.settings.nLevel !== undefined) {
+          document.getElementById('set-level').value = window.settings.nLevel;
+          document.getElementById('set-level-span').textContent = window.settings.nLevel;
+          game.n = window.settings.nLevel;
+        }
+        
+        if (window.settings.stimulusTime !== undefined) {
+          document.getElementById('set-time').value = window.settings.stimulusTime;
+          document.getElementById('set-time-span').textContent = window.settings.stimulusTime + 'ms';
+          game.time = window.settings.stimulusTime;
+        }
+        
+        if (window.settings.matchingClues !== undefined) {
+          document.getElementById('set-clues').value = window.settings.matchingClues;
+          document.getElementById('set-clues-span').textContent = window.settings.matchingClues;
+          game.clues = window.settings.matchingClues;
+        }
+        
+        if (window.settings.soundsLeft !== undefined) {
+          document.getElementById('select-sound-left').value = window.settings.soundsLeft;
+          game.soundsLeft = window.settings.soundsLeft;
+        }
+        
+        if (window.settings.soundsRight !== undefined) {
+          document.getElementById('select-sound-right').value = window.settings.soundsRight;
+          game.soundsRight = window.settings.soundsRight;
+        }
+        
+        if (window.settings.feedback !== undefined) {
+          document.getElementById('feedback').value = window.settings.feedback ? 1 : 0;
+          document.getElementById('feedback-span').textContent = window.settings.feedback ? 'on' : 'off';
+          game.feedback = window.settings.feedback;
+        }
+        
+        // Update N-level display
+        document.getElementById('N-level').textContent = 'N = ' + window.settings.nLevel;
+        
+        console.log('🎮 [DICHOTIC-DUAL-NBACK] Settings updated successfully');
+      }
+      
+      function repopulateGui() {
+        // Update the settings object with current values
+        window.settings.nLevel = parseInt(document.getElementById('set-level').value);
+        window.settings.stimulusTime = parseInt(document.getElementById('set-time').value);
+        window.settings.matchingClues = parseInt(document.getElementById('set-clues').value);
+        window.settings.soundsLeft = document.getElementById('select-sound-left').value;
+        window.settings.soundsRight = document.getElementById('select-sound-right').value;
+        window.settings.feedback = parseInt(document.getElementById('feedback').value) === 1;
+        
+        console.log('🎮 [DICHOTIC-DUAL-NBACK] GUI repopulated with current settings');
+      }
+      
+      function startGame() {
+        console.log('🎮 [DICHOTIC-DUAL-NBACK] Starting game via unified system');
+        game.start();
+      }
+      
+      // Initialize settings object with current values
+      updateSettings();
     </script>
   </body>
 
