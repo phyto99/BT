@@ -1933,16 +1933,33 @@ class UnifiedBrainTraining {
     this.gui.add(this.settings, 'matchChance', 5, 75, 1).name('Match Chance (%)');
     this.gui.add(this.settings, 'interference', 0, 75, 1).name('Interference (%)');
     
-    // Modalities folder
+    // Modalities folder with combined enable/source controls
     const modalitiesFolder = this.gui.addFolder('Modalities');
-    modalitiesFolder.add(this.settings, 'enableAudio').name('Audio Enabled');
-    modalitiesFolder.add(this.settings, 'audioSource', ['letters2', 'letters3', 'letters5', 'letters4', 'letters', 'numbers', 'nato', 'syl5', 'syl10']).name('Audio Source');
-    modalitiesFolder.add(this.settings, 'enableColor').name('Color Enabled');
-    modalitiesFolder.add(this.settings, 'colorSource', ['basic', 'gradient', 'voronoi', 'generative']).name('Color Source');
-    modalitiesFolder.add(this.settings, 'enableShape').name('Shape Enabled');
-    modalitiesFolder.add(this.settings, 'shapeSource', ['basic', 'tetris', 'iconsA', 'iconsB', 'all']).name('Shape Source');
-    modalitiesFolder.add(this.settings, 'enableImage').name('Image Enabled');
-    modalitiesFolder.add(this.settings, 'imageSource', ['voronoi', 'generative']).name('Image Source');
+    
+    // Audio modality
+    const audioEnable = modalitiesFolder.add(this.settings, 'enableAudio').name('🔊 Audio');
+    const audioSource = modalitiesFolder.add(this.settings, 'audioSource', ['letters2', 'letters3', 'letters5', 'letters4', 'letters', 'numbers', 'nato', 'syl5', 'syl10']).name('   ↳ Source');
+    audioEnable.__li.classList.add('modality-enable');
+    audioSource.__li.classList.add('modality-source');
+    
+    // Color modality
+    const colorEnable = modalitiesFolder.add(this.settings, 'enableColor').name('🎨 Color');
+    const colorSource = modalitiesFolder.add(this.settings, 'colorSource', ['basic', 'gradient', 'voronoi', 'generative']).name('   ↳ Source');
+    colorEnable.__li.classList.add('modality-enable');
+    colorSource.__li.classList.add('modality-source');
+    
+    // Shape modality
+    const shapeEnable = modalitiesFolder.add(this.settings, 'enableShape').name('⬟ Shape');
+    const shapeSource = modalitiesFolder.add(this.settings, 'shapeSource', ['basic', 'tetris', 'iconsA', 'iconsB', 'all']).name('   ↳ Source');
+    shapeEnable.__li.classList.add('modality-enable');
+    shapeSource.__li.classList.add('modality-source');
+    
+    // Image modality
+    const imageEnable = modalitiesFolder.add(this.settings, 'enableImage').name('🖼️ Image');
+    const imageSource = modalitiesFolder.add(this.settings, 'imageSource', ['voronoi', 'generative']).name('   ↳ Source');
+    imageEnable.__li.classList.add('modality-enable');
+    imageSource.__li.classList.add('modality-source');
+    
     modalitiesFolder.open();
     
     // Visual settings folder

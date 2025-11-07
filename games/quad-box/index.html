@@ -14,5 +14,80 @@
   <body>
     <div id="app"></div>
     <script type="module" src="/src/main.js"></script>
+    
+    <script>
+      // Reactive Settings Integration - Optimized for Svelte
+      window.settings = {
+        mode: 'quad',
+        theme: 'dark',
+        nBack: 2,
+        numTrials: 35,
+        trialTime: 2500,
+        matchChance: 25,
+        feedback: 'show',
+        rotationSpeed: 35
+      };
+      
+      // Wait for Svelte app to initialize and expose the store
+      const waitForStore = () => {
+        return new Promise((resolve) => {
+          const check = () => {
+            if (window.quadBoxStore) {
+              resolve();
+            } else {
+              setTimeout(check, 50);
+            }
+          };
+          check();
+        });
+      };
+      
+      window.updateSettings = function(newSettings) {
+        if (newSettings) {
+          Object.assign(window.settings, newSettings);
+          
+          // Update Svelte store directly
+          waitForStore().then(() => {
+            window.quadBoxStore?.updateSettings(newSettings);
+          });
+        }
+      };
+      
+      window.repopulateGui = function() {
+        waitForStore().then(() => {
+          try {
+            const current = window.quadBoxStore?.getSettings();
+            if (current) {
+              const mode = current.mode || 'quad';
+              const gameSettings = current.gameSettings?.[mode] || {};
+              
+              window.settings.mode = current.mode;
+              window.settings.theme = current.theme;
+              window.settings.nBack = gameSettings.nBack;
+              window.settings.numTrials = gameSettings.numTrials;
+              window.settings.trialTime = gameSettings.trialTime;
+              window.settings.feedback = current.feedback;
+              window.settings.rotationSpeed = current.rotationSpeed;
+            }
+          } catch (e) {}
+        });
+      };
+      
+      window.startGame = function() {
+        window.dispatchEvent(new CustomEvent('unifiedStartGame'));
+      };
+      
+      // Message listener for unified system
+      window.addEventListener('message', (e) => {
+        if (e.data?.type === 'settingsUpdate' && e.data.settings) {
+          Object.assign(window.settings, e.data.settings);
+          window.updateSettings(e.data.settings);
+          window.repopulateGui();
+        }
+      });
+      
+      // Initialize after store is ready
+      waitForStore().then(() => window.repopulateGui());
+    </script>
   </body>
 </html>

@@ -162,3 +162,36 @@ eybinds popup dat.gui style */
 #close-keybinds:hover {
   color: #fff !important;
 }
+
+/* Modal
+ity Controls - Combined Enable/Source Layout */
+.dg li.modality-enable {
+  background: rgba(60, 60, 60, 0.9) !important;
+  border-bottom: none !important;
+  padding-bottom: 2px !important;
+  font-weight: 600;
+}
+
+.dg li.modality-source {
+  background: rgba(50, 50, 50, 0.7) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  padding-top: 2px !important;
+  padding-left: 20px !important;
+  margin-bottom: 8px !important;
+}
+
+.dg li.modality-source .property-name {
+  font-size: 0.9em;
+  opacity: 0.8;
+  font-style: italic;
+}
+
+/* Make the source dropdown slightly smaller */
+.dg li.modality-source select {
+  font-size: 0.9em;
+}
+
+/* Add visual grouping */
+.dg li.modality-enable + li.modality-source {
+  border-left: 3px solid rgba(76, 175, 80, 0.5);
+}
