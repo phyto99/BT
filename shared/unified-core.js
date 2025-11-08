@@ -1869,8 +1869,36 @@ class UnifiedBrainTraining {
     stimuliFolder.add(this.settings, 'positionEnabled').name('Position');
     stimuliFolder.add(this.settings, 'rotationEnabled').name('Rotation');
     stimuliFolder.add(this.settings, 'wordEnabled').name('Word');
-    stimuliFolder.add(this.settings, 'shapeEnabled').name('Shape');
-    stimuliFolder.add(this.settings, 'cornerEnabled').name('Corner');
+    
+    const cornerController = stimuliFolder.add(this.settings, 'cornerEnabled').name('Corner');
+    const shapeController = stimuliFolder.add(this.settings, 'shapeEnabled').name('Shape');
+    
+    // Shape depends on Corner - disable when corner is off
+    const updateShapeState = () => {
+      if (this.settings.cornerEnabled) {
+        shapeController.__li.classList.remove('disabled');
+      } else {
+        this.settings.shapeEnabled = false;
+        shapeController.updateDisplay();
+        shapeController.__li.classList.add('disabled');
+      }
+    };
+    
+    // Prevent shape from being enabled when corner is disabled
+    shapeController.onChange((value) => {
+      if (!this.settings.cornerEnabled && value) {
+        // Revert the change
+        this.settings.shapeEnabled = false;
+        shapeController.updateDisplay();
+        console.log('⚠️ Shape cannot be enabled when Corner is disabled');
+        return false;
+      }
+    });
+    
+    cornerController.onChange(updateShapeState);
+    this.updateShapeState = updateShapeState;
+    updateShapeState();
+    
     stimuliFolder.add(this.settings, 'soundEnabled').name('Sound');
     stimuliFolder.add(this.settings, 'colorEnabled').name('Color');
     stimuliFolder.open(); // Open folder by default
@@ -2001,6 +2029,11 @@ class UnifiedBrainTraining {
           }
           // The proxy will handle the update and send to game
           this.reactiveSettings[controller.property] = value;
+          
+          // Update shape state when corner changes (3D Hyper N-Back dependency)
+          if (controller.property === 'cornerEnabled' && this.updateShapeState) {
+            this.updateShapeState();
+          }
         }
       });
     });

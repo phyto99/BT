@@ -831,6 +831,11 @@ function wallsEnableTrigHandler(evt, defVal) {
   if (defVal != null) {
     wallsEnableTrig.checked = defVal;
     wallsEnabled = defVal;
+    // Update window.settings for reactive sync
+    if (window.settings) {
+      window.settings.wallsEnabled = defVal;
+      repopulateGui();
+    }
   } else {
     wallsEnabled = !wallsEnabled;
     saveSettings();
@@ -850,6 +855,11 @@ function cameraEnableTrigHandler(evt, defVal) {
   if (defVal != null) {
     cameraEnableTrig.checked = defVal;
     cameraEnabled = defVal;
+    // Update window.settings for reactive sync
+    if (window.settings) {
+      window.settings.cameraEnabled = defVal;
+      repopulateGui();
+    }
   } else {
     cameraEnabled = !cameraEnabled;
     saveSettings();
@@ -869,6 +879,11 @@ function faceEnableTrigHandler(evt, defVal) {
   if (defVal != null) {
     faceEnableTrig.checked = defVal;
     faceEnabled = defVal;
+    // Update window.settings for reactive sync
+    if (window.settings) {
+      window.settings.faceEnabled = defVal;
+      repopulateGui();
+    }
   } else {
     faceEnabled = !faceEnabled;
     saveSettings();
@@ -888,6 +903,11 @@ function positionEnableTrigHandler(evt, defVal) {
   if (defVal != null) {
     positionEnableTrig.checked = defVal;
     positionEnabled = defVal;
+    // Update window.settings for reactive sync
+    if (window.settings) {
+      window.settings.positionEnabled = defVal;
+      repopulateGui();
+    }
   } else {
     positionEnabled = !positionEnabled;
     saveSettings();
@@ -907,6 +927,11 @@ function wordEnableTrigHandler(evt, defVal) {
   if (defVal != null) {
     wordEnableTrig.checked = defVal;
     wordEnabled = defVal;
+    // Update window.settings for reactive sync
+    if (window.settings) {
+      window.settings.wordEnabled = defVal;
+      repopulateGui();
+    }
   } else {
     wordEnabled = !wordEnabled;
     saveSettings();
@@ -5040,18 +5065,18 @@ function updateSettings(newSettings) {
   if (window.settings.previousLevelThreshold !== undefined) previousLevelThresholdInput.value = window.settings.previousLevelThreshold;
   if (window.settings.nextLevelThreshold !== undefined) nextLevelThresholdInput.value = window.settings.nextLevelThreshold;
   
-  // Trigger the existing handler functions to apply the changes
-  if (newSettings && newSettings.wallsEnabled !== undefined) wallsEnableTrigHandler();
-  if (newSettings && newSettings.cameraEnabled !== undefined) cameraEnableTrigHandler();
-  if (newSettings && newSettings.faceEnabled !== undefined) faceEnableTrigHandler();
-  if (newSettings && newSettings.positionEnabled !== undefined) positionEnableTrigHandler();
-  if (newSettings && newSettings.rotationEnabled !== undefined) rotationEnableTrigHandler();
-  if (newSettings && newSettings.wordEnabled !== undefined) wordEnableTrigHandler();
-  if (newSettings && newSettings.shapeEnabled !== undefined) shapeEnableTrigHandler();
-  if (newSettings && newSettings.cornerEnabled !== undefined) cornerEnableTrigHandler();
-  if (newSettings && newSettings.soundEnabled !== undefined) soundEnableTrigHandler();
-  if (newSettings && newSettings.colorEnabled !== undefined) colorEnableTrigHandler();
-  if (newSettings && newSettings.randomizeEnabled !== undefined) randomizeEnableTrigHandler();
+  // Trigger the existing handler functions to apply the changes (pass value as defVal to set, not toggle)
+  if (newSettings && newSettings.wallsEnabled !== undefined) wallsEnableTrigHandler(null, newSettings.wallsEnabled);
+  if (newSettings && newSettings.cameraEnabled !== undefined) cameraEnableTrigHandler(null, newSettings.cameraEnabled);
+  if (newSettings && newSettings.faceEnabled !== undefined) faceEnableTrigHandler(null, newSettings.faceEnabled);
+  if (newSettings && newSettings.positionEnabled !== undefined) positionEnableTrigHandler(null, newSettings.positionEnabled);
+  if (newSettings && newSettings.rotationEnabled !== undefined) rotationEnableTrigHandler(null, newSettings.rotationEnabled);
+  if (newSettings && newSettings.wordEnabled !== undefined) wordEnableTrigHandler(null, newSettings.wordEnabled);
+  if (newSettings && newSettings.shapeEnabled !== undefined) shapeEnableTrigHandler(null, newSettings.shapeEnabled);
+  if (newSettings && newSettings.cornerEnabled !== undefined) cornerEnableTrigHandler(null, newSettings.cornerEnabled);
+  if (newSettings && newSettings.soundEnabled !== undefined) soundEnableTrigHandler(null, newSettings.soundEnabled);
+  if (newSettings && newSettings.colorEnabled !== undefined) colorEnableTrigHandler(null, newSettings.colorEnabled);
+  if (newSettings && newSettings.randomizeEnabled !== undefined) randomizeEnableTrigHandler(null, newSettings.randomizeEnabled);
   
   if (newSettings && newSettings.nLevel !== undefined) nLevelInputHandler();
   if (newSettings && newSettings.numStimuliSelect !== undefined) numStimuliSelectInputHandler();

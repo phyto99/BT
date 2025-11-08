@@ -163,35 +163,29 @@ eybinds popup dat.gui style */
   color: #fff !important;
 }
 
-/* Modal
-ity Controls - Combined Enable/Source Layout */
-.dg li.modality-enable {
-  background: rgba(60, 60, 60, 0.9) !important;
-  border-bottom: none !important;
-  padding-bottom: 2px !important;
-  font-weight: 600;
+/* Combin
+ed Modality Controls - Checkbox + Dropdown on same line */
+.dg .c input[type="checkbox"] {
+  margin-right: 8px;
 }
 
-.dg li.modality-source {
-  background: rgba(50, 50, 50, 0.7) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-  padding-top: 2px !important;
-  padding-left: 20px !important;
-  margin-bottom: 8px !important;
+.dg .c select {
+  background: rgba(60, 60, 60, 0.9);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  padding: 2px 4px;
+  font-size: 11px;
 }
 
-.dg li.modality-source .property-name {
-  font-size: 0.9em;
-  opacity: 0.8;
-  font-style: italic;
+
+/* Disabled dat.GUI controls */
+.dg li.disabled {
+  opacity: 0.4;
+  cursor: not-allowed !important;
 }
 
-/* Make the source dropdown slightly smaller */
-.dg li.modality-source select {
-  font-size: 0.9em;
-}
-
-/* Add visual grouping */
-.dg li.modality-enable + li.modality-source {
-  border-left: 3px solid rgba(76, 175, 80, 0.5);
+.dg li.disabled * {
+  pointer-events: none;
+  cursor: not-allowed !important;
 }
