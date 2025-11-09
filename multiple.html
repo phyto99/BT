@@ -5,8 +5,8 @@
   <!-- Ensure proper scaling on all devices -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>N‑Back</title>
-  <!-- Google Font -->
-  <link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg-color: #000;
@@ -14,7 +14,7 @@
       --error-color: #d32f2f;
       --success-color: #27ae60;
       --text-color: #e0e0e0;
-      --font: 'Audiowide', sans-serif;
+      --font: 'Roboto', sans-serif;
       --transition-speed: 0.3s;
       --shadow: 0 2px 8px rgba(0,0,0,0.3);
       --progress-bg: rgba(255, 255, 255, 0.2);
@@ -340,6 +340,8 @@
       color: #000;
       padding: 10px 15px;
       font-size: 1rem;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
       margin: 0;
       animation: fadeIn 0.5s ease-out;
     }
@@ -829,7 +831,7 @@
       let canvas = document.getElementById("cell" + trial.cell);
       let ctx = cellContexts[canvas.id];
       ctx.fillStyle = "#ffffff";
-      ctx.font = (settings.gaborSize * 0.8) + "px Audiowide, sans-serif";
+      ctx.font = (settings.gaborSize * 0.8) + "px Roboto, sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(trial.number, canvas.width / 2, canvas.height / 2);
