@@ -10,23 +10,17 @@
   <style>
     :root {
       --bg-color: #000;
-      --accent-color: #00ffea;       /* Neon aqua */
-      --error-color: #ff2d95;        /* Neon pink */
-      --success-color: #27ae60;      /* Vibrant green */
+      --accent-color: #ffffff;
+      --error-color: #d32f2f;
+      --success-color: #27ae60;
       --text-color: #e0e0e0;
       --font: 'Audiowide', sans-serif;
       --transition-speed: 0.3s;
-      --shadow: 0 0 20px var(--accent-color);
-      --progress-bg: rgba(0, 255, 234, 0.2);
+      --shadow: 0 2px 8px rgba(0,0,0,0.3);
+      --progress-bg: rgba(255, 255, 255, 0.2);
     }
     /* Global Reset */
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    
-    /* Particle Canvas */
-    #particleCanvas {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      z-index: -3; pointer-events: none;
-    }
     
     /* Ripple Effect on Buttons */
     button { position: relative; overflow: hidden; }
@@ -42,25 +36,9 @@
     }
     @keyframes rippleEffect { to { transform: scale(4); opacity: 0; } }
     
-    /* Animated Neon Overlay on Body (kept as-is) */
-    body::after {
-      content: "";
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      pointer-events: none; z-index: -2;
-      background: radial-gradient(circle at center, rgba(0,255,234,0.05) 0%, transparent 70%);
-      animation: bgAnimate 30s linear infinite;
-    }
-    @keyframes bgAnimate {
-      0% { transform: scale(1) translate(0, 0); }
-      50% { transform: scale(1.1) translate(10px, -10px); }
-      100% { transform: scale(1) translate(0, 0); }
-    }
-    
-    /* Dynamic Background Gradient on Body */
+    /* Body */
     body {
-      /* Replace the old radial gradient with a dynamic linear gradient */
-      background: linear-gradient(135deg, #111, #000);
-      animation: dynamicGradient 20s ease infinite;
+      background: linear-gradient(135deg, #1a1a1a, #0a0a0a);
       font-family: var(--font);
       color: var(--text-color);
       display: flex;
@@ -69,36 +47,27 @@
       min-height: 100vh;
       overflow: hidden;
     }
-    @keyframes dynamicGradient {
-      0% { background: linear-gradient(135deg, #111, #000); }
-      50% { background: linear-gradient(135deg, #000, #222); }
-      100% { background: linear-gradient(135deg, #111, #000); }
-    }
     
     /* INSTRUCTIONS PANEL */
     #instructions {
       position: fixed;
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
-      background: rgba(0,0,0,0.95);
-      border: 3px solid var(--accent-color);
-      border-radius: 15px;
+      background: rgba(30,30,30,0.98);
+      border: 2px solid var(--accent-color);
       padding: 20px 30px;
       max-width: 90vw;
       max-height: 90vh;
       overflow-y: auto;
       z-index: 100;
       text-align: left;
-      box-shadow: 0 0 20px var(--accent-color);
-      animation: fadeIn 0.5s ease-out forwards;
+      box-shadow: var(--shadow);
     }
     #instructions h1 {
       text-align: center;
       margin-bottom: 15px;
       font-size: 2.4rem;
       color: var(--accent-color);
-      text-shadow: 0 0 10px var(--accent-color), 0 0 20px var(--accent-color);
-      animation: neonText 2s infinite alternate;
     }
     #instructions p { margin-bottom: 10px; line-height: 1.6; font-size: 1rem; }
     #instructions button {
@@ -109,16 +78,10 @@
       background: var(--accent-color);
       color: #000;
       border: none;
-      border-radius: 5px;
       cursor: pointer;
       transition: background var(--transition-speed);
     }
     #instructions button:hover { background: var(--success-color); }
-    @keyframes fadeIn { from { opacity: 0; transform: translate(-50%, -60%); } to { opacity: 1; transform: translate(-50%, -50%); } }
-    @keyframes neonText {
-      from { text-shadow: 0 0 10px var(--accent-color), 0 0 20px var(--accent-color); }
-      to { text-shadow: 0 0 20px var(--accent-color), 0 0 40px var(--accent-color); }
-    }
     
     /* MAIN CONTAINER – full width to fit at 100% zoom */
     #container {
@@ -133,14 +96,11 @@
     /* SETTINGS PANEL */
     #settings {
       flex: 1 1 250px;
-      background: rgba(10,10,10,0.95);
+      background: rgba(30,30,30,0.98);
       padding: 20px;
-      border-radius: 10px;
       border: 2px solid var(--accent-color);
       box-shadow: var(--shadow);
-      transition: transform 0.3s;
     }
-    #settings:hover { transform: scale(1.03); }
     #settings h2 {
       text-align: center;
       margin-bottom: 15px;
@@ -155,7 +115,6 @@
       padding: 10px;
       margin-bottom: 15px;
       border: none;
-      border-radius: 5px;
       font-size: 1rem;
     }
     #settings input, #settings select { background: #111; color: var(--text-color); }
@@ -165,9 +124,8 @@
     /* SYNESTHESIA DICTIONARY PANEL */
     #synesthesiaDictionary {
       display: none;
-      background: rgba(10,10,10,0.95);
+      background: rgba(30,30,30,0.98);
       padding: 20px;
-      border-radius: 10px;
       border: 2px solid var(--accent-color);
       box-shadow: var(--shadow);
       max-width: 600px;
@@ -183,7 +141,6 @@
       background: var(--accent-color);
       color: #000;
       border: none;
-      border-radius: 5px;
       cursor: pointer;
       transition: background 0.3s;
     }
@@ -195,7 +152,6 @@
       background: var(--accent-color);
       color: #000;
       border: none;
-      border-radius: 5px;
       cursor: pointer;
       transition: background 0.3s;
     }
@@ -217,22 +173,10 @@
       max-width: 100vw;
     }
     
-    /* Circuit Overlay */
+    /* Circuit Overlay - removed, using solid background */
     #circuitOverlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 0;
-      background-image: 
-        linear-gradient(90deg, transparent 0%, transparent 80%, rgba(0,255,234,0.1) 80%, rgba(0,255,234,0.1) 100%),
-        linear-gradient(0deg, transparent 0%, transparent 80%, rgba(0,255,234,0.1) 80%, rgba(0,255,234,0.1) 100%);
-      background-size: 50px 50px;
-      animation: circuitMove 10s linear infinite;
+      display: none;
     }
-    @keyframes circuitMove { from { background-position: 0 0, 0 0; } to { background-position: 50px 50px, 50px 50px; } }
     
     /* Progress Bar and Trial Progress */
     #progressBarContainer {
@@ -261,7 +205,6 @@
     #streakDisplay {
       font-size: 1.2rem;
       color: var(--success-color);
-      text-shadow: 0 0 10px var(--success-color);
       z-index: 2;
       margin: 10px 0;
       text-align: center;
@@ -277,22 +220,13 @@
       grid-template-columns: repeat(3, 1fr);
       gap: 15px;
       border: 2px solid var(--accent-color);
-      animation: neonBorder 3s ease-in-out infinite;
-    }
-    @keyframes neonBorder {
-      0% { border-color: var(--accent-color); box-shadow: 0 0 10px var(--accent-color); }
-      50% { border-color: var(--success-color); box-shadow: 0 0 20px var(--success-color); }
-      100% { border-color: var(--accent-color); box-shadow: 0 0 10px var(--accent-color); }
     }
     .grid-cell {
       background: #000;
       border: 2px solid var(--accent-color);
-      border-radius: 10px;
       box-shadow: var(--shadow);
       position: relative;
-      transition: transform 0.2s;
     }
-    .grid-cell:hover { transform: scale(1.05); }
     
     /* Controls */
     #controls {
@@ -307,12 +241,10 @@
       background: var(--error-color);
       color: #fff;
       border: none;
-      border-radius: 5px;
       cursor: pointer;
       transition: background 0.3s;
-      box-shadow: 0 0 10px var(--error-color);
     }
-    #controls button:hover { background: #c0392b; }
+    #controls button:hover { background: #c62828; }
     #visualMatch { display: none; }
     #showDictionary {
       display: none;
@@ -321,7 +253,6 @@
       background: var(--accent-color);
       color: #000;
       border: none;
-      border-radius: 5px;
       cursor: pointer;
       transition: background 0.3s;
       margin-top: 10px;
@@ -333,10 +264,9 @@
       font-size: 1.4rem;
       font-weight: bold;
       padding: 10px 20px;
-      background: rgba(0,0,0,0.6);
+      background: #1a1a1a;
       border: 2px solid var(--accent-color);
-      border-radius: 5px;
-      box-shadow: inset 0 0 15px var(--accent-color);
+      box-shadow: var(--shadow);
       transition: transform 0.2s;
     }
     @keyframes pop {
@@ -344,13 +274,8 @@
       50% { transform: scale(1.2); }
       100% { transform: scale(1); }
     }
-    @keyframes scoreGlow {
-      0% { box-shadow: 0 0 10px var(--accent-color); }
-      50% { box-shadow: 0 0 20px var(--accent-color); }
-      100% { box-shadow: 0 0 10px var(--accent-color); }
-    }
     .score-pulse {
-      animation: pop 0.6s ease-out, scoreGlow 0.6s ease-out;
+      animation: pop 0.6s ease-out;
     }
     
     /* RESULTS PANEL */
@@ -359,11 +284,10 @@
       position: fixed;
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
-      background: rgba(10,10,10,0.95);
-      border-radius: 10px;
+      background: rgba(30,30,30,0.98);
       padding: 30px;
-      border: 3px solid var(--accent-color);
-      box-shadow: 0 0 20px var(--accent-color);
+      border: 2px solid var(--accent-color);
+      box-shadow: var(--shadow);
       text-align: center;
       max-width: 600px;
       width: 90%;
@@ -373,8 +297,6 @@
       font-size: 2rem;
       color: var(--accent-color);
       margin-bottom: 20px;
-      text-shadow: 0 0 10px var(--accent-color), 0 0 20px var(--accent-color);
-      animation: neonText 2s infinite alternate;
     }
     #results p {
       font-size: 1.2rem;
@@ -417,10 +339,8 @@
       background: var(--accent-color);
       color: #000;
       padding: 10px 15px;
-      border-radius: 10px;
       font-size: 1rem;
       margin: 0;
-      text-shadow: 0 0 10px var(--accent-color);
       animation: fadeIn 0.5s ease-out;
     }
     
@@ -440,10 +360,10 @@
     /* Pop Animation */
     .pop-animation { animation: pop 0.4s ease-out; }
     
-    /* NEW: Neon Glow Trail */
+    /* Glow Trail Effect */
     .glow-trail {
       position: absolute;
-      background: radial-gradient(circle, rgba(0,255,234,0.6) 0%, rgba(0,255,234,0) 70%);
+      background: radial-gradient(circle, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0) 70%);
       border-radius: 50%;
       pointer-events: none;
       transform: scale(1);
@@ -453,11 +373,15 @@
       from { opacity: 1; transform: scale(1); }
       to { opacity: 0; transform: scale(2.5); }
     }
+    
+    /* Fade In Animation */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
   </style>
 </head>
 <body>
-  <canvas id="particleCanvas"></canvas>
-  
   <!-- INSTRUCTIONS PANEL -->
   <div id="instructions">
     <h1>N‑Back</h1>
@@ -625,43 +549,6 @@
       }, 500);
     }
     
-    const particleCanvas = document.getElementById("particleCanvas");
-    const pCtx = particleCanvas.getContext("2d");
-    let particles = [];
-    const particleCount = 100;
-    function initParticles() {
-      particleCanvas.width = window.innerWidth;
-      particleCanvas.height = window.innerHeight;
-      particles = [];
-      for (let i = 0; i < particleCount; i++) {
-        particles.push({
-          x: Math.random() * particleCanvas.width,
-          y: Math.random() * particleCanvas.height,
-          vx: (Math.random() - 0.5) * 0.5,
-          vy: (Math.random() - 0.5) * 0.5,
-          size: Math.random() * 2 + 1
-        });
-      }
-    }
-    function updateParticles() {
-      pCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
-      particles.forEach(p => {
-        p.x += p.vx;
-        p.y += p.vy;
-        if (p.x < 0) p.x = particleCanvas.width;
-        if (p.x > particleCanvas.width) p.x = 0;
-        if (p.y < 0) p.y = particleCanvas.height;
-        if (p.y > particleCanvas.height) p.y = 0;
-        pCtx.fillStyle = "rgba(0,255,234,0.3)";
-        pCtx.beginPath();
-        pCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        pCtx.fill();
-      });
-      requestAnimationFrame(updateParticles);
-    }
-    window.addEventListener("resize", initParticles);
-    initParticles();
-    updateParticles();
     
     document.querySelectorAll("button").forEach(button => {
       button.addEventListener("click", function(e) {
@@ -706,7 +593,7 @@
       return rand;
     }
     
-    // NEW: Neon Glow Trail effect for a grid cell.
+    // Glow trail effect for a grid cell
     function createGlowTrail(cell) {
       const trail = document.createElement("div");
       trail.className = "glow-trail";
@@ -739,7 +626,7 @@
         canvas.width = settings.gaborSize;
         canvas.height = settings.gaborSize;
         cellContexts[canvas.id] = canvas.getContext("2d");
-        canvas.style.borderColor = "#00ffea";
+        canvas.style.borderColor = "#ffffff";
         canvas.style.backgroundColor = "#000";
       });
       document.getElementById("settings").style.display = "none";
@@ -941,7 +828,7 @@
       currentTrialData = trial;
       let canvas = document.getElementById("cell" + trial.cell);
       let ctx = cellContexts[canvas.id];
-      ctx.fillStyle = "#00ffea";
+      ctx.fillStyle = "#ffffff";
       ctx.font = (settings.gaborSize * 0.8) + "px Audiowide, sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -1191,7 +1078,7 @@
     function flashCell(cellIndex, color) {
       let canvas = document.getElementById("cell" + cellIndex);
       canvas.style.borderColor = color;
-      setTimeout(() => { canvas.style.borderColor = "#00ffea"; }, 300);
+      setTimeout(() => { canvas.style.borderColor = "#ffffff"; }, 300);
     }
     
     function restartTask() {
