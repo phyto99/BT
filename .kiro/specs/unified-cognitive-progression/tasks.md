@@ -192,7 +192,8 @@ This implementation plan breaks down the Unified Cognitive Progression System in
   - Make graph clickable for full analysis
   - _Requirements: 6, 21_
 
-- [-] 7. Implement cross-game analytics
+- [x] 7. Implement cross-game analytics
+
 
   - Show which games contribute to each domain
   - Display contribution weights

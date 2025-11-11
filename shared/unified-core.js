@@ -6,6 +6,9 @@ class UnifiedBrainTraining {
     this.currentGameId = null;
     this.reactiveSettings = null;
     this.settingsListeners = new Map();
+    this.cognitiveSystem = null;
+    this.cognitiveUI = null;
+    this.analyticsUI = null;
     this.init();
   }
 
@@ -1117,6 +1120,7 @@ class UnifiedBrainTraining {
           
         case 'gameStarted':
           console.log('Game started:', gameId);
+          this.onGameStarted(gameId);
           break;
           
         case 'gameEnded':
@@ -1124,6 +1128,12 @@ class UnifiedBrainTraining {
           if (event.data.score !== undefined) {
             window.gameStats.recordScore(event.data.score);
           }
+          this.onGameEnded(gameId, event.data);
+          break;
+          
+        case 'sessionMetrics':
+          console.log('📊 Session metrics received:', event.data.metrics);
+          this.onSessionMetrics(gameId, event.data.metrics);
           break;
           
         case 'settingsChanged':
@@ -1153,6 +1163,68 @@ class UnifiedBrainTraining {
     // Add new listener
     window.addEventListener('message', messageHandler);
     this.currentMessageHandler = messageHandler;
+  }
+  
+  async onGameStarted(gameId) {
+    if (this.cognitiveSystem) {
+      try {
+        const sessionId = await this.cognitiveSystem.handleSessionStart(gameId);
+        this.currentSessionId = sessionId;
+        console.log('🧠 Cognitive session started:', sessionId);
+      } catch (error) {
+        console.error('Failed to start cognitive session:', error);
+      }
+    }
+  }
+  
+  async onGameEnded(gameId, data) {
+    if (this.cognitiveSystem && this.currentSessionId) {
+      try {
+        // Extract metrics from game data
+        const metrics = data.metrics || this.extractMetricsFromGameData(gameId, data);
+        
+        await this.cognitiveSystem.handleSessionEnd(this.currentSessionId, metrics);
+        console.log('🧠 Cognitive session ended');
+        this.currentSessionId = null;
+      } catch (error) {
+        console.error('Failed to end cognitive session:', error);
+      }
+    }
+  }
+  
+  async onSessionMetrics(gameId, metrics) {
+    if (this.cognitiveSystem && this.currentSessionId) {
+      try {
+        await this.cognitiveSystem.handleSessionEnd(this.currentSessionId, metrics);
+        console.log('🧠 Session metrics processed');
+        this.currentSessionId = null;
+      } catch (error) {
+        console.error('Failed to process session metrics:', error);
+      }
+    }
+  }
+  
+  extractMetricsFromGameData(gameId, data) {
+    // Extract relevant metrics based on game type
+    const metrics = {
+      level: data.level || data.nLevel || 1,
+      accuracy: data.accuracy || data.score / 100 || 0,
+      reactionTimes: data.reactionTimes || []
+    };
+    
+    // Add game-specific metrics
+    if (data.hits !== undefined) {
+      metrics.hits = data.hits;
+      metrics.misses = data.misses || 0;
+      metrics.falseAlarms = data.falseAlarms || 0;
+      metrics.correctRejections = data.correctRejections || 0;
+    }
+    
+    if (data.setSize) {
+      metrics.setSize = data.setSize;
+    }
+    
+    return metrics;
   }
 
   onGameReady(gameId) {
@@ -1372,7 +1444,7 @@ class UnifiedBrainTraining {
     }
   }
 
-  init() {
+  async init() {
     // Check if we're running from a web server
     this.checkServerStatus();
     
@@ -1380,8 +1452,58 @@ class UnifiedBrainTraining {
     this.createSidebar();
     this.setupEventListeners();
     
+    // Initialize cognitive progression system
+    await this.initializeCognitiveSystem();
+    
     // Optional: Preload common games for faster switching
     this.initializeGamePreloading();
+  }
+  
+  async initializeCognitiveSystem() {
+    try {
+      // Wait for cognitive progression script to load
+      if (typeof CognitiveDataStore === 'undefined' || typeof CognitiveProgressionSystem === 'undefined') {
+        console.warn('⚠️ Cognitive progression system not loaded yet, waiting...');
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
+      if (typeof CognitiveDataStore !== 'undefined' && typeof CognitiveProgressionSystem !== 'undefined') {
+        const dataStore = new CognitiveDataStore();
+        this.cognitiveSystem = new CognitiveProgressionSystem(dataStore);
+        await this.cognitiveSystem.init();
+        
+        console.log('✅ Cognitive progression system initialized');
+        
+        // Initialize UI components
+        if (typeof CognitiveProfileUI !== 'undefined') {
+          this.cognitiveUI = new CognitiveProfileUI('cognitive-profile-container', this.cognitiveSystem);
+          this.analyticsUI = new CrossGameAnalyticsUI('analytics-container', this.cognitiveSystem);
+        }
+        
+        // Listen for cognitive updates
+        window.addEventListener('message', (event) => {
+          if (event.data.type === 'cognitive:update') {
+            this.onCognitiveUpdate(event.data.payload);
+          }
+        });
+      } else {
+        console.warn('⚠️ Cognitive progression system not available');
+      }
+    } catch (error) {
+      console.error('Failed to initialize cognitive system:', error);
+    }
+  }
+  
+  onCognitiveUpdate(payload) {
+    console.log('🧠 Cognitive data updated:', payload);
+    
+    // Update UI if available
+    if (this.cognitiveUI) {
+      this.cognitiveUI.render();
+    }
+    if (this.analyticsUI) {
+      this.analyticsUI.render();
+    }
   }
 
   getGamePath(gameId) {

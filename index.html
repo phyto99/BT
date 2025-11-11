@@ -11,6 +11,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.min.js"></script>
+    
+    <!-- Cognitive Progression System -->
+    <script src="shared/cognitive-progression.js"></script>
+    <script src="shared/cognitive-ui.js"></script>
+    
     <script src="shared/unified-core.js"></script>
     
     <style>
@@ -356,7 +361,7 @@
             };
         }
 
-        function showStatsPopup() {
+        async function showStatsPopup() {
             const currentGame = window.unifiedBrainTraining?.currentGameId || 'none';
             const gameNames = {
                 'jiggle-factorial': 'Jiggle Factorial 3D',
@@ -367,6 +372,53 @@
                 'multiple': 'Multiple N-back'
             };
             
+            let cognitiveContent = '';
+            
+            // Get cognitive data if available
+            if (window.unifiedBrainTraining?.cognitiveSystem) {
+                const scores = window.unifiedBrainTraining.cognitiveSystem.cognitiveScores;
+                const progression = window.unifiedBrainTraining.cognitiveSystem.progressionData;
+                
+                cognitiveContent = `
+                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.2);">
+                        <p class="modal-text"><strong>Cognitive Profile:</strong></p>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0;">
+                            ${Object.entries(scores).filter(([key]) => key !== 'id').map(([domain, data]) => {
+                                const domainNames = {
+                                    workingMemory: 'Working Memory',
+                                    attention: 'Attention',
+                                    processingSpeed: 'Processing Speed',
+                                    executiveFunctions: 'Executive Functions',
+                                    perceptualProcessing: 'Perceptual Processing',
+                                    longTermMemory: 'Long-Term Memory'
+                                };
+                                const color = data.score <= 333 ? '#4CAF50' : data.score <= 666 ? '#FFC107' : '#F44336';
+                                return `
+                                    <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px;">
+                                        <div style="font-size: 12px; color: rgba(255,255,255,0.7);">${domainNames[domain]}</div>
+                                        <div style="font-size: 20px; font-weight: bold; color: ${color};">${data.score}</div>
+                                        <div style="font-size: 10px; color: rgba(255,255,255,0.5);">${data.sessions} sessions</div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                        <p class="modal-text"><strong>Training Progress:</strong></p>
+                        <ul class="modal-list">
+                            <li>Total Sessions: ${progression.totalSessions}</li>
+                            <li>Total Time: ${Math.round(progression.totalTime / 3600)} hours</li>
+                            <li>Current Streak: ${progression.currentStreak} days</li>
+                            <li>Longest Streak: ${progression.longestStreak} days</li>
+                        </ul>
+                    </div>
+                `;
+            } else {
+                cognitiveContent = `
+                    <p class="modal-text" style="font-size: 14px; color: rgba(255,255,255,0.8); margin-top: 15px;">
+                        Start training to see your cognitive profile and progress!
+                    </p>
+                `;
+            }
+            
             createCustomModal({
                 title: 'Training Statistics',
                 content: `
@@ -374,12 +426,10 @@
                     <p class="modal-text"><strong>Session Info:</strong></p>
                     <ul class="modal-list">
                         <li>Games available: 6</li>
-                        <li>System: Blob URL loading</li>
-                        <li>Status: Active</li>
+                        <li>System: Cognitive Progression Active</li>
+                        <li>Status: Tracking</li>
                     </ul>
-                    <p class="modal-text" style="font-size: 14px; color: rgba(255,255,255,0.8); margin-top: 15px;">
-                        Detailed statistics and progress tracking coming soon!
-                    </p>
+                    ${cognitiveContent}
                 `
             });
         }
