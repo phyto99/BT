@@ -38,6 +38,11 @@ This system focuses exclusively on:
 - **Learning Curves**: Statistical trend analysis with confidence intervals and equations
 - **Raw Data Access**: View all raw data that feeds into calculations
 
+### 🎯 Motivational Features
+- **Progress Bars**: Daily/weekly training time tracking with visual feedback
+- **Achievement System**: Unlock achievements based on cognitive milestones + training time
+- **Streak Tracking**: Maintain training consistency with daily streak counter
+
 ### 🎮 Game-Specific Mapping
 
 Each game is scientifically mapped to cognitive constructs:
@@ -99,7 +104,7 @@ Each game is scientifically mapped to cognitive constructs:
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              Cognitive Profile Update                        │
+│              Cognitive Scores Update                         │
 │  • Updates domain scores (000-999)                          │
 │  • Recalculates construct scores                            │
 │  • Updates trends and learning curves                       │
@@ -110,7 +115,6 @@ Each game is scientifically mapped to cognitive constructs:
 │           Progression System Update                          │
 │  • Updates progress bars (time-based)                       │
 │  • Checks achievements (cognitive + time)                   │
-│  • Recalculates tier (cognitive profile + time)            │
 │  • Updates streak tracking                                  │
 └────────────────────┬────────────────────────────────────────┘
                      │
@@ -120,7 +124,6 @@ Each game is scientifically mapped to cognitive constructs:
 │  • Progress bars update                                     │
 │  • Cognitive scores improve (numbers decrease)              │
 │  • Achievements unlock                                      │
-│  • Tier advances                                            │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -149,7 +152,6 @@ The system uses **lower scores = better performance** because:
 
 ### Phase 1: Core Infrastructure (Weeks 1-2)
 - IndexedDB schema with cognitive data structures
-- Profile management with cognitive profiles
 - Session tracking with cognitive mapping
 - Basic cognitive metric calculations
 
@@ -163,7 +165,6 @@ The system uses **lower scores = better performance** because:
 - Progress bars (time-based)
 - Cognitive profile visualization (radar chart)
 - Statistics dashboard with cognitive metrics
-- Tier badge with cognitive requirements
 
 ### Phase 4: Analytics & Trends (Week 4-5)
 - Trend analysis with statistical significance
@@ -171,9 +172,8 @@ The system uses **lower scores = better performance** because:
 - Cross-game cognitive analytics
 - Performance prediction algorithms
 
-### Phase 5: Achievements & Tiers (Week 5)
+### Phase 5: Achievements (Week 5)
 - Achievement system (cognitive + time-based)
-- Tier calculation (cognitive profile + training time)
 - Unlock animations and celebrations
 - Achievement showcase
 
@@ -191,7 +191,7 @@ The system uses **lower scores = better performance** because:
 - Documentation completion
 - Production deployment
 
-**Total Estimated Time**: ~200 hours (5 weeks with 2 developers)
+**Total Estimated Time**: ~180 hours (4.5 weeks with 2 developers)
 
 ## Benefits
 

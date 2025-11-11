@@ -41,11 +41,11 @@ This directory contains comprehensive specifications for the Unified Brain Train
 **Key Features**:
 - **Scientific Cognitive Mapping**: Maps each game to 6 cognitive domains and 30+ specific constructs
 - **000-999 Scoring**: Inverted scale where lower = better (like golf or reaction times)
-- **Progress Tracking**: Daily/weekly bars showing time AND cognitive improvement
+- **Progress Tracking**: Daily/weekly bars showing training time
 - **Cognitive Profile**: Radar chart of performance across all domains
 - **Scientific Metrics**: d-prime, capacity estimates, processing speed, learning curves
 - **Achievement System**: Unlocks based on cognitive milestones + training time
-- **Tier Progression**: 5 tiers calculated from cognitive profile + training consistency
+- **Streak Tracking**: Maintain training consistency with daily streak counter
 - **Cross-Game Analytics**: See how different games contribute to each cognitive domain
 
 **Documents**:
@@ -59,7 +59,7 @@ This directory contains comprehensive specifications for the Unified Brain Train
 - [🎨 Visual Mockups](./unified-cognitive-progression/VISUAL_MOCKUPS.md) - UI with cognitive scores
 - [🔄 Spec Merge Notes](./unified-cognitive-progression/SPEC_MERGE_NOTES.md) - Why and how specs were merged
 
-**Timeline**: 5 weeks (2 weeks core + 1 week features + 1 week UI + 1 week polish)
+**Timeline**: 4.5 weeks (~180 hours)
 
 **Benefits**:
 - **Scientific Rigor**: Research-validated cognitive metrics and domain mapping

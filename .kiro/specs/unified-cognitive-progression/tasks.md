@@ -4,22 +4,22 @@
 
 This implementation plan breaks down the Unified Cognitive Progression System into discrete, manageable coding tasks. Each task builds incrementally on previous work, with no orphaned code. The system combines scientific cognitive tracking with motivational progression features.
 
-**Estimated Total Time**: ~200 hours (5 weeks with 2 developers)
+**Estimated Total Time**: ~180 hours (4.5 weeks with 2 developers)
 
 ## Task List
 
 - [ ] 1. Set up core infrastructure and data layer
-  - Create IndexedDB schema with profiles, sessions, and achievements stores
+  - Create IndexedDB schema with sessions and achievements stores
   - Implement database initialization with proper error handling
   - Build data access layer with CRUD operations for all stores
-  - Add indexes for efficient querying (profileId, gameId, timestamps)
+  - Add indexes for efficient querying (gameId, timestamps)
   - _Requirements: 7, 13, 15_
 
 - [ ] 1.1 Create CognitiveDataStore class
   - Implement initDatabase() function with version management
   - Create generic get(), put(), and getAllFromIndex() methods
-  - Add profile operations (createProfile, getProfile, updateProfile)
-  - Add session operations (createSession, endSession, getSessionsByProfile)
+  - Add session operations (createSession, endSession, getAllSessions)
+  - Add cognitive data storage (scores, trends, statistics)
   - _Requirements: 7, 13_
 
 - [ ] 1.2 Implement data validation layer
@@ -66,27 +66,18 @@ This implementation plan breaks down the Unified Cognitive Progression System in
   - _Requirements: 1, 2_
 
 - [ ] 3. Build progression engine
-  - Define tier system with 5 tiers (Beginner → Master)
-  - Create tier calculation logic based on time + cognitive score
   - Implement streak tracking with day-based logic
   - Build achievement checking system
   - _Requirements: None (progression features)_
 
-- [ ] 3.1 Implement tier calculation
-  - Create TIERS constant with requirements
-  - Implement calculateTier() function
-  - Calculate overall cognitive score from all domains
-  - Check both time and cognitive requirements
-  - _Requirements: None (progression features)_
-
-- [ ] 3.2 Build achievement system
+- [ ] 3.1 Build achievement system
   - Define ACHIEVEMENTS constant with all achievement types
   - Implement checkAchievements() function
   - Support cognitive, time, consistency, and milestone achievements
   - Track achievement progress and unlock timestamps
   - _Requirements: None (progression features)_
 
-- [ ] 3.3 Create streak management
+- [ ] 3.2 Create streak management
   - Implement updateStreak() function
   - Handle same-day, consecutive-day, and broken streaks
   - Track current and longest streaks
@@ -103,7 +94,6 @@ This implementation plan breaks down the Unified Cognitive Progression System in
 
 - [ ] 4.1 Build session start handler
   - Implement handleSessionStart() method
-  - Load current profile
   - Create new session record
   - Update streak tracking
   - Return session ID to game
@@ -117,8 +107,8 @@ This implementation plan breaks down the Unified Cognitive Progression System in
   - Update session record with all data
   - _Requirements: 7, 18_
 
-- [ ] 4.3 Create profile update logic
-  - Implement updateCognitiveProfile() method
+- [ ] 4.3 Create cognitive score update logic
+  - Implement updateCognitiveScores() method
   - Use weighted moving average for score updates
   - Update session counts and confidence levels
   - Handle multiple domain updates in one session
@@ -127,8 +117,7 @@ This implementation plan breaks down the Unified Cognitive Progression System in
 - [ ] 4.4 Create progression update logic
   - Implement updateProgression() method
   - Update total time and session counts
-  - Recalculate tier after each session
-  - Persist updated profile to database
+  - Persist updated data to database
   - _Requirements: None (progression features)_
 
 - [ ] 5. Build trend analysis system
@@ -266,21 +255,13 @@ This implementation plan breaks down the Unified Cognitive Progression System in
   - _Requirements: 20_
 
 - [ ] 10. Build progression UI components
-  - Create tier badge display
   - Show achievement showcase
   - Display streak counter
   - Add progress bars for daily/weekly goals
   - Show time-based statistics
   - _Requirements: None (progression features)_
 
-- [ ] 10.1 Create tier display
-  - Show current tier with icon/badge
-  - Display requirements for next tier
-  - Show progress toward next tier (time + cognitive)
-  - Add tier history/timeline
-  - _Requirements: None (progression features)_
-
-- [ ] 10.2 Build achievement showcase
+- [ ] 10.1 Build achievement showcase
   - Display unlocked achievements with timestamps
   - Show locked achievements with progress
   - Group by category (cognitive, time, consistency, milestone)
@@ -288,7 +269,7 @@ This implementation plan breaks down the Unified Cognitive Progression System in
   - Create achievement detail modals
   - _Requirements: None (progression features)_
 
-- [ ] 10.3 Create streak display
+- [ ] 10.2 Create streak display
   - Show current streak with visual indicator
   - Display longest streak
   - Show training calendar with streak visualization
@@ -413,8 +394,8 @@ This implementation plan breaks down the Unified Cognitive Progression System in
   - _Requirements: 10_
 
 - [ ] 15.2 Implement data deletion
-  - Add delete profile functionality
   - Add delete session functionality
+  - Add delete all data functionality
   - Require confirmation before deletion
   - Offer export before deletion
   - Clear all related data (cascade delete)
@@ -509,7 +490,6 @@ This implementation plan breaks down the Unified Cognitive Progression System in
   - _Requirements: 2, 4, 6, 16_
 
 - [ ]* 18.2 Write unit tests for progression system
-  - Test calculateTier() logic
   - Test checkAchievements() for all types
   - Test updateStreak() scenarios
   - Test achievement progress tracking
@@ -517,9 +497,8 @@ This implementation plan breaks down the Unified Cognitive Progression System in
 
 - [ ]* 18.3 Write integration tests
   - Test complete session flow (start → end → update)
-  - Test profile updates after multiple sessions
+  - Test cognitive score updates after multiple sessions
   - Test achievement unlocking
-  - Test tier progression
   - Test data export/import
   - _Requirements: 7, 9_
 
@@ -602,11 +581,11 @@ This implementation plan breaks down the Unified Cognitive Progression System in
 
 **Phase 1: Core Infrastructure (Weeks 1-2)**
 - Tasks 1-2: Data layer and cognitive mapping
-- Estimated: 60 hours
+- Estimated: 50 hours
 
 **Phase 2: Session Management & Progression (Week 2-3)**
 - Tasks 3-4: Progression engine and session handling
-- Estimated: 40 hours
+- Estimated: 35 hours
 
 **Phase 3: Analytics & Visualization (Week 3-4)**
 - Tasks 5-7: Trends, UI components, and analytics
@@ -614,9 +593,9 @@ This implementation plan breaks down the Unified Cognitive Progression System in
 
 **Phase 4: Integration & Features (Week 4)**
 - Tasks 8-10: Export, integration, and progression UI
-- Estimated: 30 hours
+- Estimated: 25 hours
 
-**Phase 5: Polish & Testing (Week 5)**
+**Phase 5: Polish & Testing (Week 4.5)**
 - Tasks 11-20: Responsive design, accessibility, testing, documentation
 - Estimated: 20 hours
 
