@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Cognitive Integration</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #eee;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .test-section {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .log {
+            background: #000;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #4CAF50;
+            padding-left: 10px;
+        }
+        .log-error {
+            border-left-color: #F44336;
+        }
+        .scores {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .score-card {
+            background: #333;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .score-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        .score-label {
+            font-size: 12px;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧠 Cognitive Integration Test</h1>
+    
+    <div class="test-section">
+        <h2>1. System Status</h2>
+        <div id="system-status">Checking...</div>
+        <button onclick="checkSystem()">Refresh Status</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Simulate Game Session</h2>
+        <p>Simulate a complete game session with metrics:</p>
+        <button onclick="simulateSession('3d-hyper-nback')">Simulate 3D Hyper N-Back</button>
+        <button onclick="simulateSession('jiggle-factorial')">Simulate Jiggle Factorial</button>
+        <button onclick="simulateSession('dichotic-dual-nback')">Simulate Dichotic Dual N-Back</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Current Cognitive Scores</h2>
+        <div id="cognitive-scores">No data yet</div>
+        <button onclick="displayScores()">Refresh Scores</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Session History</h2>
+        <div id="session-history">No sessions yet</div>
+        <button onclick="displayHistory()">Refresh History</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>5. Console Log</h2>
+        <div id="console-log" class="log"></div>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+    
+    <script src="shared/cognitive-progression.js"></script>
+    <script src="shared/cognitive-ui.js"></script>
+    <script>
+        let cognitiveSystem = null;
+        let currentSessionId = null;
+        
+        // Custom console logging
+        const originalLog = console.log;
+        const originalError = console.error;
+        
+        function addLogEntry(message, isError = false) {
+            const logDiv = document.getElementById('console-log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry' + (isError ? ' log-error' : '');
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addLogEntry(args.join(' '));
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addLogEntry(args.join(' '), true);
+        };
+        
+        // Initialize system
+        async function initSystem() {
+            try {
+                console.log('Initializing cognitive progression system...');
+                const dataStore = new CognitiveDataStore();
+                cognitiveSystem = new CognitiveProgressionSystem(dataStore);
+                await cognitiveSystem.init();
+                console.log('✅ System initialized successfully');
+                checkSystem();
+            } catch (error) {
+                console.error('Failed to initialize:', error);
+            }
+        }
+        
+        function checkSystem() {
+            const statusDiv = document.getElementById('system-status');
+            if (cognitiveSystem) {
+                const scores = cognitiveSystem.cognitiveScores;
+                const progression = cognitiveSystem.progressionData;
+                statusDiv.innerHTML = `
+                    <div style="color: #4CAF50;">✅ System Active</div>
+                    <div style="font-size: 12px; margin-top: 10px;">
+                        <div>Total Sessions: ${progression.totalSessions}</div>
+                        <div>Total Time: ${Math.round(progression.totalTime / 60)} minutes</div>
+                        <div>Current Streak: ${progression.currentStreak} days</div>
+                    </div>
+                `;
+            } else {
+                statusDiv.innerHTML = '<div style="color: #F44336;">❌ System Not Initialized</div>';
+            }
+        }
+        
+        async function simulateSession(gameId) {
+            if (!cognitiveSystem) {
+                console.error('System not initialized');
+                return;
+            }
+            
+            try {
+                console.log(`Starting simulated session for ${gameId}...`);
+                
+                // Start session
+                currentSessionId = await cognitiveSystem.handleSessionStart(gameId);
+                console.log(`Session started: ${currentSessionId}`);
+                
+                // Simulate game play (wait 2 seconds)
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // Generate random but realistic metrics
+                const metrics = generateMetrics(gameId);
+                console.log('Generated metrics:', metrics);
+                
+                // End session
+                await cognitiveSystem.handleSessionEnd(currentSessionId, metrics);
+                console.log('Session ended successfully');
+                
+                // Update displays
+                displayScores();
+                displayHistory();
+                checkSystem();
+                
+            } catch (error) {
+                console.error('Session simulation failed:', error);
+            }
+        }
+        
+        function generateMetrics(gameId) {
+            const baseMetrics = {
+                level: Math.floor(Math.random() * 5) + 2,
+                accuracy: 0.6 + Math.random() * 0.3,
+                reactionTimes: Array.from({length: 20}, () => 600 + Math.random() * 400)
+            };
+            
+            // Add signal detection metrics for N-back games
+            if (gameId.includes('nback') || gameId === '3d-hyper-nback') {
+                const total = 40;
+                const hits = Math.floor(total * baseMetrics.accuracy * 0.5);
+                const correctRejections = Math.floor(total * baseMetrics.accuracy * 0.5);
+                const misses = Math.floor(total * 0.25) - hits;
+                const falseAlarms = total - hits - correctRejections - misses;
+                
+                Object.assign(baseMetrics, {
+                    hits,
+                    misses,
+                    falseAlarms,
+                    correctRejections,
+                    setSize: baseMetrics.level
+                });
+            }
+            
+            // Add tracking metrics for MOT games
+            if (gameId === 'jiggle-factorial') {
+                baseMetrics.setSize = baseMetrics.level;
+            }
+            
+            return baseMetrics;
+        }
+        
+        function displayScores() {
+            const scoresDiv = document.getElementById('cognitive-scores');
+            if (!cognitiveSystem) {
+                scoresDiv.innerHTML = 'System not initialized';
+                return;
+            }
+            
+            const scores = cognitiveSystem.cognitiveScores;
+            const domainNames = {
+                workingMemory: 'Working Memory',
+                attention: 'Attention',
+                processingSpeed: 'Processing Speed',
+                executiveFunctions: 'Executive Functions',
+                perceptualProcessing: 'Perceptual Processing',
+                longTermMemory: 'Long-Term Memory'
+            };
+            
+            let html = '<div class="scores">';
+            for (const [domain, data] of Object.entries(scores)) {
+                if (domain === 'id') continue;
+                
+                const color = data.score <= 333 ? '#4CAF50' : 
+                             data.score <= 666 ? '#FFC107' : '#F44336';
+                
+                html += `
+                    <div class="score-card">
+                        <div class="score-label">${domainNames[domain]}</div>
+                        <div class="score-value" style="color: ${color}">${data.score}</div>
+                        <div class="score-label">${data.sessions} sessions | ${Math.round(data.confidence * 100)}% confidence</div>
+                    </div>
+                `;
+            }
+            html += '</div>';
+            scoresDiv.innerHTML = html;
+        }
+        
+        async function displayHistory() {
+            const historyDiv = document.getElementById('session-history');
+            if (!cognitiveSystem) {
+                historyDiv.innerHTML = 'System not initialized';
+                return;
+            }
+            
+            const sessions = await cognitiveSystem.dataStore.getAllSessions();
+            
+            if (sessions.length === 0) {
+                historyDiv.innerHTML = 'No sessions recorded yet';
+                return;
+            }
+            
+            let html = '<div style="font-size: 12px;">';
+            sessions.slice(-5).reverse().forEach(session => {
+                const date = new Date(session.startTime).toLocaleString();
+                const duration = Math.round((session.duration || 0) / 1000);
+                html += `
+                    <div style="padding: 8px; margin: 5px 0; background: #333; border-radius: 4px;">
+                        <strong>${session.gameId}</strong> - ${date}<br>
+                        Duration: ${duration}s | Level: ${session.gameMetrics?.level || 'N/A'}
+                    </div>
+                `;
+            });
+            html += '</div>';
+            historyDiv.innerHTML = html;
+        }
+        
+        function clearLog() {
+            document.getElementById('console-log').innerHTML = '';
+        }
+        
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('Page loaded, initializing...');
+            initSystem();
+        });
+    </script>
+</body>
+</html>
