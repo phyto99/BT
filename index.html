@@ -362,6 +362,208 @@
         }
 
         async function showStatsPopup() {
+            // Create dat.GUI-styled statistics panel
+            const existingPanel = document.getElementById('unified-stats-panel');
+            if (existingPanel) {
+                existingPanel.remove();
+                return; // Toggle off
+            }
+            
+            const panel = document.createElement('div');
+            panel.id = 'unified-stats-panel';
+            panel.className = 'dg ac';
+            panel.style.cssText = `
+                position: fixed;
+                top: 60px;
+                right: 10px;
+                width: 320px;
+                max-height: calc(100vh - 80px);
+                overflow-y: auto;
+                z-index: 2000;
+                background: #1a1a1a;
+                box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            `;
+            
+            // Build content
+            let content = '<div style="padding: 10px; font-family: \'Lucida Grande\', sans-serif; font-size: 11px; color: #eee;">';
+            
+            // Header
+            content += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #444;">';
+            content += '<div style="font-size: 13px; font-weight: bold;">📊 Training Statistics</div>';
+            content += '<button id="close-stats-panel" style="background: none; border: none; color: #999; cursor: pointer; font-size: 18px; padding: 0; width: 20px; height: 20px;">×</button>';
+            content += '</div>';
+            
+            // Current game
+            const currentGame = window.unifiedBrainTraining?.currentGameId || 'none';
+            const gameNames = {
+                'jiggle-factorial': 'Jiggle Factorial 3D',
+                '3d-hyper-nback': '3D Hyper N-back',
+                'dichotic-dual-nback': 'Dichotic Dual N-back',
+                'quad-box': 'Quad Box',
+                'fast-sequence-nback': 'Fast Sequence N-back',
+                'multiple': 'Multiple N-back'
+            };
+            
+            content += `<div style="margin-bottom: 15px; padding: 8px; background: #2a2a2a; border-radius: 3px;">`;
+            content += `<div style="color: #aaa; font-size: 10px; margin-bottom: 3px;">CURRENT GAME</div>`;
+            content += `<div style="font-size: 12px;">${gameNames[currentGame] || 'None'}</div>`;
+            content += `</div>`;
+            
+            // Cognitive data
+            if (window.unifiedBrainTraining?.cognitiveSystem) {
+                const scores = window.unifiedBrainTraining.cognitiveSystem.cognitiveScores;
+                const progression = window.unifiedBrainTraining.cognitiveSystem.progressionData;
+                
+                // Cognitive Profile
+                content += '<div style="margin-bottom: 15px;">';
+                content += '<div style="color: #aaa; font-size: 10px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Cognitive Profile</div>';
+                
+                const domainNames = {
+                    workingMemory: 'Working Memory',
+                    attention: 'Attention',
+                    processingSpeed: 'Processing Speed',
+                    executiveFunctions: 'Executive Functions',
+                    perceptualProcessing: 'Perceptual Processing',
+                    longTermMemory: 'Long-Term Memory'
+                };
+                
+                Object.entries(scores).filter(([key]) => key !== 'id').forEach(([domain, data]) => {
+                    const color = data.score <= 333 ? '#4CAF50' : data.score <= 666 ? '#FFC107' : '#F44336';
+                    content += `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; margin: 3px 0; background: #2a2a2a; border-radius: 3px; cursor: pointer;" 
+                             onclick="window.showDomainDetails('${domain}')" 
+                             onmouseover="this.style.background='#333'" 
+                             onmouseout="this.style.background='#2a2a2a'">
+                            <div style="flex: 1;">
+                                <div style="font-size: 11px;">${domainNames[domain]}</div>
+                                <div style="font-size: 9px; color: #888;">${data.sessions} sessions</div>
+                            </div>
+                            <div style="font-size: 16px; font-weight: bold; color: ${color};">${data.score}</div>
+                        </div>
+                    `;
+                });
+                content += '</div>';
+                
+                // Training Progress
+                content += '<div style="margin-bottom: 15px;">';
+                content += '<div style="color: #aaa; font-size: 10px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Training Progress</div>';
+                content += '<div style="background: #2a2a2a; padding: 8px; border-radius: 3px;">';
+                content += `<div style="display: flex; justify-content: space-between; margin: 4px 0;"><span>Total Sessions:</span><span style="color: #4CAF50;">${progression.totalSessions}</span></div>`;
+                content += `<div style="display: flex; justify-content: space-between; margin: 4px 0;"><span>Total Time:</span><span style="color: #4CAF50;">${Math.round(progression.totalTime / 3600)}h ${Math.round((progression.totalTime % 3600) / 60)}m</span></div>`;
+                content += `<div style="display: flex; justify-content: space-between; margin: 4px 0;"><span>Current Streak:</span><span style="color: #FFC107;">${progression.currentStreak} days</span></div>`;
+                content += `<div style="display: flex; justify-content: space-between; margin: 4px 0;"><span>Best Streak:</span><span style="color: #FFC107;">${progression.longestStreak} days</span></div>`;
+                content += '</div></div>';
+                
+                // View Details Button
+                content += '<button onclick="window.showDetailedStats()" style="width: 100%; padding: 8px; background: #4CAF50; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 11px; font-family: \'Lucida Grande\', sans-serif;">View Detailed Analytics</button>';
+                
+            } else {
+                content += '<div style="padding: 20px; text-align: center; color: #888; font-size: 11px;">';
+                content += 'Start training to see your cognitive profile!';
+                content += '</div>';
+            }
+            
+            content += '</div>';
+            panel.innerHTML = content;
+            
+            document.body.appendChild(panel);
+            
+            // Close button handler
+            document.getElementById('close-stats-panel').addEventListener('click', () => {
+                panel.remove();
+            });
+            
+            // Close on outside click
+            setTimeout(() => {
+                document.addEventListener('click', function closeOnOutside(e) {
+                    if (!panel.contains(e.target) && !document.getElementById('unified-stats-btn').contains(e.target)) {
+                        panel.remove();
+                        document.removeEventListener('click', closeOnOutside);
+                    }
+                });
+            }, 100);
+        }
+        
+        // Show domain details in modal
+        window.showDomainDetails = function(domain) {
+            if (!window.unifiedBrainTraining?.cognitiveSystem) return;
+            
+            const domainNames = {
+                workingMemory: 'Working Memory',
+                attention: 'Attention',
+                processingSpeed: 'Processing Speed',
+                executiveFunctions: 'Executive Functions',
+                perceptualProcessing: 'Perceptual Processing',
+                longTermMemory: 'Long-Term Memory'
+            };
+            
+            const domainData = window.unifiedBrainTraining.cognitiveSystem.cognitiveScores[domain];
+            
+            createCustomModal({
+                title: domainNames[domain],
+                content: `
+                    <div style="text-align: center; margin: 20px 0;">
+                        <div style="font-size: 48px; font-weight: bold; color: ${domainData.score <= 333 ? '#4CAF50' : domainData.score <= 666 ? '#FFC107' : '#F44336'};">
+                            ${domainData.score}
+                        </div>
+                        <div style="font-size: 14px; color: #aaa; margin-top: 10px;">
+                            Lower score = better performance
+                        </div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 4px; margin: 15px 0;">
+                        <div style="display: flex; justify-content: space-between; margin: 8px 0;">
+                            <span>Sessions Completed:</span>
+                            <span style="font-weight: bold;">${domainData.sessions}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin: 8px 0;">
+                            <span>Confidence Level:</span>
+                            <span style="font-weight: bold;">${Math.round(domainData.confidence * 100)}%</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin: 8px 0;">
+                            <span>Percentile Rank:</span>
+                            <span style="font-weight: bold;">${Math.round((1 - domainData.score/999) * 100)}th</span>
+                        </div>
+                    </div>
+                    <p class="modal-text" style="font-size: 12px; color: #aaa; margin-top: 15px;">
+                        Complete more training sessions to improve your score and increase confidence.
+                    </p>
+                `
+            });
+        };
+        
+        // Show detailed analytics
+        window.showDetailedStats = function() {
+            // Close the stats panel first
+            const panel = document.getElementById('unified-stats-panel');
+            if (panel) panel.remove();
+            
+            // Show detailed modal with charts
+            createCustomModal({
+                title: '📊 Detailed Analytics',
+                content: `
+                    <div id="cognitive-profile-container"></div>
+                    <div id="analytics-container" style="margin-top: 30px;"></div>
+                    <p class="modal-text" style="font-size: 12px; color: #aaa; margin-top: 20px; text-align: center;">
+                        Full visualization with charts coming soon!
+                    </p>
+                `
+            });
+            
+            // Render cognitive UI if available
+            if (window.unifiedBrainTraining?.cognitiveUI) {
+                setTimeout(() => {
+                    window.unifiedBrainTraining.cognitiveUI.render();
+                }, 100);
+            }
+            if (window.unifiedBrainTraining?.analyticsUI) {
+                setTimeout(() => {
+                    window.unifiedBrainTraining.analyticsUI.render();
+                }, 100);
+            }
+        };
+        
+        // Keep old function for compatibility
+        async function showStatsPopupOld() {
             const currentGame = window.unifiedBrainTraining?.currentGameId || 'none';
             const gameNames = {
                 'jiggle-factorial': 'Jiggle Factorial 3D',
