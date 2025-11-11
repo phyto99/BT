@@ -8,14 +8,16 @@ This implementation plan breaks down the Unified Cognitive Progression System in
 
 ## Task List
 
-- [ ] 1. Set up core infrastructure and data layer
+- [-] 1. Set up core infrastructure and data layer
+
   - Create IndexedDB schema with sessions and achievements stores
   - Implement database initialization with proper error handling
   - Build data access layer with CRUD operations for all stores
   - Add indexes for efficient querying (gameId, timestamps)
   - _Requirements: 7, 13, 15_
 
-- [ ] 1.1 Create CognitiveDataStore class
+- [x] 1.1 Create CognitiveDataStore class
+
   - Implement initDatabase() function with version management
   - Create generic get(), put(), and getAllFromIndex() methods
   - Add session operations (createSession, endSession, getAllSessions)
@@ -36,7 +38,8 @@ This implementation plan breaks down the Unified Cognitive Progression System in
   - Integrate caching with data access layer
   - _Requirements: 13_
 
-- [ ] 2. Implement cognitive mapping engine
+- [-] 2. Implement cognitive mapping engine
+
   - Define GAME_MAPPINGS constant with all 6 games
   - Map each game to cognitive domains with weights
   - Map each game to specific cognitive constructs
@@ -84,7 +87,8 @@ This implementation plan breaks down the Unified Cognitive Progression System in
   - Update lastTrainingDate on each session
   - _Requirements: None (progression features)_
 
-- [ ] 4. Implement session management system
+- [-] 4. Implement session management system
+
   - Create CognitiveProgressionSystem class
   - Handle session start/end lifecycle
   - Calculate cognitive metrics on session end
@@ -120,7 +124,8 @@ This implementation plan breaks down the Unified Cognitive Progression System in
   - Persist updated data to database
   - _Requirements: None (progression features)_
 
-- [ ] 5. Build trend analysis system
+- [-] 5. Build trend analysis system
+
   - Implement statistical regression for trends
   - Calculate confidence intervals
   - Determine statistical significance
@@ -143,7 +148,8 @@ This implementation plan breaks down the Unified Cognitive Progression System in
   - _Requirements: 11_
 
 
-- [ ] 6. Create UI components for cognitive profile
+- [-] 6. Create UI components for cognitive profile
+
   - Build cognitive profile display with all 6 domains
   - Implement radar chart visualization
   - Add click handlers to show formula modals
@@ -186,7 +192,8 @@ This implementation plan breaks down the Unified Cognitive Progression System in
   - Make graph clickable for full analysis
   - _Requirements: 6, 21_
 
-- [ ] 7. Implement cross-game analytics
+- [-] 7. Implement cross-game analytics
+
   - Show which games contribute to each domain
   - Display contribution weights
   - Show session counts per game
