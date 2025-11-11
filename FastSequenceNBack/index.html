@@ -8,6 +8,7 @@
       font-family: sans-serif;
       margin: 20px;
       text-align: center;
+      background-color: white;
       transition: background-color 0.3s;
     }
     /* Pages */
@@ -124,37 +125,9 @@
       background-color: #f9f9f9;
     }
 
-    /* --------- Instructions Overlay Styling --------- */
-    #instructionsOverlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background-color: rgba(255, 255, 255, 0.95);
-      overflow-y: auto;
-      z-index: 9999;
-      display: none;
-      padding: 20px;
-      box-sizing: border-box;
-      text-align: left;
-    }
-    #instructionsOverlay.show {
-      display: block;
-    }
-    #instructionsOverlay h2 {
-      margin-top: 0;
-    }
-    #closeInstructionsBtn {
-      position: absolute;
-      top: 15px;
-      right: 20px;
-      font-size: 1.4em;
-      background: none;
-      border: none;
-      cursor: pointer;
-      font-weight: bold;
-    }
+
+    /* Hide instructions overlay - now in unified info panel */
+    #instructionsOverlay { display: none !important; }
   </style>
 </head>
 <body>
@@ -165,8 +138,6 @@
       <p>created by @0xfrankensteinx0 (Discord)</p>
     </div>
     <form id="settingsForm">
-      <!-- Instructions Button -->
-      <button type="button" id="instructionsBtn">Instructions</button>
       <!-- Common settings -->
       <label>Rows: <input type="number" id="rows" min="2" max="20" value="4" required></label>
       <label>Columns: <input type="number" id="cols" min="2" max="20" value="4" required></label>
@@ -489,21 +460,7 @@
         startNBack();
       });
 
-      /********** Instructions Overlay Logic **********/
-      const instructionsBtn = document.getElementById('instructionsBtn');
-      const instructionsOverlay = document.getElementById('instructionsOverlay');
-      const closeInstructionsBtn = document.getElementById('closeInstructionsBtn');
 
-      instructionsBtn.addEventListener('click', () => {
-        instructionsOverlay.classList.add('show');
-      });
-      closeInstructionsBtn.addEventListener('click', () => {
-        instructionsOverlay.classList.remove('show');
-      });
-
-      window.addEventListener('load', () => {
-        instructionsOverlay.classList.add('show');
-      });
 
       /********** MEMORY GAME CODE **********/
       const gridContainer = document.getElementById('gridContainer');

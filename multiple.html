@@ -481,7 +481,7 @@
         <div id="robotImage">
           <svg width="120" height="180" viewBox="0 0 120 180" xmlns="http://www.w3.org/2000/svg">
             <defs>
-              <linearGradient id="robotBodyGradient" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="robotBodyGradient1" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stop-color="#555" />
                 <stop offset="100%" stop-color="#222" />
               </linearGradient>
@@ -497,7 +497,7 @@
               <path d="M45,50 Q60,60 75,50" stroke="#00ffea" stroke-width="3" fill="none"/>
             </g>
             <g id="body">
-              <path d="M25,75 Q60,120 95,75 L95,150 Q60,170 25,150 Z" fill="url(#robotBodyGradient)" stroke="#00ffea" stroke-width="2"/>
+              <path d="M25,75 Q60,120 95,75 L95,150 Q60,170 25,150 Z" fill="url(#robotBodyGradient1)" stroke="#00ffea" stroke-width="2"/>
             </g>
             <g id="arms">
               <line x1="25" y1="80" x2="5" y2="110" stroke="#00ffea" stroke-width="3"/>
@@ -1002,7 +1002,7 @@
           <div id="robotImage">
             <svg width="120" height="180" viewBox="0 0 120 180" xmlns="http://www.w3.org/2000/svg">
               <defs>
-                <linearGradient id="robotBodyGradient" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="robotBodyGradient2" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stop-color="#555" />
                   <stop offset="100%" stop-color="#222" />
                 </linearGradient>
@@ -1018,7 +1018,7 @@
                 <path d="M45,50 Q60,60 75,50" stroke="#00ffea" stroke-width="3" fill="none"/>
               </g>
               <g id="body">
-                <path d="M25,75 Q60,120 95,75 L95,150 Q60,170 25,150 Z" fill="url(#robotBodyGradient)" stroke="#00ffea" stroke-width="2"/>
+                <path d="M25,75 Q60,120 95,75 L95,150 Q60,170 25,150 Z" fill="url(#robotBodyGradient2)" stroke="#00ffea" stroke-width="2"/>
               </g>
               <g id="arms">
                 <line x1="25" y1="80" x2="5" y2="110" stroke="#00ffea" stroke-width="3"/>
@@ -1207,6 +1207,39 @@
       let scoreEl = document.getElementById("score");
       scoreEl.classList.add("score-pulse");
       setTimeout(() => { scoreEl.classList.remove("score-pulse"); }, 600);
+    }
+    
+    // ========== UNIFIED SETTINGS INTEGRATION ==========
+    // Auto-start game (bypass instructions)
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById("instructions").style.display = "none";
+      fadeIn(document.getElementById("container"));
+      fadeIn(document.getElementById("settings"));
+    });
+    
+    // Listen for settings updates
+    window.addEventListener('message', (event) => {
+      if (event.data.type === 'settingsUpdate' && event.data.gameId === 'multiple') {
+        const newSettings = event.data.settings;
+        console.log('🎮 [Multiple] Received settings:', newSettings);
+        
+        Object.assign(settings, newSettings);
+        
+        const fields = ['modality', 'nValue', 'stimulusDuration', 'isiDuration', 'gaborContrast', 
+                       'gaborFrequency', 'gaborSize', 'totalTrials', 'relationalComplexity'];
+        fields.forEach(field => {
+          const element = document.getElementById(field);
+          if (field in newSettings && element) {
+            element.value = newSettings[field];
+          }
+        });
+        
+        console.log('🎮 [Multiple] Settings applied');
+      }
+    });
+    
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'gameReady', gameId: 'multiple' }, '*');
     }
   </script>
 </body>

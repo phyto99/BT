@@ -66,33 +66,32 @@
             background-color: rgba(60, 60, 60, 0.9);
         }
 
-        /* Custom Modal Styling - Sharp Text Style */
+        /* Custom Modal Styling - Dynamic Sizing */
         .custom-modal {
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             width: 2px;
+            height: var(--modal-height, 400px);
             background: #999999;
             z-index: 2000;
             color: white;
-            font-family: 'Oswald', sans-serif;
-            font-size: 24px;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
             overflow: hidden;
             transition: width 0.3s ease;
-            letter-spacing: 0.5px;
-            line-height: 1.2;
-        }
-        
-        .custom-modal.expanded {
-            width: var(--modal-width);
+            line-height: 1.5;
         }
         
         .modal-content {
-            padding: 45px;
+            padding: 40px;
             opacity: 0;
             transition: opacity 0.3s ease 0.2s;
             position: relative;
+            overflow-y: auto;
+            min-width: 400px;
+            max-width: 90vw;
         }
         
         .modal-content.visible {
@@ -101,16 +100,17 @@
         
         .modal-close {
             position: absolute;
-            top: 15px;
+            top: 10px;
             right: 15px;
             background: none;
             border: none;
             color: white;
-            font-size: 36px;
+            font-size: 32px;
             cursor: pointer;
+            font-family: Arial, sans-serif;
+            font-weight: normal;
+            line-height: 1;
             text-shadow: 1px 1px 0px rgba(0, 0, 0, 1);
-            font-family: 'Oswald', sans-serif;
-            font-weight: 300;
         }
         
         .modal-close:hover {
@@ -119,45 +119,42 @@
         
         .modal-title {
             margin-top: 0;
-            margin-bottom: 8px;
+            margin-bottom: 15px;
+            font-size: 24px;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            line-height: 1.3;
             text-shadow: 1px 1px 0px rgba(0, 0, 0, 1);
-            letter-spacing: 1px;
-            font-size: 30px;
-            font-family: 'Oswald', sans-serif;
-            font-weight: 300;
-            line-height: 1.0;
         }
         
         .modal-text {
+            margin-bottom: 10px;
+            font-family: Arial, sans-serif;
+            font-weight: normal;
+            line-height: 1.5;
             text-shadow: 1px 1px 0px rgba(0, 0, 0, 1);
-            margin-bottom: 5px;
-            letter-spacing: 0.5px;
-            font-family: 'Oswald', sans-serif;
-            font-weight: 300;
-            line-height: 1.1;
         }
         
         .modal-text strong {
+            font-family: Arial, sans-serif;
+            font-weight: bold;
             text-shadow: 1px 1px 0px rgba(0, 0, 0, 1);
-            letter-spacing: 0.5px;
-            font-family: 'Oswald', sans-serif;
-            font-weight: 400;
         }
         
         .modal-list {
             text-align: left;
-            margin: 4px 0;
-            font-family: 'Oswald', sans-serif;
-            font-weight: 300;
-            line-height: 1.1;
+            margin: 10px 0;
+            padding-left: 20px;
+            font-family: Arial, sans-serif;
+            font-weight: normal;
+            line-height: 1.5;
         }
         
         .modal-list li {
+            margin: 5px 0;
+            font-family: Arial, sans-serif;
+            font-weight: normal;
             text-shadow: 1px 1px 0px rgba(0, 0, 0, 1);
-            margin: 1px 0;
-            letter-spacing: 0.5px;
-            font-family: 'Oswald', sans-serif;
-            font-weight: 300;
             line-height: 1.1;
         }
         
@@ -228,8 +225,6 @@
             const gameInfo = getGameInfo(currentGame);
             
             createCustomModal({
-                width: 900,
-                height: 450,
                 title: gameInfo.title,
                 content: gameInfo.content
             });
@@ -298,6 +293,43 @@
                         </ul>
                         <p class="modal-text"><strong>Controls:</strong> Use keyboard for audio/visual responses</p>
                     `
+                },
+                'fast-sequence-nback': {
+                    title: 'Fast Sequence N-back - How to Play',
+                    content: `
+                        <p class="modal-text"><strong>Basics:</strong></p>
+                        <p class="modal-text">This game contains two modes:</p>
+                        <ul class="modal-list">
+                            <li><strong>Memory Game:</strong> A spatial memory game resembling Corsi, which displays a sequence of squares for you to recall and click in the same order.</li>
+                            <li><strong>N-back Mode:</strong> Each "trial" is a sequence of squares instead of a single square like in standard N-back tasks.</li>
+                        </ul>
+                        <p class="modal-text"><strong>Adjustable Settings:</strong></p>
+                        <ul class="modal-list">
+                            <li>Synesthesia-like linkages (letter-color and spatial-music links)</li>
+                            <li>Number of squares in the grid and sequence</li>
+                            <li>Duration of display and delay between squares</li>
+                            <li>N level, sec/trial, number of trials</li>
+                            <li>Percent match and interference control</li>
+                        </ul>
+                        <p class="modal-text"><strong>Synesthesia Details:</strong></p>
+                        <p class="modal-text">Grapheme-color synesthesia links each letter to a unique color. Spatial-musical synesthesia associates spatial movements with musical tones based on direction (angle) and magnitude (octave). The "GC-test" setting controls how often only the color is shown, and "uncolored-letter" shows letters without color. Start at 0% and gradually increase as you learn the associations.</p>
+                        <p class="modal-text"><strong>Controls:</strong> Press <strong>L</strong> for spatial sequence matches, <strong>K</strong> for letter sequence matches</p>
+                    `
+                },
+                'multiple': {
+                    title: 'Multiple N-back - How to Play',
+                    content: `
+                        <p class="modal-text"><strong>Modality Descriptions:</strong></p>
+                        <ul class="modal-list">
+                            <li><strong>Gabor:</strong> A Gabor patch appears in a random cell. Match trials repeat the orientation exactly from n-back while appearing in a different cell.</li>
+                            <li><strong>Circle (Knight's Move):</strong> A circle appears in a random cell. A match occurs if the current cell is reachable via a knight's move from the n-back cell. Press "Visual Match" for exact position matches.</li>
+                            <li><strong>Synesthesia:</strong> Each trial randomly presents either a color or a sound. Twelve unique colors are paired with twelve distinct tone frequencies. Match when the stimulus (regardless of modality) is the same as n trials ago.</li>
+                            <li><strong>Relational Difference:</strong> A number (0–99) is shown. For 1-back: match if T(n) – T(n–1) = T(n–2) – T(n–3). For 2-back: match if T(n) – T(n–3) = T(n–2) – T(n–4).</li>
+                        </ul>
+                        <p class="modal-text"><strong>Instructions:</strong></p>
+                        <p class="modal-text">Watch each stimulus carefully. When you believe the current stimulus matches the one shown n trials ago (according to the modality rules), press the "Match (n-back)" button. In Circle mode, you can also use "Visual Match" for exact position matches. Your score, progress, and current streak update automatically.</p>
+                        <p class="modal-text"><strong>Controls:</strong> Click "Match (n-back)" button or "Visual Match" (Circle mode only)</p>
+                    `
                 }
             };
 
@@ -311,6 +343,8 @@
                         <li>3D Hyper N-back</li>
                         <li>Dichotic Dual N-back</li>
                         <li>Quad Box</li>
+                        <li>Fast Sequence N-back</li>
+                        <li>Multiple N-back</li>
                     </ul>
                     <p class="modal-text"><strong>Features:</strong></p>
                     <ul class="modal-list">
@@ -328,18 +362,18 @@
                 'jiggle-factorial': 'Jiggle Factorial 3D',
                 '3d-hyper-nback': '3D Hyper N-back',
                 'dichotic-dual-nback': 'Dichotic Dual N-back',
-                'quad-box': 'Quad Box'
+                'quad-box': 'Quad Box',
+                'fast-sequence-nback': 'Fast Sequence N-back',
+                'multiple': 'Multiple N-back'
             };
             
             createCustomModal({
-                width: 750,
-                height: 375,
                 title: 'Training Statistics',
                 content: `
                     <p class="modal-text"><strong>Current Game:</strong> ${gameNames[currentGame] || 'None'}</p>
                     <p class="modal-text"><strong>Session Info:</strong></p>
                     <ul class="modal-list">
-                        <li>Games available: 4</li>
+                        <li>Games available: 6</li>
                         <li>System: Blob URL loading</li>
                         <li>Status: Active</li>
                     </ul>
@@ -350,8 +384,8 @@
             });
         }
 
-        // Optimized Custom Modal Function (~1KB)
-        function createCustomModal({width, height, title, content}) {
+        // Dynamic Custom Modal Function
+        function createCustomModal({title, content}) {
             // Create backdrop
             const backdrop = document.createElement('div');
             backdrop.className = 'modal-backdrop';
@@ -359,19 +393,33 @@
             // Create modal
             const modal = document.createElement('div');
             modal.className = 'custom-modal';
-            modal.style.setProperty('--modal-width', width + 'px');
-            modal.style.height = height + 'px';
             
-            // Close function
+            // Store final dimensions for closing animation
+            let finalWidth, finalHeight;
+            
+            // Close function with reverse animation
             function closeModal() {
-                modal.style.width = '2px';
+                // Fade out content first
                 modal.querySelector('.modal-content').classList.remove('visible');
-                backdrop.classList.remove('visible');
+                
+                // Then collapse horizontally back to vertical line (keep height)
+                setTimeout(() => {
+                    modal.style.width = '2px';
+                    // Don't change height - keep it as vertical line
+                }, 100);
+                
+                // Fade out backdrop
+                setTimeout(() => {
+                    backdrop.classList.remove('visible');
+                }, 200);
+                
                 document.removeEventListener('keydown', handleEscape);
+                
+                // Remove elements after animation completes
                 setTimeout(() => {
                     backdrop.remove();
                     modal.remove();
-                }, 300);
+                }, 500);
             }
             
             function handleEscape(e) {
@@ -384,12 +432,38 @@
                 <div class="modal-content">
                     <button class="modal-close" aria-label="Close">&times;</button>
                     <h2 class="modal-title">${title}</h2>
-                    ${content}
+                    <div style="white-space: normal;">${content}</div>
                 </div>
             `;
             
             document.body.appendChild(backdrop);
             document.body.appendChild(modal);
+            
+            // Temporarily make visible to measure
+            modal.style.visibility = 'hidden';
+            modal.style.width = 'auto';
+            modal.style.height = 'auto';
+            modal.style.maxWidth = '90vw';
+            modal.style.maxHeight = '90vh';
+            
+            // Measure content size
+            const modalContent = modal.querySelector('.modal-content');
+            const contentWidth = modalContent.offsetWidth;
+            const contentHeight = modalContent.offsetHeight;
+            
+            // Calculate final dimensions with constraints
+            const maxWidth = window.innerWidth * 0.9;
+            const maxHeight = window.innerHeight * 0.9;
+            finalWidth = Math.min(Math.max(contentWidth, 400), maxWidth);
+            finalHeight = Math.min(contentHeight, maxHeight);
+            
+            // Reset to starting state - vertical line at full height
+            modal.style.visibility = 'visible';
+            modal.style.width = '2px';
+            modal.style.height = finalHeight + 'px';
+            modal.style.setProperty('--modal-height', finalHeight + 'px');
+            modal.style.maxWidth = 'none';
+            modal.style.maxHeight = 'none';
             
             // Set up event listeners
             const closeButton = modal.querySelector('.modal-close');
@@ -402,10 +476,11 @@
                 e.stopPropagation();
             });
             
-            // Animate in
+            // Animate in - expand horizontally from vertical line
             setTimeout(() => {
                 backdrop.classList.add('visible');
-                modal.classList.add('expanded');
+                modal.style.width = finalWidth + 'px';
+                
                 setTimeout(() => {
                     modal.querySelector('.modal-content').classList.add('visible');
                 }, 200);

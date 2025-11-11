@@ -32,6 +32,12 @@ class UnifiedBrainTraining {
     gameSettings.loadQuadBox = () => {
       this.loadGameWithStatus('quad-box');
     };
+    gameSettings.loadFastSequenceNBack = () => {
+      this.loadGameWithStatus('fast-sequence-nback');
+    };
+    gameSettings.loadMultiple = () => {
+      this.loadGameWithStatus('multiple');
+    };
     
     // Create a simple reactive proxy
     this.reactiveSettings = new Proxy(gameSettings, {
@@ -1381,7 +1387,9 @@ class UnifiedBrainTraining {
   getGamePath(gameId) {
     // Special cases for games that need different paths
     const specialPaths = {
-      'quad-box': 'games/quad-box/dist/index.html'  // Compiled Svelte app
+      'quad-box': 'games/quad-box/dist/index.html',  // Compiled Svelte app
+      'fast-sequence-nback': 'FastSequenceNBack/index.html',  // Single file game
+      'multiple': 'multiple.html'  // Single file game
     };
     
     // Return special path if exists, otherwise use standard path
@@ -1391,7 +1399,9 @@ class UnifiedBrainTraining {
   getGameBaseURL(gameId) {
     // Special cases for games that need different base URLs
     const specialBaseURLs = {
-      'quad-box': `${window.location.origin}/games/quad-box/dist/`
+      'quad-box': `${window.location.origin}/games/quad-box/dist/`,
+      'fast-sequence-nback': `${window.location.origin}/FastSequenceNBack/`,  // Single file in root folder
+      'multiple': `${window.location.origin}/`  // Single file in root
     };
     
     // Return special base URL if exists, otherwise use standard base URL
@@ -1737,6 +1747,38 @@ class UnifiedBrainTraining {
           'shape': 'J',
           'audio': 'L'
         }
+      },
+      'fast-sequence-nback': {
+        rows: 4,
+        cols: 4,
+        numSquares: 3,
+        flashTime: 250,
+        gridColor: 'rgb(100,100,100)',
+        squareColor: 'white',
+        flashDelay: 25,
+        alternateColor: false,
+        memoryLetterStimulus: true,
+        nLevel: 2,
+        secTrial: 2,
+        trialNum: 20,
+        percentMatch: 30,
+        interferenceControl: 50,
+        letterStimulus: true,
+        graphemeColor: true,
+        gcTest: 10,
+        uncoloredLetter: 10,
+        spatialMusic: 25
+      },
+      'multiple': {
+        modality: 'gabor',
+        nValue: 2,
+        stimulusDuration: 500,
+        isiDuration: 1000,
+        gaborContrast: 0.5,
+        gaborFrequency: 0.05,
+        gaborSize: 150,
+        totalTrials: 20,
+        relationalComplexity: '1back'
       }
     };
 
@@ -1778,6 +1820,8 @@ class UnifiedBrainTraining {
     this.gui.add(this.settings, 'loadHyperNBack').name('Load 3D Hyper N-back');
     this.gui.add(this.settings, 'loadDichoticDualNBack').name('Load Dichotic Dual N-back');
     this.gui.add(this.settings, 'loadQuadBox').name('Load Quad Box');
+    this.gui.add(this.settings, 'loadFastSequenceNBack').name('Load Fast Sequence N-back');
+    this.gui.add(this.settings, 'loadMultiple').name('Load Multiple N-back');
 
     // Add ONLY the settings for the currently loaded game
     const currentGame = this.currentGameId || 'jiggle-factorial';
@@ -1790,6 +1834,10 @@ class UnifiedBrainTraining {
       this.buildDichoticDualNBackGUI();
     } else if (currentGame === 'quad-box') {
       this.buildQuadBoxGUI();
+    } else if (currentGame === 'fast-sequence-nback') {
+      this.buildFastSequenceNBackGUI();
+    } else if (currentGame === 'multiple') {
+      this.buildMultipleGUI();
     } else {
       // Default message if no specific game is loaded
       const note = document.createElement('div');
@@ -2005,6 +2053,71 @@ class UnifiedBrainTraining {
     const tallyFolder = this.gui.addFolder('Tally Mode Settings');
     tallyFolder.add(this.settings, 'positionWidth', 1, 4, 1).name('Position Width');
     tallyFolder.add(this.settings, 'enablePositionWidthSequence').name('Enable Position Width Sequence');
+  }
+
+  buildFastSequenceNBackGUI() {
+    // Grid settings
+    const gridFolder = this.gui.addFolder('Grid Settings');
+    gridFolder.add(this.settings, 'rows', 2, 20, 1).name('Rows');
+    gridFolder.add(this.settings, 'cols', 2, 20, 1).name('Columns');
+    gridFolder.add(this.settings, 'numSquares', 1, 20, 1).name('Number of Squares');
+    gridFolder.open();
+    
+    // Visual settings
+    const visualFolder = this.gui.addFolder('Visual Settings');
+    visualFolder.add(this.settings, 'flashTime', 50, 1000, 10).name('Flash Time (ms)');
+    visualFolder.add(this.settings, 'flashDelay', 0, 500, 5).name('Flash Delay (ms)');
+    visualFolder.add(this.settings, 'gridColor', ['rgb(100,100,100)', 'yellow', 'green', 'blue', 'red', 'white']).name('Grid Color');
+    visualFolder.add(this.settings, 'squareColor', ['white', 'black', 'yellow', 'green', 'blue', 'red']).name('Square Color');
+    visualFolder.add(this.settings, 'alternateColor').name('Alternate Color');
+    visualFolder.open();
+    
+    // Memory game settings
+    const memoryFolder = this.gui.addFolder('Memory Game Settings');
+    memoryFolder.add(this.settings, 'memoryLetterStimulus').name('Add Letter Stimulus');
+    
+    // N-Back settings
+    const nbackFolder = this.gui.addFolder('N-Back Settings');
+    nbackFolder.add(this.settings, 'nLevel', 1, 10, 1).name('N Level');
+    nbackFolder.add(this.settings, 'secTrial', 1, 10, 0.1).name('Sec/Trial');
+    nbackFolder.add(this.settings, 'trialNum', 1, 100, 1).name('Trial Number/Set');
+    nbackFolder.add(this.settings, 'percentMatch', 0, 100, 1).name('Percent Match');
+    nbackFolder.add(this.settings, 'interferenceControl', 0, 100, 1).name('Interference Control (%)');
+    nbackFolder.add(this.settings, 'letterStimulus').name('Add Letter Stimulus');
+    nbackFolder.open();
+    
+    // Synesthesia settings
+    const synesthesiaFolder = this.gui.addFolder('Synesthesia Settings');
+    synesthesiaFolder.add(this.settings, 'graphemeColor').name('Grapheme-Color');
+    synesthesiaFolder.add(this.settings, 'gcTest', 0, 100, 1).name('GC-test (%)');
+    synesthesiaFolder.add(this.settings, 'uncoloredLetter', 0, 100, 1).name('Uncolored Letter (%)');
+    synesthesiaFolder.add(this.settings, 'spatialMusic', 0, 100, 1).name('Spatial-Music (%)');
+    synesthesiaFolder.open();
+  }
+
+  buildMultipleGUI() {
+    // Modality selection
+    this.gui.add(this.settings, 'modality', ['gabor', 'circle', 'synesthesia', 'relational']).name('Select Modality');
+    
+    // Core N-Back settings
+    this.gui.add(this.settings, 'nValue', 1, 10, 1).name('N-Back Value');
+    this.gui.add(this.settings, 'totalTrials', 5, 100, 1).name('Total Trials');
+    
+    // Timing settings
+    const timingFolder = this.gui.addFolder('Timing Settings');
+    timingFolder.add(this.settings, 'stimulusDuration', 100, 2000, 50).name('Stimulus Duration (ms)');
+    timingFolder.add(this.settings, 'isiDuration', 100, 3000, 50).name('Inter-Stimulus Interval (ms)');
+    timingFolder.open();
+    
+    // Gabor settings
+    const gaborFolder = this.gui.addFolder('Gabor Settings');
+    gaborFolder.add(this.settings, 'gaborContrast', 0, 1, 0.01).name('Gabor Contrast');
+    gaborFolder.add(this.settings, 'gaborFrequency', 0.01, 0.2, 0.01).name('Gabor Frequency');
+    gaborFolder.add(this.settings, 'gaborSize', 50, 300, 10).name('Stimulus Size (px)');
+    
+    // Relational settings
+    const relationalFolder = this.gui.addFolder('Relational Settings');
+    relationalFolder.add(this.settings, 'relationalComplexity', ['1back', '2back']).name('Relational Complexity');
   }
 
 
