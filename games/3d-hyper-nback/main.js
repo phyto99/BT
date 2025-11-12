@@ -3636,13 +3636,13 @@ function updateContinuousStatsSidebar() {
   if (sessionMetrics.n1LureEncounters && sessionMetrics.n1LureEncounters > 0) {
     sessionMetrics.n1LureResistance = (sessionMetrics.n1LureCorrectRejections || 0) / sessionMetrics.n1LureEncounters;
   } else {
-    sessionMetrics.n1LureResistance = 1.0;
+    sessionMetrics.n1LureResistance = 1.0; // Default if no lures encountered
   }
 
   if (sessionMetrics.nPlusLureEncounters && sessionMetrics.nPlusLureEncounters > 0) {
     sessionMetrics.nPlusLureResistance = (sessionMetrics.nPlusLureCorrectRejections || 0) / sessionMetrics.nPlusLureEncounters;
   } else {
-    sessionMetrics.nPlusLureResistance = 1.0;
+    sessionMetrics.nPlusLureResistance = 1.0; // Default if no lures encountered
   }
 
   // Calculate total lure resistance
@@ -3652,32 +3652,37 @@ function updateContinuousStatsSidebar() {
       ((sessionMetrics.n1LureResistance * (sessionMetrics.n1LureEncounters || 0)) + 
        (sessionMetrics.nPlusLureResistance * (sessionMetrics.nPlusLureEncounters || 0))) / totalLureEncounters;
   } else {
-    sessionMetrics.totalLureResistance = 0;
+    sessionMetrics.totalLureResistance = 1.0; // Default to 100% if no lures
   }
   
   // Calculate excellence progress bars
-  const dPrimeTarget = 2.0;
-  const lureResistanceTarget = 0.85;
-  const accuracyTarget = 0.90;
+  const dPrimeTarget = 2.0; // Target is d' > 2.0
+  const lureResistanceTarget = 0.85; // Target is 85% resistance
+  const accuracyTarget = 0.90; // Target is 90% accuracy
 
+  // Calculate progress percentages
   const accuracyProgress = Math.min(100, Math.max(0, (accuracy / accuracyTarget) * 100));
   const dPrimeProgress = Math.min(100, Math.max(0, (sessionMetrics.dPrime / dPrimeTarget) * 100));
   const lureResistanceProgress = sessionMetrics.totalLureResistance ? 
     Math.min(100, Math.max(0, (sessionMetrics.totalLureResistance / lureResistanceTarget) * 100)) : 0;
 
-  // Calculate overall excellence
+  // Calculate overall excellence (weighted average)
   let overallProgress = 0;
   let weightSum = 0;
+  // Add accuracy to overall score (weight: 2 - high importance)
   overallProgress += accuracyProgress * 2;
   weightSum += 2;
+  // Add d-prime to overall score (weight: 2)
   overallProgress += dPrimeProgress * 2;
   weightSum += 2;
 
-  if (totalLureEncounters > 0) {
+  // Add lure resistance to overall score if applicable (weight: 1)
+  if (sessionMetrics.n1LureResistance && totalLureEncounters > 0) {
     overallProgress += lureResistanceProgress;
     weightSum += 1;
   }
 
+  // Calculate final overall progress
   const finalOverallProgress = overallProgress / weightSum;
   
   // Update sidebar content - matching original dialog styling exactly
@@ -3759,7 +3764,7 @@ function updateContinuousStatsSidebar() {
         </div>
       </div>
       
-      ${totalLureEncounters > 0 ? `
+      ${sessionMetrics.n1LureResistance && totalLureEncounters > 0 ? `
       <div class="sidebar-progress-item">
         <div class="sidebar-progress-header">
           <span>Interference Control</span>
