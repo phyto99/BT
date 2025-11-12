@@ -228,6 +228,7 @@ let numStimuliSelect = defVal_numStimuliSelect;
 // Game states
 let matchingStimuli = 0;
 let stimuliCount = 0;
+let lastSidebarUpdate = 0; // Track when sidebar was last updated
 let intervals = [];
 
 // Stimulus History Buffer for cross-session continuity
@@ -3679,6 +3680,9 @@ function updateContinuousStatsSidebar() {
   try {
     console.log('🎯 [CONTINUOUS] Updating stats sidebar');
     
+    // Update last update tracker
+    lastSidebarUpdate = stimuliCount;
+    
     // Create sidebar if it doesn't exist
     let sidebar = document.getElementById('continuous-stats-sidebar');
     if (!sidebar) {
@@ -3867,6 +3871,10 @@ function updateContinuousStatsSidebar() {
     
     <div class="sidebar-speed">
       Speed: <strong>${getSpeedTarget(currentMicroLevel)}ms</strong>
+    </div>
+    
+    <div class="sidebar-last-update">
+      Last update: <strong id="sidebar-trials-ago">0</strong> trials ago
     </div>
   `;
   
@@ -4937,6 +4945,12 @@ function getGameCycle(n) {
     
     // Count stimulus
     stimuliCount++;
+    
+    // Update "trials ago" counter on every stimulus (BEFORE checking for sidebar update)
+    const trialsAgoElement = document.getElementById('sidebar-trials-ago');
+    if (trialsAgoElement) {
+      trialsAgoElement.textContent = stimuliCount - lastSidebarUpdate;
+    }
     
     // Update sidebar every 5 stimuli for live stats
     if (stimuliCount % 5 === 0) {
