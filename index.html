@@ -11,6 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <!-- Cognitive Progression System -->
     <script src="shared/cognitive-progression.js"></script>
@@ -218,13 +219,7 @@
             
             // Stats button handler  
             document.getElementById('unified-stats-btn').addEventListener('click', () => {
-                console.log('Stats button clicked!');
-                try {
-                    showStatsPopup();
-                } catch (error) {
-                    console.error('Error showing stats:', error);
-                    alert('Error showing statistics: ' + error.message);
-                }
+                showStatsPopup();
             });
             
             // Load default game
@@ -367,43 +362,8 @@
             };
         }
 
-        async function showStatsPopup() {
-            console.log('showStatsPopup called');
-            console.log('Cognitive system:', window.unifiedBrainTraining?.cognitiveSystem);
-            
-            // Create dat.GUI-styled statistics panel
-            const existingPanel = document.getElementById('unified-stats-panel');
-            if (existingPanel) {
-                console.log('Removing existing panel');
-                existingPanel.remove();
-                return; // Toggle off
-            }
-            
-            const panel = document.createElement('div');
-            panel.id = 'unified-stats-panel';
-            panel.className = 'dg ac';
-            panel.style.cssText = `
-                position: fixed;
-                top: 60px;
-                right: 10px;
-                width: 320px;
-                max-height: calc(100vh - 80px);
-                overflow-y: auto;
-                z-index: 2000;
-                background: #1a1a1a;
-                box-shadow: 0 0 10px rgba(0,0,0,0.5);
-            `;
-            
-            // Build content
-            let content = '<div style="padding: 10px; font-family: \'Lucida Grande\', sans-serif; font-size: 11px; color: #eee;">';
-            
-            // Header
-            content += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #444;">';
-            content += '<div style="font-size: 13px; font-weight: bold;">📊 Training Statistics</div>';
-            content += '<button id="close-stats-panel" style="background: none; border: none; color: #999; cursor: pointer; font-size: 18px; padding: 0; width: 20px; height: 20px;">×</button>';
-            content += '</div>';
-            
-            // Current game
+        function showStatsPopup() {
+            // Get current game info
             const currentGame = window.unifiedBrainTraining?.currentGameId || 'none';
             const gameNames = {
                 'jiggle-factorial': 'Jiggle Factorial 3D',
@@ -414,98 +374,155 @@
                 'multiple': 'Multiple N-back'
             };
             
-            content += `<div style="margin-bottom: 15px; padding: 8px; background: #2a2a2a; border-radius: 3px;">`;
-            content += `<div style="color: #aaa; font-size: 10px; margin-bottom: 3px;">CURRENT GAME</div>`;
-            content += `<div style="font-size: 12px;">${gameNames[currentGame] || 'None'}</div>`;
+            // Get game statistics
+            const gameData = getGameStatistics(currentGame);
+            
+            // Build content
+            let content = '';
+            
+            // Current game
+            content += `<div style="margin-bottom: 20px; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 4px;">`;
+            content += `<div style="color: #aaa; font-size: 11px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px;">Current Game</div>`;
+            content += `<div style="font-size: 14px; font-weight: bold;">${gameNames[currentGame] || 'None'}</div>`;
             content += `</div>`;
             
-            // Cognitive data
-            if (window.unifiedBrainTraining?.cognitiveSystem) {
-                console.log('Cognitive system found, loading data...');
-                const scores = window.unifiedBrainTraining.cognitiveSystem.cognitiveScores;
-                const progression = window.unifiedBrainTraining.cognitiveSystem.progressionData;
-                
-                // Cognitive Profile
-                content += '<div style="margin-bottom: 15px;">';
-                content += '<div style="color: #aaa; font-size: 10px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Cognitive Profile</div>';
-                
-                const domainNames = {
-                    workingMemory: 'Working Memory',
-                    attention: 'Attention',
-                    processingSpeed: 'Processing Speed',
-                    executiveFunctions: 'Executive Functions',
-                    perceptualProcessing: 'Perceptual Processing',
-                    longTermMemory: 'Long-Term Memory'
-                };
-                
-                Object.entries(scores).filter(([key]) => key !== 'id').forEach(([domain, data]) => {
-                    const color = data.score <= 333 ? '#4CAF50' : data.score <= 666 ? '#FFC107' : '#F44336';
-                    content += `
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; margin: 3px 0; background: #2a2a2a; border-radius: 3px; cursor: pointer;" 
-                             onclick="window.showDomainDetails('${domain}')" 
-                             onmouseover="this.style.background='#333'" 
-                             onmouseout="this.style.background='#2a2a2a'">
-                            <div style="flex: 1;">
-                                <div style="font-size: 11px;">${domainNames[domain]}</div>
-                                <div style="font-size: 9px; color: #888;">${data.sessions} sessions</div>
-                            </div>
-                            <div style="font-size: 16px; font-weight: bold; color: ${color};">${data.score}</div>
-                        </div>
-                    `;
-                });
+            // Game statistics
+            if (gameData && gameData.hasData) {
+                content += '<div style="margin-bottom: 20px;">';
+                content += '<div style="color: #aaa; font-size: 11px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Game Statistics</div>';
+                content += '<div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 4px; margin-bottom: 15px;">';
+                content += `<div style="display: flex; justify-content: space-between; margin: 6px 0; font-size: 13px;"><span>Sessions:</span><span style="color: #4CAF50; font-weight: bold;">${gameData.sessions}</span></div>`;
+                content += `<div style="display: flex; justify-content: space-between; margin: 6px 0; font-size: 13px;"><span>Avg Score:</span><span style="color: #4CAF50; font-weight: bold;">${gameData.avgScore}</span></div>`;
+                content += `<div style="display: flex; justify-content: space-between; margin: 6px 0; font-size: 13px;"><span>Best Score:</span><span style="color: #FFC107; font-weight: bold;">${gameData.bestScore}</span></div>`;
                 content += '</div>';
-                
-                // Training Progress
-                content += '<div style="margin-bottom: 15px;">';
-                content += '<div style="color: #aaa; font-size: 10px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Training Progress</div>';
-                content += '<div style="background: #2a2a2a; padding: 8px; border-radius: 3px;">';
-                content += `<div style="display: flex; justify-content: space-between; margin: 4px 0;"><span>Total Sessions:</span><span style="color: #4CAF50;">${progression.totalSessions}</span></div>`;
-                content += `<div style="display: flex; justify-content: space-between; margin: 4px 0;"><span>Total Time:</span><span style="color: #4CAF50;">${Math.round(progression.totalTime / 3600)}h ${Math.round((progression.totalTime % 3600) / 60)}m</span></div>`;
-                content += `<div style="display: flex; justify-content: space-between; margin: 4px 0;"><span>Current Streak:</span><span style="color: #FFC107;">${progression.currentStreak} days</span></div>`;
-                content += `<div style="display: flex; justify-content: space-between; margin: 4px 0;"><span>Best Streak:</span><span style="color: #FFC107;">${progression.longestStreak} days</span></div>`;
-                content += '</div></div>';
-                
-                // View Details Button
-                content += '<button onclick="window.showDetailedStats()" style="width: 100%; padding: 8px; background: #4CAF50; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 11px; font-family: \'Lucida Grande\', sans-serif;">View Detailed Analytics</button>';
-                
+                content += '<div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 4px;">';
+                content += '<canvas id="unified-stats-chart" width="500" height="250"></canvas>';
+                content += '</div>';
+                content += '</div>';
             } else {
-                console.log('Cognitive system not found');
-                content += '<div style="padding: 20px; text-align: center; color: #888; font-size: 11px;">';
-                content += '<div style="margin-bottom: 10px;">🧠 Cognitive System</div>';
-                content += '<div style="color: #F44336; margin-bottom: 10px;">Not Initialized</div>';
-                content += '<div style="font-size: 10px; color: #666;">The system will initialize automatically.</div>';
-                content += '<div style="font-size: 10px; color: #666; margin-top: 10px;">Start training to see your cognitive profile!</div>';
-                content += '</div>';
-                
-                // Debug info
-                content += '<div style="margin-top: 15px; padding: 8px; background: #2a2a2a; border-radius: 3px; font-size: 9px; color: #666;">';
-                content += '<div>Debug Info:</div>';
-                content += `<div>unifiedBrainTraining: ${window.unifiedBrainTraining ? '✓' : '✗'}</div>`;
-                content += `<div>CognitiveDataStore: ${typeof CognitiveDataStore !== 'undefined' ? '✓' : '✗'}</div>`;
-                content += `<div>CognitiveProgressionSystem: ${typeof CognitiveProgressionSystem !== 'undefined' ? '✓' : '✗'}</div>`;
+                content += '<div style="padding: 40px 20px; text-align: center;">';
+                content += '<div style="font-size: 64px; margin-bottom: 20px;">📊</div>';
+                content += '<div style="color: #aaa; font-size: 14px; margin-bottom: 10px; font-weight: bold;">No statistics yet</div>';
+                content += '<div style="color: #888; font-size: 12px; line-height: 1.6;">Complete a training session to see your performance graphs and statistics here.</div>';
                 content += '</div>';
             }
             
-            content += '</div>';
-            panel.innerHTML = content;
-            console.log('Panel created, appending to body');
-            
-            document.body.appendChild(panel);
-            
-            // Close button handler
-            document.getElementById('close-stats-panel').addEventListener('click', () => {
-                panel.remove();
+            // Use the existing modal system
+            createCustomModal({
+                title: '📊 Training Statistics',
+                content: content
             });
             
-            // Close on outside click
-            setTimeout(() => {
-                document.addEventListener('click', function closeOnOutside(e) {
-                    if (!panel.contains(e.target) && !document.getElementById('unified-stats-btn').contains(e.target)) {
-                        panel.remove();
-                        document.removeEventListener('click', closeOnOutside);
+            // Render chart if we have data
+            if (gameData && gameData.hasData && typeof Chart !== 'undefined') {
+                setTimeout(() => {
+                    const canvas = document.getElementById('unified-stats-chart');
+                    if (canvas) {
+                        renderUnifiedChart(gameData);
+                    }
+                }, 300);
+            }
+        }
+        
+        // Get game statistics from localStorage
+        function getGameStatistics(gameId) {
+            if (gameId === 'jiggle-factorial') {
+                const progressData = JSON.parse(localStorage.getItem('progressData')) || [];
+                if (progressData.length === 0) return { hasData: false };
+                
+                const scores = progressData.map(d => d.averageScore || 0);
+                const avgScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+                const bestScore = Math.max(...scores);
+                
+                return {
+                    hasData: true,
+                    sessions: progressData.length,
+                    avgScore: avgScore,
+                    bestScore: bestScore,
+                    chartData: progressData
+                };
+            }
+            
+            // Add other games here
+            return { hasData: false };
+        }
+        
+        // Render chart using Chart.js
+        function renderUnifiedChart(gameData) {
+            const canvas = document.getElementById('unified-stats-chart');
+            if (!canvas || !gameData || !gameData.chartData) {
+                return;
+            }
+            
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+            
+            // Destroy existing chart
+            if (window.unifiedStatsChart) {
+                window.unifiedStatsChart.destroy();
+            }
+            
+            const data = gameData.chartData;
+            
+            try {
+                window.unifiedStatsChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.map((d, i) => d.date || `S${i + 1}`),
+                        datasets: [{
+                            label: 'Score',
+                            data: data.map(d => d.averageScore || 0),
+                            borderColor: '#4CAF50',
+                            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                            tension: 0.3,
+                            fill: true,
+                            pointRadius: 3,
+                            pointHoverRadius: 5
+                        }, {
+                            label: 'Accuracy %',
+                            data: data.map(d => d.averageAccuracy || 0),
+                            borderColor: '#2196F3',
+                            backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                            tension: 0.3,
+                            fill: true,
+                            pointRadius: 3,
+                            pointHoverRadius: 5
+                        }]
+                    },
+                    options: {
+                        responsive: false,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                labels: { 
+                                    color: '#eee', 
+                                    font: { size: 11 },
+                                    padding: 10
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: { 
+                                    color: '#aaa', 
+                                    font: { size: 10 },
+                                    maxRotation: 0
+                                },
+                                grid: { color: 'rgba(255,255,255,0.1)' }
+                            },
+                            y: {
+                                ticks: { 
+                                    color: '#aaa', 
+                                    font: { size: 10 }
+                                },
+                                grid: { color: 'rgba(255,255,255,0.1)' }
+                            }
+                        }
                     }
                 });
-            }, 100);
+            } catch (error) {
+                console.error('Chart rendering error:', error);
+            }
         }
         
         // Show domain details in modal
