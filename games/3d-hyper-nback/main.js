@@ -5458,32 +5458,38 @@ if (speedDisplay) {
 }
 
 // Reactive Settings Integration for Unified System
-window.settings = {
-  wallsEnabled: wallsEnableTrig.checked,
-  cameraEnabled: cameraEnableTrig.checked,
-  faceEnabled: faceEnableTrig.checked,
-  positionEnabled: positionEnableTrig.checked,
-  rotationEnabled: rotationEnableTrig.checked,
-  wordEnabled: wordEnableTrig.checked,
-  shapeEnabled: shapeEnableTrig.checked,
-  cornerEnabled: cornerEnableTrig.checked,
-  soundEnabled: soundEnableTrig.checked,
-  colorEnabled: colorEnableTrig.checked,
-  randomizeEnabled: randomizeEnableTrig.checked,
-  nLevel: parseInt(nLevelInput.value),
-  numStimuliSelect: parseInt(numStimuliSelectInput.value),
-  sceneDimmer: parseFloat(sceneDimmerInput.value),
-  zoom: parseFloat(zoomInput.value),
-  perspective: parseFloat(perspectiveInput.value),
-  targetNumOfStimuli: parseInt(targetStimuliInput.value),
-  baseDelay: parseInt(baseDelayInput.value),
-  maxAllowedMistakes: parseInt(maxAllowedMistakesInput.value),
-  previousLevelThreshold: parseFloat(previousLevelThresholdInput.value),
-  nextLevelThreshold: parseFloat(nextLevelThresholdInput.value)
-};
+// Initialize settings object (will be populated after DOM is ready)
+window.settings = {};
 
 function updateSettings(newSettings) {
   console.log('🎮 [3D-HYPER-NBACK] Updating settings:', newSettings);
+  
+  // Initialize settings object if empty
+  if (Object.keys(window.settings).length === 0) {
+    window.settings = {
+      wallsEnabled: wallsEnableTrig?.checked || defVal_wallsEnabled,
+      cameraEnabled: cameraEnableTrig?.checked || defVal_cameraEnabled,
+      faceEnabled: faceEnableTrig?.checked || defVal_faceEnabled,
+      positionEnabled: positionEnableTrig?.checked || defVal_positionEnabled,
+      rotationEnabled: rotationEnableTrig?.checked || defVal_rotationEnabled,
+      wordEnabled: wordEnableTrig?.checked || defVal_wordEnabled,
+      shapeEnabled: shapeEnableTrig?.checked || defVal_shapeEnabled,
+      cornerEnabled: cornerEnableTrig?.checked || defVal_cornerEnabled,
+      soundEnabled: soundEnableTrig?.checked || defVal_soundEnabled,
+      colorEnabled: colorEnableTrig?.checked || defVal_colorEnabled,
+      randomizeEnabled: randomizeEnableTrig?.checked || defVal_randomizeEnabled,
+      nLevel: nLevelInput?.value ? parseInt(nLevelInput.value) : defVal_nLevel,
+      numStimuliSelect: numStimuliSelectInput?.value ? parseInt(numStimuliSelectInput.value) : defVal_numStimuliSelect,
+      sceneDimmer: sceneDimmerInput?.value ? parseFloat(sceneDimmerInput.value) : defVal_sceneDimmer,
+      zoom: zoomInput?.value ? parseFloat(zoomInput.value) : defVal_zoom,
+      perspective: perspectiveInput?.value ? parseFloat(perspectiveInput.value) : defVal_perspective,
+      targetNumOfStimuli: targetStimuliInput?.value ? parseInt(targetStimuliInput.value) : defVal_targetNumOfStimuli,
+      baseDelay: baseDelayInput?.value ? parseInt(baseDelayInput.value) : defVal_baseDelay,
+      maxAllowedMistakes: maxAllowedMistakesInput?.value ? parseInt(maxAllowedMistakesInput.value) : defVal_maxAllowedMistakes,
+      previousLevelThreshold: previousLevelThresholdInput?.value ? parseFloat(previousLevelThresholdInput.value) : defVal_prevLevelThreshold,
+      nextLevelThreshold: nextLevelThresholdInput?.value ? parseFloat(nextLevelThresholdInput.value) : defVal_nextLevelThreshold
+    };
+  }
   
   if (newSettings) {
     // Update settings object
@@ -5573,8 +5579,20 @@ function startGame() {
   play();
 }
 
-// Initialize settings object with current values
-updateSettings();
+// Expose functions for unified system
+window.updateSettings = updateSettings;
+window.applySettings = updateSettings; // Alias for compatibility
+window.repopulateGui = repopulateGui;
+window.startGame = startGame;
+
+// Initialize settings object with current values (after DOM is ready)
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    updateSettings();
+  });
+} else {
+  updateSettings();
+}
 
 // Listen for settings updates from unified system
 window.addEventListener('message', function(event) {
