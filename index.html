@@ -218,7 +218,13 @@
             
             // Stats button handler  
             document.getElementById('unified-stats-btn').addEventListener('click', () => {
-                showStatsPopup();
+                console.log('Stats button clicked!');
+                try {
+                    showStatsPopup();
+                } catch (error) {
+                    console.error('Error showing stats:', error);
+                    alert('Error showing statistics: ' + error.message);
+                }
             });
             
             // Load default game
@@ -362,9 +368,13 @@
         }
 
         async function showStatsPopup() {
+            console.log('showStatsPopup called');
+            console.log('Cognitive system:', window.unifiedBrainTraining?.cognitiveSystem);
+            
             // Create dat.GUI-styled statistics panel
             const existingPanel = document.getElementById('unified-stats-panel');
             if (existingPanel) {
+                console.log('Removing existing panel');
                 existingPanel.remove();
                 return; // Toggle off
             }
@@ -411,6 +421,7 @@
             
             // Cognitive data
             if (window.unifiedBrainTraining?.cognitiveSystem) {
+                console.log('Cognitive system found, loading data...');
                 const scores = window.unifiedBrainTraining.cognitiveSystem.cognitiveScores;
                 const progression = window.unifiedBrainTraining.cognitiveSystem.progressionData;
                 
@@ -458,13 +469,26 @@
                 content += '<button onclick="window.showDetailedStats()" style="width: 100%; padding: 8px; background: #4CAF50; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 11px; font-family: \'Lucida Grande\', sans-serif;">View Detailed Analytics</button>';
                 
             } else {
+                console.log('Cognitive system not found');
                 content += '<div style="padding: 20px; text-align: center; color: #888; font-size: 11px;">';
-                content += 'Start training to see your cognitive profile!';
+                content += '<div style="margin-bottom: 10px;">🧠 Cognitive System</div>';
+                content += '<div style="color: #F44336; margin-bottom: 10px;">Not Initialized</div>';
+                content += '<div style="font-size: 10px; color: #666;">The system will initialize automatically.</div>';
+                content += '<div style="font-size: 10px; color: #666; margin-top: 10px;">Start training to see your cognitive profile!</div>';
+                content += '</div>';
+                
+                // Debug info
+                content += '<div style="margin-top: 15px; padding: 8px; background: #2a2a2a; border-radius: 3px; font-size: 9px; color: #666;">';
+                content += '<div>Debug Info:</div>';
+                content += `<div>unifiedBrainTraining: ${window.unifiedBrainTraining ? '✓' : '✗'}</div>`;
+                content += `<div>CognitiveDataStore: ${typeof CognitiveDataStore !== 'undefined' ? '✓' : '✗'}</div>`;
+                content += `<div>CognitiveProgressionSystem: ${typeof CognitiveProgressionSystem !== 'undefined' ? '✓' : '✗'}</div>`;
                 content += '</div>';
             }
             
             content += '</div>';
             panel.innerHTML = content;
+            console.log('Panel created, appending to body');
             
             document.body.appendChild(panel);
             
