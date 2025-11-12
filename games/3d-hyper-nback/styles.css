@@ -1219,3 +1219,169 @@ dialog .dialog-content {
 .rotation-active {
   box-shadow: inset 0 0 8px #0ff, 0 0 8px #0ff4 !important;
 }
+
+
+/* Continuous Stats Sidebar - Matches original dialog styling */
+.continuous-stats-sidebar {
+  position: fixed;
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%) translateX(120%);
+  width: 280px;
+  background-color: #0008;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.5em;
+  padding: 1em;
+  color: #fff;
+  font-family: 'Nova Square', cursive;
+  font-size: 1.25rem;
+  z-index: 9999;
+  transition: transform 0.5s ease, opacity 0.5s ease;
+  opacity: 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+}
+
+.continuous-stats-sidebar.show {
+  transform: translateY(-50%) translateX(0);
+  opacity: 1;
+}
+
+/* Sidebar uses same card styling as dialog */
+.continuous-stats-sidebar .sidebar-dim {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.continuous-stats-sidebar .sidebar-stats-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 1rem;
+  justify-content: center;
+  text-align: center;
+  margin: 1rem 0;
+}
+
+.continuous-stats-sidebar .sidebar-stats-card {
+  padding: 0.25rem;
+  flex: 1;
+  min-width: 70px;
+}
+
+.continuous-stats-sidebar .sidebar-stats-card-title {
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.continuous-stats-sidebar .sidebar-stats-card-value {
+  margin-top: 0.25rem;
+  font-size: 1.25rem;
+}
+
+.continuous-stats-sidebar .sidebar-level {
+  text-align: center;
+  font-size: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.continuous-stats-sidebar .sidebar-accuracy {
+  text-align: center;
+  font-size: 1rem;
+  margin: 0.5rem 0;
+}
+
+.continuous-stats-sidebar .sidebar-metrics {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.continuous-stats-sidebar .sidebar-metric-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  margin: 0.25rem 0;
+}
+
+.continuous-stats-sidebar .sidebar-metric-label {
+  font-weight: 700;
+}
+
+.continuous-stats-sidebar .sidebar-section-title {
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 700;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.continuous-stats-sidebar .sidebar-lure-stats {
+  margin-top: 0.5rem;
+}
+
+.continuous-stats-sidebar .sidebar-lure-details {
+  font-size: 0.7rem;
+  text-align: center;
+  margin-top: 0.5rem;
+  opacity: 0.8;
+}
+
+.continuous-stats-sidebar .sidebar-excellence {
+  margin-top: 0.5rem;
+}
+
+.continuous-stats-sidebar .sidebar-progress-item {
+  margin: 0.5rem 0;
+}
+
+.continuous-stats-sidebar .sidebar-progress-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.continuous-stats-sidebar .sidebar-progress-bar-container {
+  background: rgba(255, 255, 255, 0.2);
+  height: 0.4rem;
+  border-radius: 0.2rem;
+  overflow: hidden;
+}
+
+.continuous-stats-sidebar .sidebar-progress-bar {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.continuous-stats-sidebar .sidebar-speed {
+  text-align: center;
+  font-size: 0.9rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .continuous-stats-sidebar {
+    right: 10px;
+    width: 160px;
+    font-size: 10px;
+  }
+  
+  .stats-title {
+    font-size: 12px;
+  }
+  
+  .level-value {
+    font-size: 16px;
+  }
+  
+  .stat-value {
+    font-size: 14px;
+  }
+}

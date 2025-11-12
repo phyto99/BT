@@ -3621,16 +3621,66 @@ function updateContinuousStatsSidebar() {
                         wrongShape + wrongCorner + wrongSound + wrongColor + wrongRotation;
   const correctResponses = rightWalls + rightCamera + rightFace + rightPosition + rightWord + 
                           rightShape + rightCorner + rightSound + rightColor + rightRotation;
-  const accuracy = totalResponses > 0 ? (correctResponses / totalResponses * 100).toFixed(1) : 0;
+  const accuracy = totalResponses > 0 ? (correctResponses / totalResponses) : 0;
+  const accuracyPercent = (accuracy * 100).toFixed(1);
   
   // Get dimension display
   const activeDimensions = getActiveStimuliCount();
   const dimDisplay = `${activeDimensions}D`;
   
-  // Update sidebar content - matching original dialog styling
+  // Calculate totals
   const wrongTotal = wrongWalls + wrongCamera + wrongFace + wrongPosition + wrongWord + wrongShape + wrongCorner + wrongSound + wrongColor + wrongRotation;
   const missedTotal = matchingStimuli - correctResponses;
   
+  // Calculate lure resistances if there were any lures
+  if (sessionMetrics.n1LureEncounters && sessionMetrics.n1LureEncounters > 0) {
+    sessionMetrics.n1LureResistance = (sessionMetrics.n1LureCorrectRejections || 0) / sessionMetrics.n1LureEncounters;
+  } else {
+    sessionMetrics.n1LureResistance = 1.0;
+  }
+
+  if (sessionMetrics.nPlusLureEncounters && sessionMetrics.nPlusLureEncounters > 0) {
+    sessionMetrics.nPlusLureResistance = (sessionMetrics.nPlusLureCorrectRejections || 0) / sessionMetrics.nPlusLureEncounters;
+  } else {
+    sessionMetrics.nPlusLureResistance = 1.0;
+  }
+
+  // Calculate total lure resistance
+  const totalLureEncounters = (sessionMetrics.n1LureEncounters || 0) + (sessionMetrics.nPlusLureEncounters || 0);
+  if (totalLureEncounters > 0) {
+    sessionMetrics.totalLureResistance = 
+      ((sessionMetrics.n1LureResistance * (sessionMetrics.n1LureEncounters || 0)) + 
+       (sessionMetrics.nPlusLureResistance * (sessionMetrics.nPlusLureEncounters || 0))) / totalLureEncounters;
+  } else {
+    sessionMetrics.totalLureResistance = 0;
+  }
+  
+  // Calculate excellence progress bars
+  const dPrimeTarget = 2.0;
+  const lureResistanceTarget = 0.85;
+  const accuracyTarget = 0.90;
+
+  const accuracyProgress = Math.min(100, Math.max(0, (accuracy / accuracyTarget) * 100));
+  const dPrimeProgress = Math.min(100, Math.max(0, (sessionMetrics.dPrime / dPrimeTarget) * 100));
+  const lureResistanceProgress = sessionMetrics.totalLureResistance ? 
+    Math.min(100, Math.max(0, (sessionMetrics.totalLureResistance / lureResistanceTarget) * 100)) : 0;
+
+  // Calculate overall excellence
+  let overallProgress = 0;
+  let weightSum = 0;
+  overallProgress += accuracyProgress * 2;
+  weightSum += 2;
+  overallProgress += dPrimeProgress * 2;
+  weightSum += 2;
+
+  if (totalLureEncounters > 0) {
+    overallProgress += lureResistanceProgress;
+    weightSum += 1;
+  }
+
+  const finalOverallProgress = overallProgress / weightSum;
+  
+  // Update sidebar content - matching original dialog styling exactly
   sidebar.innerHTML = `
     <div class="sidebar-dim">${dimDisplay}</div>
     
@@ -3650,13 +3700,14 @@ function updateContinuousStatsSidebar() {
     </div>
     
     <div class="sidebar-accuracy">
-      Accuracy: <strong>${accuracy}%</strong>
+      Accuracy: <strong>${accuracyPercent}%</strong>
     </div>
     
     <div class="sidebar-level">
       N = <strong>${formatMicroLevel(currentMicroLevel)}</strong>
     </div>
     
+    <div class="sidebar-section-title">Signal Detection Metrics</div>
     <div class="sidebar-metrics">
       <div class="sidebar-metric-row">
         <span class="sidebar-metric-label">d'-Prime:</span>
@@ -3666,12 +3717,69 @@ function updateContinuousStatsSidebar() {
         <span class="sidebar-metric-label">Bias:</span>
         <span>${sessionMetrics.responseBias.toFixed(2)}</span>
       </div>
-      ${sessionMetrics.totalLureResistance > 0 ? `
+    </div>
+    
+    ${totalLureEncounters > 0 ? `
+    <div class="sidebar-section-title">Interference Control</div>
+    <div class="sidebar-lure-stats">
       <div class="sidebar-metric-row">
-        <span class="sidebar-metric-label">Lure Resist:</span>
+        <span class="sidebar-metric-label">Lure Resistance:</span>
         <span>${(sessionMetrics.totalLureResistance * 100).toFixed(0)}%</span>
       </div>
+      <div class="sidebar-metric-row">
+        <span class="sidebar-metric-label">Lures Encountered:</span>
+        <span>${totalLureEncounters}</span>
+      </div>
+      <div class="sidebar-lure-details">
+        N-1: ${(sessionMetrics.n1LureResistance * 100).toFixed(0)}% (${sessionMetrics.n1LureEncounters || 0}), 
+        N+1: ${(sessionMetrics.nPlusLureResistance * 100).toFixed(0)}% (${sessionMetrics.nPlusLureEncounters || 0})
+      </div>
+    </div>
+    ` : ''}
+    
+    <div class="sidebar-section-title">Excellence Progress</div>
+    <div class="sidebar-excellence">
+      <div class="sidebar-progress-item">
+        <div class="sidebar-progress-header">
+          <span>Accuracy Threshold</span>
+          <span>${Math.round(accuracyProgress)}%</span>
+        </div>
+        <div class="sidebar-progress-bar-container">
+          <div class="sidebar-progress-bar" style="width: ${accuracyProgress}%; background: #9C27B0;"></div>
+        </div>
+      </div>
+      
+      <div class="sidebar-progress-item">
+        <div class="sidebar-progress-header">
+          <span>d'-Prime Excellence</span>
+          <span>${Math.round(dPrimeProgress)}%</span>
+        </div>
+        <div class="sidebar-progress-bar-container">
+          <div class="sidebar-progress-bar" style="width: ${dPrimeProgress}%; background: #4CAF50;"></div>
+        </div>
+      </div>
+      
+      ${totalLureEncounters > 0 ? `
+      <div class="sidebar-progress-item">
+        <div class="sidebar-progress-header">
+          <span>Interference Control</span>
+          <span>${Math.round(lureResistanceProgress)}%</span>
+        </div>
+        <div class="sidebar-progress-bar-container">
+          <div class="sidebar-progress-bar" style="width: ${lureResistanceProgress}%; background: #2196F3;"></div>
+        </div>
+      </div>
       ` : ''}
+      
+      <div class="sidebar-progress-item">
+        <div class="sidebar-progress-header">
+          <span>Overall Excellence</span>
+          <span>${Math.round(finalOverallProgress)}%</span>
+        </div>
+        <div class="sidebar-progress-bar-container">
+          <div class="sidebar-progress-bar" style="width: ${finalOverallProgress}%; background: linear-gradient(90deg, #4CAF50, #2196F3);"></div>
+        </div>
+      </div>
     </div>
     
     <div class="sidebar-speed">
@@ -3682,7 +3790,6 @@ function updateContinuousStatsSidebar() {
   // Keep sidebar visible permanently
   sidebar.classList.add('show');
   console.log('🎯 [CONTINUOUS] Sidebar shown with class "show"');
-  console.log('🎯 [CONTINUOUS] Sidebar HTML:', sidebar.outerHTML.substring(0, 200));
   
   } catch (error) {
     console.error('🎯 [CONTINUOUS] ERROR in updateContinuousStatsSidebar:', error);
