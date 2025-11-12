@@ -1,4 +1,10 @@
 // Fixed main.js file for the 3D Hyper N-Back application
+// VERSION: 1.5 - Debug and localStorage reset
+
+// Emergency localStorage reset - uncomment to clear corrupted data
+// localStorage.removeItem('hyper-n-back');
+// localStorage.removeItem('hyper-history');
+// console.log('🔄 LocalStorage cleared - refresh page');
 
 function deepCopy(anything) {
   return JSON.parse(JSON.stringify(anything));
@@ -324,6 +330,7 @@ let currentMicroLevel = 2.00;
 
 // Store micro-levels for different stimulus configurations
 let microLevelsByConfig = {
+  1: 2.00,  // Single n-back
   2: 2.00,  // Dual n-back
   3: 2.00,  // Triple n-back
   4: 2.00,  // Quad n-back
@@ -331,11 +338,13 @@ let microLevelsByConfig = {
   6: 2.00,
   7: 2.00,
   8: 2.00,
-  9: 2.00
+  9: 2.00,
+  10: 2.00
 };
 
 // Track accuracy attempts for integer level transitions
 let accuracyAttemptsByConfig = {
+  1: { attempts: [], requiredSuccesses: 3, windowSize: 5 },
   2: { attempts: [], requiredSuccesses: 3, windowSize: 5 },
   3: { attempts: [], requiredSuccesses: 3, windowSize: 5 },
   4: { attempts: [], requiredSuccesses: 3, windowSize: 5 },
@@ -343,11 +352,13 @@ let accuracyAttemptsByConfig = {
   6: { attempts: [], requiredSuccesses: 3, windowSize: 5 },
   7: { attempts: [], requiredSuccesses: 3, windowSize: 5 },
   8: { attempts: [], requiredSuccesses: 3, windowSize: 5 },
-  9: { attempts: [], requiredSuccesses: 3, windowSize: 5 }
+  9: { attempts: [], requiredSuccesses: 3, windowSize: 5 },
+  10: { attempts: [], requiredSuccesses: 3, windowSize: 5 }
 };
 
 // Session histories by configuration
 let sessionHistoriesByConfig = {
+  1: [],
   2: [],
   3: [],
   4: [],
@@ -355,11 +366,13 @@ let sessionHistoriesByConfig = {
   6: [],
   7: [],
   8: [],
-  9: []
+  9: [],
+  10: []
 };
 
 // Phase transition accuracy tracking
 let phaseAccuracyAttemptsByConfig = {
+  1: { phase1to2: [], phase2to3: [], requiredSuccesses: 3, windowSize: 5 },
   2: { phase1to2: [], phase2to3: [], requiredSuccesses: 3, windowSize: 5 },
   3: { phase1to2: [], phase2to3: [], requiredSuccesses: 3, windowSize: 5 },
   4: { phase1to2: [], phase2to3: [], requiredSuccesses: 3, windowSize: 5 },
@@ -367,7 +380,8 @@ let phaseAccuracyAttemptsByConfig = {
   6: { phase1to2: [], phase2to3: [], requiredSuccesses: 3, windowSize: 5 },
   7: { phase1to2: [], phase2to3: [], requiredSuccesses: 3, windowSize: 5 },
   8: { phase1to2: [], phase2to3: [], requiredSuccesses: 3, windowSize: 5 },
-  9: { phase1to2: [], phase2to3: [], requiredSuccesses: 3, windowSize: 5 }
+  9: { phase1to2: [], phase2to3: [], requiredSuccesses: 3, windowSize: 5 },
+  10: { phase1to2: [], phase2to3: [], requiredSuccesses: 3, windowSize: 5 }
 };
 
 function calculateDPrime(hits, misses, falseAlarms, correctRejections) {
@@ -477,21 +491,29 @@ function checkMicroLevelAdvancement(sessionMetrics, sessionHistory) {
   const correctResponses = sessionMetrics.hits;
   const accuracy = totalMatches > 0 ? correctResponses / totalMatches : 0;
 
-  // Criteria for advancement
-  const matchAccuracy = sessionMetrics.hits / Math.max(1, sessionMetrics.hits + sessionMetrics.misses + sessionMetrics.falseAlarms);
-  const goodAccuracy = matchAccuracy >= 0.9; // 90% accuracy minimum for any progress
+  // PRIMARY CRITERIA: d'prime (signal detection sensitivity)
+  const dPrime = sessionMetrics.dPrime;
+  const goodDPrime = dPrime >= dPrimeThreshold;
+  const excellentDPrime = dPrime >= dPrimeThreshold * 1.5;
+  
+  // SECONDARY CRITERIA: Response bias (should be near 0)
+  const bias = Math.abs(sessionMetrics.responseBias);
+  const lowBias = bias < 0.5;
+  
+  // TERTIARY CRITERIA: Lure resistance
   const goodLureResistance = sessionMetrics.n1LureResistance >= lureResistanceThreshold;
-  console.log(`Advancement criteria: accuracy=${(matchAccuracy * 100).toFixed(1)}%, goodAccuracy=${goodAccuracy}`);
+  
+  console.log(`Advancement criteria: d'=${dPrime.toFixed(2)} (baseline=${dPrimeThreshold.toFixed(2)}), bias=${bias.toFixed(2)}, lureResist=${(sessionMetrics.n1LureResistance * 100).toFixed(0)}%`);
   
   // Get current level components
   const { nLevel, microProgress } = getMicroLevelComponents(currentMicroLevel);
   
-  // Advancement size (0.01 to 0.05 based on accuracy)
+  // Advancement size (0.01 to 0.05 based on d'prime performance)
   const baseIncrement = 0.01;
   const maxIncrement = 0.05;
-  // Use matchAccuracy that was already calculated above
-  const performanceRatio = Math.min(1, Math.max(0, (matchAccuracy - 0.5) / 0.4)); // Scale from 50% to 90%
-  const increment = baseIncrement + (performanceRatio * (maxIncrement - baseIncrement));
+  // Scale increment based on how much d'prime exceeds baseline
+  const dPrimeRatio = Math.min(1, Math.max(0, (dPrime - dPrimeThreshold) / dPrimeThreshold));
+  const increment = baseIncrement + (dPrimeRatio * (maxIncrement - baseIncrement));
   const roundedIncrement = Math.round(increment * 100) / 100;
   
   // Determine new micro-level
@@ -499,14 +521,14 @@ function checkMicroLevelAdvancement(sessionMetrics, sessionHistory) {
   console.log("=== START checkMicroLevelAdvancement ===");
   console.log(`Initial newMicroLevel: ${newMicroLevel}`);
 
-  // Check for regression first
+  // Check for regression first (d'prime < 70% of baseline)
   let isRegressing = false;
-  if (matchAccuracy < 0.75) {
-    // Regression in micro-level for poor performance (below 75% accuracy)
+  if (dPrime < dPrimeThreshold * 0.7) {
+    // Regression in micro-level for poor d'prime performance
     const decrement = 0.05;
     newMicroLevel = Math.round((currentMicroLevel - decrement) * 100) / 100;
     newMicroLevel = Math.max(2.0, newMicroLevel);
-    console.log(`Decreasing micro-level by -${decrement.toFixed(2)} (accuracy below 75%: ${(matchAccuracy * 100).toFixed(1)}%)`);
+    console.log(`Decreasing micro-level by -${decrement.toFixed(2)} (d'prime ${dPrime.toFixed(2)} < 70% of baseline ${(dPrimeThreshold * 0.7).toFixed(2)})`);
     isRegressing = true;
     console.log(`Returning newMicroLevel: ${newMicroLevel} (was ${currentMicroLevel})`);
     
@@ -534,26 +556,12 @@ function checkMicroLevelAdvancement(sessionMetrics, sessionHistory) {
     }
     return newMicroLevel;
 
-  } else if (matchAccuracy >= 0.75 && matchAccuracy < 0.90) {
-    // Record failed phase transition attempt if at boundary
-    const atPhaseBoundary = Math.abs(microProgress - 0.33) < 0.001 || Math.abs(microProgress - 0.66) < 0.001;
-    if (atPhaseBoundary) {
-      const configKey = getCurrentConfigKey();
-      const phaseData = phaseAccuracyAttemptsByConfig[configKey];
-      const currentPhase = microProgress < 0.34 ? 1 : (microProgress < 0.67 ? 2 : 3);
-      const transitionKey = currentPhase === 1 ? 'phase1to2' : 'phase2to3';
-      
-      // Record failed attempt
-      phaseData[transitionKey].push(false);
-      if (phaseData[transitionKey].length > phaseData.windowSize) {
-        phaseData[transitionKey] = phaseData[transitionKey].slice(-phaseData.windowSize);
-      }
-    }
-    // Stay at current level
+  } else if (dPrime >= dPrimeThreshold * 0.7 && dPrime < dPrimeThreshold) {
+    // d'prime is acceptable but not exceeding baseline - stay at current level
     newMicroLevel = currentMicroLevel;
-    console.log(`Maintaining current level (accuracy ${(matchAccuracy * 100).toFixed(1)}% - need 90% for progress)`);
+    console.log(`Maintaining current level (d'prime ${dPrime.toFixed(2)} meets baseline but doesn't exceed it)`);
 
-  } else if (goodAccuracy) {
+  } else if (goodDPrime && lowBias) {
     // Calculate potential new level (only if not already regressing)
     let potentialNewLevel = Math.round((currentMicroLevel + roundedIncrement) * 100) / 100;
     
@@ -592,18 +600,18 @@ function checkMicroLevelAdvancement(sessionMetrics, sessionHistory) {
         // Determine which phase transition this is
         const transitionKey = currentPhase === 1 ? 'phase1to2' : 'phase2to3';
 
-        // Calculate proper accuracy for phase transitions (matches only)
-        const matchAccuracy = sessionMetrics.hits / Math.max(1, sessionMetrics.hits + sessionMetrics.misses + sessionMetrics.falseAlarms);
+        // Phase transitions require good d'prime AND low bias
+        const phaseTransitionSuccess = goodDPrime && lowBias;
 
         // Record this attempt
-        phaseData[transitionKey].push(matchAccuracy >= 0.90);
+        phaseData[transitionKey].push(phaseTransitionSuccess);
         
         // Keep only the most recent attempts within window size
         if (phaseData[transitionKey].length > phaseData.windowSize) {
           phaseData[transitionKey] = phaseData[transitionKey].slice(-phaseData.windowSize);
         }
         
-        // Count successful attempts (90%+ accuracy) in the window
+        // Count successful attempts (good d'prime + low bias) in the window
         const successCount = phaseData[transitionKey].filter(a => a).length;
         
         // Need at least 5 attempts AND 3+ successes to advance
@@ -645,11 +653,11 @@ function checkMicroLevelAdvancement(sessionMetrics, sessionHistory) {
           const configKey = getCurrentConfigKey();
           const attemptData = accuracyAttemptsByConfig[configKey];
           
-          // Calculate proper accuracy for integer transitions (matches only)
-          const matchAccuracy = sessionMetrics.hits / Math.max(1, sessionMetrics.hits + sessionMetrics.misses + sessionMetrics.falseAlarms);
+          // Integer transitions require excellent d'prime AND low bias
+          const integerTransitionSuccess = excellentDPrime && lowBias;
           
           // Record this attempt
-          attemptData.attempts.push(matchAccuracy >= 0.90);
+          attemptData.attempts.push(integerTransitionSuccess);
           
           // Keep only the most recent attempts within window size
           if (attemptData.attempts.length > attemptData.windowSize) {
@@ -668,7 +676,7 @@ function checkMicroLevelAdvancement(sessionMetrics, sessionHistory) {
           } else {
             // Cap at .99 of current level
             newMicroLevel = Math.floor(currentMicroLevel) + 0.99;
-            console.log(`Integer transition blocked: ${successCount}/${attemptData.requiredSuccesses} successful attempts (${(matchAccuracy * 100).toFixed(0)}% this session)`);
+            console.log(`Integer transition blocked: ${successCount}/${attemptData.requiredSuccesses} successful attempts (d'=${dPrime.toFixed(2)}, need ${(dPrimeThreshold * 1.5).toFixed(2)})`);
           }
         } else {
           // Within same integer level - check if this is also within same phase
@@ -683,9 +691,9 @@ function checkMicroLevelAdvancement(sessionMetrics, sessionHistory) {
       }
     }
     } else {
-    // Accuracy between 75-89% - maintain current level with no progress
+    // d'prime is good but bias is too high - maintain current level
     newMicroLevel = currentMicroLevel;
-    console.log(`Maintaining current level (accuracy ${(matchAccuracy * 100).toFixed(1)}% - need 90% for progress)`);
+    console.log(`Maintaining current level (d'prime good but bias too high: ${bias.toFixed(2)})`);
 }
   
   // Integer level transitions
@@ -766,11 +774,21 @@ function getActiveStimuliCount() {
 // Function to get current configuration key
 function getCurrentConfigKey() {
   const count = getActiveStimuliCount();
-  // Ensure we always return a valid config key (minimum 2)
-  if (count < 2) {
+  // Ensure we always return a valid config key (minimum 1)
+  if (count < 1) {
     console.warn(`Invalid stimulus count ${count}, defaulting to 2`);
     return 2;
   }
+  
+  // Ensure the config key exists in our tracking objects
+  if (!accuracyAttemptsByConfig[count]) {
+    console.log(`Initializing tracking for config ${count}`);
+    accuracyAttemptsByConfig[count] = { attempts: [], requiredSuccesses: 3, windowSize: 5 };
+    phaseAccuracyAttemptsByConfig[count] = { phase1to2: [], phase2to3: [], requiredSuccesses: 3, windowSize: 5 };
+    sessionHistoriesByConfig[count] = [];
+    microLevelsByConfig[count] = 2.00;
+  }
+  
   return count;
 }
 
@@ -3578,6 +3596,100 @@ function writeWord(word) {
   });
 }
 
+// Continuous stats sidebar update function
+function updateContinuousStatsSidebar() {
+  try {
+    console.log('🎯 [CONTINUOUS] Updating stats sidebar');
+    
+    // Create sidebar if it doesn't exist
+    let sidebar = document.getElementById('continuous-stats-sidebar');
+    if (!sidebar) {
+      console.log('🎯 [CONTINUOUS] Creating new sidebar element');
+      sidebar = document.createElement('div');
+      sidebar.id = 'continuous-stats-sidebar';
+      sidebar.className = 'continuous-stats-sidebar';
+      document.body.appendChild(sidebar);
+      console.log('🎯 [CONTINUOUS] Sidebar element created and appended to body');
+    } else {
+      console.log('🎯 [CONTINUOUS] Sidebar already exists, updating content');
+    }
+  
+  // Calculate accuracy
+  const totalResponses = rightWalls + rightCamera + rightFace + rightPosition + rightWord + 
+                        rightShape + rightCorner + rightSound + rightColor + rightRotation +
+                        wrongWalls + wrongCamera + wrongFace + wrongPosition + wrongWord +
+                        wrongShape + wrongCorner + wrongSound + wrongColor + wrongRotation;
+  const correctResponses = rightWalls + rightCamera + rightFace + rightPosition + rightWord + 
+                          rightShape + rightCorner + rightSound + rightColor + rightRotation;
+  const accuracy = totalResponses > 0 ? (correctResponses / totalResponses * 100).toFixed(1) : 0;
+  
+  // Get dimension display
+  const activeDimensions = getActiveStimuliCount();
+  const dimDisplay = `${activeDimensions}D`;
+  
+  // Update sidebar content - matching original dialog styling
+  const wrongTotal = wrongWalls + wrongCamera + wrongFace + wrongPosition + wrongWord + wrongShape + wrongCorner + wrongSound + wrongColor + wrongRotation;
+  const missedTotal = matchingStimuli - correctResponses;
+  
+  sidebar.innerHTML = `
+    <div class="sidebar-dim">${dimDisplay}</div>
+    
+    <div class="sidebar-stats-cards">
+      <div class="sidebar-stats-card">
+        <div class="sidebar-stats-card-title">Right</div>
+        <div class="sidebar-stats-card-value">${correctResponses}</div>
+      </div>
+      <div class="sidebar-stats-card">
+        <div class="sidebar-stats-card-title">Missed</div>
+        <div class="sidebar-stats-card-value">${missedTotal}</div>
+      </div>
+      <div class="sidebar-stats-card">
+        <div class="sidebar-stats-card-title">Wrong</div>
+        <div class="sidebar-stats-card-value">${wrongTotal}</div>
+      </div>
+    </div>
+    
+    <div class="sidebar-accuracy">
+      Accuracy: <strong>${accuracy}%</strong>
+    </div>
+    
+    <div class="sidebar-level">
+      N = <strong>${formatMicroLevel(currentMicroLevel)}</strong>
+    </div>
+    
+    <div class="sidebar-metrics">
+      <div class="sidebar-metric-row">
+        <span class="sidebar-metric-label">d'-Prime:</span>
+        <span>${sessionMetrics.dPrime.toFixed(2)}</span>
+      </div>
+      <div class="sidebar-metric-row">
+        <span class="sidebar-metric-label">Bias:</span>
+        <span>${sessionMetrics.responseBias.toFixed(2)}</span>
+      </div>
+      ${sessionMetrics.totalLureResistance > 0 ? `
+      <div class="sidebar-metric-row">
+        <span class="sidebar-metric-label">Lure Resist:</span>
+        <span>${(sessionMetrics.totalLureResistance * 100).toFixed(0)}%</span>
+      </div>
+      ` : ''}
+    </div>
+    
+    <div class="sidebar-speed">
+      Speed: <strong>${getSpeedTarget(currentMicroLevel)}ms</strong>
+    </div>
+  `;
+  
+  // Keep sidebar visible permanently
+  sidebar.classList.add('show');
+  console.log('🎯 [CONTINUOUS] Sidebar shown with class "show"');
+  console.log('🎯 [CONTINUOUS] Sidebar HTML:', sidebar.outerHTML.substring(0, 200));
+  
+  } catch (error) {
+    console.error('🎯 [CONTINUOUS] ERROR in updateContinuousStatsSidebar:', error);
+    console.error('🎯 [CONTINUOUS] Error stack:', error.stack);
+  }
+}
+
 // Function to randomly select a variable number of stimuli
 function selectRandomStimuli(numStimuli = 2) {
   // Define all available stimuli types
@@ -3801,12 +3913,66 @@ function getGameCycle(n) {
 
   let i = 0;
   return function() {
+    console.log(`🎮 [CYCLE] Stimulus ${i} starting`);
+    
     // Track missed stimuli from previous presentation, but not on first iteration
     if (i > 0 && (currWalls || currCamera || currFace || currPosition || currWord || currShape || currCorner || currSound || currColor)) {
       trackMissedStimuli(); // Track any missed stimuli from the previous presentation
     }
     
-    resetBlock();
+    // Clear current stimulus references
+    currWalls = null;
+    currCamera = null;
+    currFace = null;
+    currPosition = null;
+    currWord = null;
+    currShape = null;
+    currCorner = null;
+    currSound = null;
+    currColor = null;
+    currRotation = null;
+    
+    // Clear visual elements from previous stimulus
+    // Clear shape
+    const shape = document.querySelector(".shape");
+    if (shape) {
+      shape.classList.remove("triangle", "square", "circle");
+    }
+    
+    // Clear face colors
+    faceEls.forEach(face => {
+      face.classList.remove("col-a", "col-b", "col-c", "col-d", "col-e", "col-f");
+    });
+    
+    // Clear word displays
+    wallWords.forEach(wall => {
+      wall.innerText = "";
+      wall.classList.remove("text-white");
+    });
+    
+    // Reset button states for new stimulus
+    checkWallsBtn.classList.remove("right", "wrong");
+    checkCameraBtn.classList.remove("right", "wrong");
+    checkFaceBtn.classList.remove("right", "wrong");
+    checkPositionBtn.classList.remove("right", "wrong");
+    checkWordBtn.classList.remove("right", "wrong");
+    checkShapeBtn.classList.remove("right", "wrong");
+    checkCornerBtn.classList.remove("right", "wrong");
+    checkSoundBtn.classList.remove("right", "wrong");
+    checkColorBtn.classList.remove("right", "wrong");
+    checkRotationBtn.classList.remove("right", "wrong");
+    
+    // Re-enable checks for new stimulus
+    enableWallsCheck = true;
+    enableCameraCheck = true;
+    enableFaceCheck = true;
+    enablePositionCheck = true;
+    enableWordCheck = true;
+    enableShapeCheck = true;
+    enableCornerCheck = true;
+    enableSoundCheck = true;
+    enableColorCheck = true;
+    enableRotationCheck = true;
       
     if (!isRunning) {
       return;
@@ -3969,13 +4135,9 @@ function getGameCycle(n) {
         }
       };
       
-      // Important: Stop the game *after* we've collected all the data
-      // but before updating the UI
+      // Important: Don't stop the game - we're in continuous mode
+      // Just reset intervals to prepare for next round
       resetIntervals();
-      isRunning = false;
-      
-      document.querySelector(".stop").classList.add("active");
-      document.querySelector(".play").classList.remove("active");
 
       // Update the recap dialog
       const resDim = document.querySelector("#res-dim");
@@ -4172,6 +4334,11 @@ function getGameCycle(n) {
         // Show accuracy attempts progress
         const configKey = getCurrentConfigKey();
         const attemptData = accuracyAttemptsByConfig[configKey];
+        
+        // Safety check: ensure attemptData exists
+        if (attemptData) {
+          // Only show progress if we have attempt data
+        
         const recentAttempts = attemptData.attempts.slice(-attemptData.windowSize);
         const successCount = recentAttempts.filter(a => a).length;
 
@@ -4261,6 +4428,7 @@ function getGameCycle(n) {
         
         // Update nLevel for game state (to reflect micro-level changes)
         nLevelInputHandler(null, newMicroLevel);
+        } // Close attemptData if statement
       }
 
       // Restart game with new speed if currently running
@@ -4275,6 +4443,12 @@ function getGameCycle(n) {
       
       // Save history and show results
       const datestamp = new Date().toLocaleDateString("sv");
+      
+      // Ensure history object exists for this config
+      if (!history[configKey]) {
+        history[configKey] = {};
+      }
+      
       history[configKey][datestamp] = history[configKey][datestamp] || [];
       history[configKey][datestamp].push(historyPoint);
       console.log("history", history);
@@ -4441,27 +4615,107 @@ function getGameCycle(n) {
         oldProgressMsg.remove();
       }
 
-      // Show the recap dialog
-      recapDialogContent.parentElement.show();
+      // Update the continuous stats sidebar instead of showing modal
+      console.log('🎯 [CONTINUOUS] Round ended, updating sidebar and continuing...');
+      updateContinuousStatsSidebar();
       
       // Reset game state for next round
-      // If game was running, restart with new speed
-      if (isRunning) {
-        resetIntervals();
-        const newSpeed = getSpeedTarget(newMicroLevel);
-        console.log(`Level changed to ${formatMicroLevel(newMicroLevel)}, new speed: ${newSpeed}ms`);
-        intervals.push(
-          setInterval(getGameCycle(Math.floor(newMicroLevel)), newSpeed)
-        );
+      // Automatically continue to next round (continuous mode)
+      console.log('🎯 [CONTINUOUS] Resetting intervals and starting next round');
+      resetIntervals();
+      const newSpeed = getSpeedTarget(newMicroLevel);
+      console.log(`🎯 [CONTINUOUS] Level changed to ${formatMicroLevel(newMicroLevel)}, new speed: ${newSpeed}ms`);
+      
+      // Reset only the counters, not the visual state (for seamless transition)
+      matchingStimuli = 0;
+      matchingWalls = 0;
+      matchingCamera = 0;
+      matchingFace = 0;
+      matchingPosition = 0;
+      matchingWord = 0;
+      matchingShape = 0;
+      matchingCorner = 0;
+      matchingSound = 0;
+      matchingColor = 0;
+      matchingRotation = 0;
+      
+      rightWalls = 0;
+      rightCamera = 0;
+      rightFace = 0;
+      rightPosition = 0;
+      rightWord = 0;
+      rightShape = 0;
+      rightCorner = 0;
+      rightSound = 0;
+      rightColor = 0;
+      rightRotation = 0;
+      
+      wrongWalls = 0;
+      wrongCamera = 0;
+      wrongFace = 0;
+      wrongPosition = 0;
+      wrongWord = 0;
+      wrongShape = 0;
+      wrongCorner = 0;
+      wrongSound = 0;
+      wrongColor = 0;
+      wrongRotation = 0;
+      
+      // Reset button states only
+      checkWallsBtn.classList.remove("right", "wrong");
+      checkCameraBtn.classList.remove("right", "wrong");
+      checkFaceBtn.classList.remove("right", "wrong");
+      checkPositionBtn.classList.remove("right", "wrong");
+      checkWordBtn.classList.remove("right", "wrong");
+      checkShapeBtn.classList.remove("right", "wrong");
+      checkCornerBtn.classList.remove("right", "wrong");
+      checkSoundBtn.classList.remove("right", "wrong");
+      checkColorBtn.classList.remove("right", "wrong");
+      checkRotationBtn.classList.remove("right", "wrong");
+      
+      // Re-enable checks
+      enableWallsCheck = true;
+      enableCameraCheck = true;
+      enableFaceCheck = true;
+      enablePositionCheck = true;
+      enableWordCheck = true;
+      enableShapeCheck = true;
+      enableCornerCheck = true;
+      enableSoundCheck = true;
+      enableColorCheck = true;
+      enableRotationCheck = true;
+      
+      // Clear any lingering visual elements before starting new round
+      const shape = document.querySelector(".shape");
+      if (shape) {
+        shape.classList.remove("triangle", "square", "circle");
       }
-      resetPoints();
-      resetBlock();
+      faceEls.forEach(face => {
+        face.classList.remove("col-a", "col-b", "col-c", "col-d", "col-e", "col-f");
+      });
+      wallWords.forEach(wall => {
+        wall.innerText = "";
+        wall.classList.remove("text-white");
+      });
+      
+      // Start next round immediately (no delay)
+      const nextGameCycle = getGameCycle(Math.floor(newMicroLevel));
+      nextGameCycle(); // Call immediately to show first stimulus instantly
+      intervals.push(
+        setInterval(nextGameCycle, newSpeed)
+      );
+      console.log('🎯 [CONTINUOUS] Next round started seamlessly!');
       
       return;
     }
     
     // Count stimulus
     stimuliCount++;
+    
+    // Update sidebar every 5 stimuli for live stats
+    if (stimuliCount % 5 === 0) {
+      updateContinuousStatsSidebar();
+    }
     
     // Animating stimuli
     if (wallsEnabled && walls && walls[i]) {
@@ -4566,6 +4820,9 @@ function play() {
 
   document.querySelectorAll("dialog").forEach(d => d.close());
   closeOptions();
+  
+  // Show sidebar from the start
+  updateContinuousStatsSidebar();
 
   // Update micro-level for the new random configuration
   if (randomizeEnabled) {
@@ -4578,9 +4835,66 @@ function play() {
     updateMicroLevelForConfig();
   }
 
-  // Reset game state before starting
-  resetPoints();
-  resetBlock();
+  // Reset only counters and intervals, not visual state (for seamless start)
+  // Visual state is initialized on page load
+  matchingStimuli = 0;
+  matchingWalls = 0;
+  matchingCamera = 0;
+  matchingFace = 0;
+  matchingPosition = 0;
+  matchingWord = 0;
+  matchingShape = 0;
+  matchingCorner = 0;
+  matchingSound = 0;
+  matchingColor = 0;
+  matchingRotation = 0;
+  
+  rightWalls = 0;
+  rightCamera = 0;
+  rightFace = 0;
+  rightPosition = 0;
+  rightWord = 0;
+  rightShape = 0;
+  rightCorner = 0;
+  rightSound = 0;
+  rightColor = 0;
+  rightRotation = 0;
+  
+  wrongWalls = 0;
+  wrongCamera = 0;
+  wrongFace = 0;
+  wrongPosition = 0;
+  wrongWord = 0;
+  wrongShape = 0;
+  wrongCorner = 0;
+  wrongSound = 0;
+  wrongColor = 0;
+  wrongRotation = 0;
+  
+  // Reset button states
+  checkWallsBtn.classList.remove("right", "wrong");
+  checkCameraBtn.classList.remove("right", "wrong");
+  checkFaceBtn.classList.remove("right", "wrong");
+  checkPositionBtn.classList.remove("right", "wrong");
+  checkWordBtn.classList.remove("right", "wrong");
+  checkShapeBtn.classList.remove("right", "wrong");
+  checkCornerBtn.classList.remove("right", "wrong");
+  checkSoundBtn.classList.remove("right", "wrong");
+  checkColorBtn.classList.remove("right", "wrong");
+  checkRotationBtn.classList.remove("right", "wrong");
+  
+  // Re-enable checks
+  enableWallsCheck = true;
+  enableCameraCheck = true;
+  enableFaceCheck = true;
+  enablePositionCheck = true;
+  enableWordCheck = true;
+  enableShapeCheck = true;
+  enableCornerCheck = true;
+  enableSoundCheck = true;
+  enableColorCheck = true;
+  enableRotationCheck = true;
+  
   resetIntervals();
     
   isRunning = true;
@@ -4618,12 +4932,20 @@ function play() {
     rtImprovement: 0
   };
   
-  speak("Start.");
+  // Don't speak "Start" - it causes delay. Start immediately.
   document.querySelector(".stop").classList.remove("active");
   document.querySelector(".play").classList.add("active");
 
+  // Get the game cycle function
+  const gameCycle = getGameCycle(nLevel);
+  const speed = getSpeedTarget(currentMicroLevel);
+  
+  // Call it immediately for the first stimulus (no delay)
+  gameCycle();
+  
+  // Then start the interval for subsequent stimuli
   intervals.push(
-    setInterval(getGameCycle(nLevel), getSpeedTarget(currentMicroLevel))
+    setInterval(gameCycle, speed)
   );
   
   isTransitioning = false;
@@ -4956,6 +5278,21 @@ numStimuliSelectInput.addEventListener("change", numStimuliSelectInputHandler);
 
 // Set up dialog close button event listeners
 document.addEventListener('DOMContentLoaded', function() {
+  // Initialize visual state on page load (so play() doesn't need to reset)
+  console.log('🎯 [INIT] Initializing visual state on page load');
+  resetCubeTransform(cube);
+  move(innerCube, initialInnerCubePosition);
+  rotateCamera(-40, -45);
+  floors.forEach(floor =>
+    setFloorBackground(
+      floor,
+      sceneDimmer,
+      tileAHexColor,
+      tileBHHexColor
+    )
+  );
+  console.log('🎯 [INIT] Visual state initialized - ready for seamless play');
+  
   // Recap dialog close button
   const recapCloseBtn = document.querySelector('#recap-dialog .close-button');
   if (recapCloseBtn) {
