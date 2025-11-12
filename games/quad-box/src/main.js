@@ -18,6 +18,11 @@ const app = mount(App, {
   target: document.getElementById('app'),
 })
 
+// Notify parent that game is ready
+if (window.parent !== window) {
+  window.parent.postMessage({ type: 'gameReady', gameId: 'quad-box' }, '*')
+}
+
 // Expose settings store for unified system integration
 import { settings } from './stores/settingsStore'
 import { get } from 'svelte/store'

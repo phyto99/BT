@@ -947,6 +947,13 @@ class UnifiedBrainTraining {
           console.log('Blob URL cleaned up for:', gameId);
         }
       }, 1000); // Small delay to ensure everything is loaded
+      
+      // Fallback: Show info popup for games that don't send gameReady message
+      setTimeout(() => {
+        if (typeof window.showInfoPopup === 'function') {
+          window.showInfoPopup(true);
+        }
+      }, 500);
     };
     
     // Handle iframe load errors
@@ -1245,6 +1252,13 @@ class UnifiedBrainTraining {
     } else if (this.settings) {
       // Fallback to regular settings
       this.sendSettingsToGame(gameId, this.settings);
+    }
+    
+    // Auto-show info popup on first load (if not disabled)
+    if (typeof window.showInfoPopup === 'function') {
+      setTimeout(() => {
+        window.showInfoPopup(true);
+      }, 500);
     }
   }
 

@@ -98,6 +98,7 @@
             overflow-y: auto;
             min-width: 400px;
             max-width: 90vw;
+            background: transparent;
         }
         
         .modal-content.visible {
@@ -226,13 +227,37 @@
             window.unifiedBrainTraining.loadGame('jiggle-factorial');
         });
 
-        function showInfoPopup() {
+        function showInfoPopup(autoShow = false) {
             const currentGame = window.unifiedBrainTraining?.currentGameId || 'none';
+            
+            // Prevent duplicate popups - check if one is already open
+            if (document.querySelector('.custom-modal')) {
+                return;
+            }
+            
+            // Check if user has disabled auto-show for this game
+            if (autoShow && localStorage.getItem(`hideInfo_${currentGame}`) === 'true') {
+                return;
+            }
+            
+            // Prevent multiple auto-shows for the same game in quick succession
+            if (autoShow) {
+                const lastShown = window._lastInfoPopupShown || {};
+                const now = Date.now();
+                if (lastShown[currentGame] && (now - lastShown[currentGame]) < 2000) {
+                    return;
+                }
+                window._lastInfoPopupShown = window._lastInfoPopupShown || {};
+                window._lastInfoPopupShown[currentGame] = now;
+            }
+            
             const gameInfo = getGameInfo(currentGame);
             
             createCustomModal({
                 title: gameInfo.title,
-                content: gameInfo.content
+                content: gameInfo.content,
+                showCheckbox: true,
+                gameId: currentGame
             });
         }
 
@@ -602,83 +627,10 @@
                 }, 100);
             }
         };
-        
-        // Keep old function for compatibility
-        async function showStatsPopupOld() {
-            const currentGame = window.unifiedBrainTraining?.currentGameId || 'none';
-            const gameNames = {
-                'jiggle-factorial': 'Jiggle Factorial 3D',
-                '3d-hyper-nback': '3D Hyper N-back',
-                'dichotic-dual-nback': 'Dichotic Dual N-back',
-                'quad-box': 'Quad Box',
-                'fast-sequence-nback': 'Fast Sequence N-back',
-                'multiple': 'Multiple N-back'
-            };
-            
-            let cognitiveContent = '';
-            
-            // Get cognitive data if available
-            if (window.unifiedBrainTraining?.cognitiveSystem) {
-                const scores = window.unifiedBrainTraining.cognitiveSystem.cognitiveScores;
-                const progression = window.unifiedBrainTraining.cognitiveSystem.progressionData;
-                
-                cognitiveContent = `
-                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.2);">
-                        <p class="modal-text"><strong>Cognitive Profile:</strong></p>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0;">
-                            ${Object.entries(scores).filter(([key]) => key !== 'id').map(([domain, data]) => {
-                                const domainNames = {
-                                    workingMemory: 'Working Memory',
-                                    attention: 'Attention',
-                                    processingSpeed: 'Processing Speed',
-                                    executiveFunctions: 'Executive Functions',
-                                    perceptualProcessing: 'Perceptual Processing',
-                                    longTermMemory: 'Long-Term Memory'
-                                };
-                                const color = data.score <= 333 ? '#4CAF50' : data.score <= 666 ? '#FFC107' : '#F44336';
-                                return `
-                                    <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px;">
-                                        <div style="font-size: 12px; color: rgba(255,255,255,0.7);">${domainNames[domain]}</div>
-                                        <div style="font-size: 20px; font-weight: bold; color: ${color};">${data.score}</div>
-                                        <div style="font-size: 10px; color: rgba(255,255,255,0.5);">${data.sessions} sessions</div>
-                                    </div>
-                                `;
-                            }).join('')}
-                        </div>
-                        <p class="modal-text"><strong>Training Progress:</strong></p>
-                        <ul class="modal-list">
-                            <li>Total Sessions: ${progression.totalSessions}</li>
-                            <li>Total Time: ${Math.round(progression.totalTime / 3600)} hours</li>
-                            <li>Current Streak: ${progression.currentStreak} days</li>
-                            <li>Longest Streak: ${progression.longestStreak} days</li>
-                        </ul>
-                    </div>
-                `;
-            } else {
-                cognitiveContent = `
-                    <p class="modal-text" style="font-size: 14px; color: rgba(255,255,255,0.8); margin-top: 15px;">
-                        Start training to see your cognitive profile and progress!
-                    </p>
-                `;
-            }
-            
-            createCustomModal({
-                title: 'Training Statistics',
-                content: `
-                    <p class="modal-text"><strong>Current Game:</strong> ${gameNames[currentGame] || 'None'}</p>
-                    <p class="modal-text"><strong>Session Info:</strong></p>
-                    <ul class="modal-list">
-                        <li>Games available: 6</li>
-                        <li>System: Cognitive Progression Active</li>
-                        <li>Status: Tracking</li>
-                    </ul>
-                    ${cognitiveContent}
-                `
-            });
-        }
 
-        // Dynamic Custom Modal Function
-        function createCustomModal({title, content}) {
+
+        // Custom Modal Function
+        function createCustomModal({title, content, showCheckbox = false, gameId = null}) {
             // Create backdrop
             const backdrop = document.createElement('div');
             backdrop.className = 'modal-backdrop';
@@ -698,7 +650,6 @@
                 // Then collapse horizontally back to vertical line (keep height)
                 setTimeout(() => {
                     modal.style.width = '2px';
-                    // Don't change height - keep it as vertical line
                 }, 100);
                 
                 // Fade out backdrop
@@ -721,63 +672,98 @@
                 }
             }
             
+            // Build checkbox HTML if needed
+            let checkboxHtml = '';
+            if (showCheckbox && gameId) {
+                const isChecked = localStorage.getItem(`hideInfo_${gameId}`) === 'true';
+                checkboxHtml = `
+                    <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.2);">
+                        <label style="display: flex; align-items: center; cursor: pointer; font-size: 13px;">
+                            <input type="checkbox" id="dont-show-again" ${isChecked ? 'checked' : ''} 
+                                   style="margin-right: 8px; cursor: pointer; width: 16px; height: 16px;">
+                            <span>Don't show this again</span>
+                        </label>
+                    </div>
+                `;
+            }
+            
             modal.innerHTML = `
                 <div class="modal-content">
                     <button class="modal-close" aria-label="Close">&times;</button>
                     <h2 class="modal-title">${title}</h2>
                     <div style="white-space: normal;">${content}</div>
+                    ${checkboxHtml}
                 </div>
             `;
             
             document.body.appendChild(backdrop);
             document.body.appendChild(modal);
             
-            // Temporarily make visible to measure
-            modal.style.visibility = 'hidden';
-            modal.style.width = 'auto';
-            modal.style.height = 'auto';
-            modal.style.maxWidth = '90vw';
-            modal.style.maxHeight = '90vh';
-            
-            // Measure content size
-            const modalContent = modal.querySelector('.modal-content');
-            const contentWidth = modalContent.offsetWidth;
-            const contentHeight = modalContent.offsetHeight;
-            
-            // Calculate final dimensions with constraints
-            const maxWidth = window.innerWidth * 0.9;
-            const maxHeight = window.innerHeight * 0.9;
-            finalWidth = Math.min(Math.max(contentWidth, 400), maxWidth);
-            finalHeight = Math.min(contentHeight, maxHeight);
-            
-            // Reset to starting state - vertical line at full height
-            modal.style.visibility = 'visible';
-            modal.style.width = '2px';
-            modal.style.height = finalHeight + 'px';
-            modal.style.setProperty('--modal-height', finalHeight + 'px');
-            modal.style.maxWidth = 'none';
-            modal.style.maxHeight = 'none';
-            
-            // Set up event listeners
-            const closeButton = modal.querySelector('.modal-close');
-            closeButton.addEventListener('click', closeModal);
-            backdrop.addEventListener('click', closeModal);
-            document.addEventListener('keydown', handleEscape);
-            
-            // Prevent modal content clicks from closing modal
-            modal.querySelector('.modal-content').addEventListener('click', (e) => {
-                e.stopPropagation();
-            });
-            
-            // Animate in - expand horizontally from vertical line
-            setTimeout(() => {
-                backdrop.classList.add('visible');
-                modal.style.width = finalWidth + 'px';
+            // Use requestAnimationFrame to ensure DOM is ready for measurement
+            requestAnimationFrame(() => {
+                // Temporarily make visible to measure
+                modal.style.visibility = 'hidden';
+                modal.style.width = 'auto';
+                modal.style.height = 'auto';
+                modal.style.maxWidth = '90vw';
+                modal.style.maxHeight = '90vh';
                 
-                setTimeout(() => {
-                    modal.querySelector('.modal-content').classList.add('visible');
-                }, 200);
-            }, 10);
+                // Force reflow to ensure accurate measurement
+                modal.offsetHeight;
+                
+                // Measure content size
+                const modalContent = modal.querySelector('.modal-content');
+                const contentWidth = modalContent.offsetWidth;
+                const contentHeight = modalContent.offsetHeight;
+                
+                // Calculate final dimensions with constraints
+                const maxWidth = window.innerWidth * 0.9;
+                const maxHeight = window.innerHeight * 0.9;
+                finalWidth = Math.min(Math.max(contentWidth, 400), maxWidth);
+                finalHeight = Math.min(contentHeight, maxHeight);
+                
+                // Reset to starting state - vertical line at full height
+                modal.style.visibility = 'visible';
+                modal.style.width = '2px';
+                modal.style.height = finalHeight + 'px';
+                modal.style.setProperty('--modal-height', finalHeight + 'px');
+                modal.style.maxWidth = 'none';
+                modal.style.maxHeight = 'none';
+                
+                // Force reflow before animation
+                modal.offsetHeight;
+                
+                // Set up event listeners
+                const closeButton = modal.querySelector('.modal-close');
+                closeButton.addEventListener('click', closeModal);
+                backdrop.addEventListener('click', closeModal);
+                document.addEventListener('keydown', handleEscape);
+                
+                // Prevent modal content clicks from closing modal
+                modal.querySelector('.modal-content').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                });
+                
+                // Handle checkbox if present
+                if (showCheckbox && gameId) {
+                    const checkbox = document.getElementById('dont-show-again');
+                    if (checkbox) {
+                        checkbox.addEventListener('change', (e) => {
+                            localStorage.setItem(`hideInfo_${gameId}`, e.target.checked);
+                        });
+                    }
+                }
+                
+                // Animate in - expand horizontally from vertical line
+                requestAnimationFrame(() => {
+                    backdrop.classList.add('visible');
+                    modal.style.width = finalWidth + 'px';
+                    
+                    setTimeout(() => {
+                        modal.querySelector('.modal-content').classList.add('visible');
+                    }, 200);
+                });
+            });
         }
     </script>
 </body>
