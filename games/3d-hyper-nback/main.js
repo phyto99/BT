@@ -230,6 +230,22 @@ let matchingStimuli = 0;
 let stimuliCount = 0;
 let intervals = [];
 
+// Stimulus History Buffer for cross-session continuity
+const HISTORY_BUFFER_SIZE = 50; // Keep last 50 stimuli per modality
+let stimulusHistory = {
+  walls: [],
+  cameras: [],
+  faces: [],
+  positions: [],
+  words: [],
+  shapes: [],
+  corners: [],
+  sounds: [],
+  colors: [],
+  rotations: [],
+  currentN: 2  // Track current N-back level
+};
+
 let isRunning = false;
 
 let enableWallsCheck = true;
@@ -2933,7 +2949,7 @@ function createBlocks(symbols, n) {
 }
 
 // Create blocks with fixed match density
-function createBlocksWithFixedDensity(symbols, n, matchDensity = 0.25) {
+function createBlocksWithFixedDensity(symbols, n, matchDensity = 0.25, modalityHistory = []) {
   // Calculate total trials needed based on target matches and desired density
   const targetMatches = targetNumOfStimuli;
   // Scale trials based on n-level: n * target matches
@@ -2942,6 +2958,37 @@ function createBlocksWithFixedDensity(symbols, n, matchDensity = 0.25) {
   // Initialize blocks array
   let blocks = Array(totalTrials).fill(null);
   let placedMatches = 0;
+  
+  // PHASE 0: Try to create matches using history for first N positions
+  const historyAvailable = modalityHistory.length >= n;
+  const historyMatchSlots = Math.min(n, totalTrials);
+  
+  if (historyAvailable) {
+    console.log(`History available: ${modalityHistory.length} stimuli, attempting history-based matches`);
+    
+    for (let i = 0; i < historyMatchSlots && placedMatches < targetMatches; i++) {
+      // Calculate which history position this would reference
+      const historyIndex = modalityHistory.length - n + i;
+      
+      if (historyIndex >= 0 && historyIndex < modalityHistory.length) {
+        const historicalSymbol = modalityHistory[historyIndex].symbol;
+        
+        // 25% chance to create a history-based match (same as normal match density)
+        if (Math.random() < matchDensity && !blocks[i]) {
+          blocks[i] = {
+            isMatching: true,
+            symbol: historicalSymbol,
+            referencesHistory: true,  // Flag for analytics
+            canScore: true  // Can be scored (has valid history)
+          };
+          placedMatches++;
+          console.log(`Created history-based match at position ${i} with symbol ${historicalSymbol}`);
+        }
+      }
+    }
+  } else {
+    console.log(`No history available (length: ${modalityHistory.length}, need: ${n})`);
+  }
   
   // First phase: place target matches with n-back spacing
   while (placedMatches < targetMatches) {
@@ -2981,9 +3028,17 @@ function createBlocksWithFixedDensity(symbols, n, matchDensity = 0.25) {
       while (!safe && attempts < maxAttempts) {
         safe = true;
         
-        // Check n positions back
+        // Check n positions back (within current session)
         if (i >= n && blocks[i - n] && blocks[i - n].symbol === symbol) {
           safe = false;
+        }
+        
+        // Check n positions back in history (for first N positions)
+        if (i < n && historyAvailable) {
+          const historyIndex = modalityHistory.length - n + i;
+          if (historyIndex >= 0 && modalityHistory[historyIndex].symbol === symbol) {
+            safe = false;
+          }
         }
         
         // Check n positions forward
@@ -3002,11 +3057,31 @@ function createBlocksWithFixedDensity(symbols, n, matchDensity = 0.25) {
       }
 
       // Check if this placement actually creates a match
-      const createsMatch = (i >= n && blocks[i - n] && blocks[i - n].symbol === symbol);
+      let createsMatch = false;
+      let canScore = true;
+      
+      // Check within current session
+      if (i >= n && blocks[i - n] && blocks[i - n].symbol === symbol) {
+        createsMatch = true;
+      }
+      
+      // Check against history for first N positions
+      if (i < n && historyAvailable) {
+        const historyIndex = modalityHistory.length - n + i;
+        if (historyIndex >= 0 && modalityHistory[historyIndex].symbol === symbol) {
+          createsMatch = true;
+        }
+      }
+      
+      // Mark as unscorable if in first N positions with no history
+      if (i < n && !historyAvailable) {
+        canScore = false;
+      }
 
       blocks[i] = {
         isMatching: createsMatch,
-        symbol: symbol
+        symbol: symbol,
+        canScore: canScore  // Flag whether this trial can be scored
       };
 
       // Update match count if we created an unintended match
@@ -3125,9 +3200,9 @@ function placeLures(blocks, n, lureFrequency = 0.10) {
   return blocks;
 }
 
-function createBlocksWithLures(symbols, n, matchDensity = 0.23, lureFrequency = 0.10) {
-  // First create blocks with fixed match density
-  let blocks = createBlocksWithFixedDensity(symbols, n, matchDensity);
+function createBlocksWithLures(symbols, n, matchDensity = 0.23, lureFrequency = 0.10, modalityHistory = []) {
+  // First create blocks with fixed match density, using history if available
+  let blocks = createBlocksWithFixedDensity(symbols, n, matchDensity, modalityHistory);
   
   // Then add systematic lures
   blocks = placeLures(blocks, n, lureFrequency);
@@ -3278,10 +3353,13 @@ function resetBlock() {
 
 // Track misses and correct rejections at the end of each stimulus presentation
 function trackMissedStimuli() {
+  // Helper function to check if stimulus can be scored
+  const canScore = (stimulus) => stimulus && stimulus.canScore !== false;
+  
   // Check for misses (matching stimuli that weren't responded to)
-  if (currWalls && currWalls.isMatching && enableWallsCheck) {
+  if (currWalls && currWalls.isMatching && enableWallsCheck && canScore(currWalls)) {
     sessionMetrics.misses++;
-  } else if (currWalls && !currWalls.isMatching && enableWallsCheck) {
+  } else if (currWalls && !currWalls.isMatching && enableWallsCheck && canScore(currWalls)) {
     // Correct rejection: non-matching stimulus correctly ignored
     sessionMetrics.correctRejections++;
     
@@ -3304,9 +3382,9 @@ function trackMissedStimuli() {
   }
   
   // Camera stimulus
-  if (currCamera && currCamera.isMatching && enableCameraCheck) {
+  if (currCamera && currCamera.isMatching && enableCameraCheck && canScore(currCamera)) {
     sessionMetrics.misses++;
-  } else if (currCamera && !currCamera.isMatching && enableCameraCheck) {
+  } else if (currCamera && !currCamera.isMatching && enableCameraCheck && canScore(currCamera)) {
     sessionMetrics.correctRejections++;
     if (currCamera.isLure) {
       if (currCamera.lureType === 'n-1') {
@@ -3326,9 +3404,9 @@ function trackMissedStimuli() {
   }
   
   // Face stimulus
-  if (currFace && currFace.isMatching && enableFaceCheck) {
+  if (currFace && currFace.isMatching && enableFaceCheck && canScore(currFace)) {
     sessionMetrics.misses++;
-  } else if (currFace && !currFace.isMatching && enableFaceCheck) {
+  } else if (currFace && !currFace.isMatching && enableFaceCheck && canScore(currFace)) {
     sessionMetrics.correctRejections++;
     if (currFace.isLure) {
       if (currFace.lureType === 'n-1') {
@@ -3348,9 +3426,9 @@ function trackMissedStimuli() {
   }
   
   // Position stimulus
-  if (currPosition && currPosition.isMatching && enablePositionCheck) {
+  if (currPosition && currPosition.isMatching && enablePositionCheck && canScore(currPosition)) {
     sessionMetrics.misses++;
-  } else if (currPosition && !currPosition.isMatching && enablePositionCheck) {
+  } else if (currPosition && !currPosition.isMatching && enablePositionCheck && canScore(currPosition)) {
     sessionMetrics.correctRejections++;
     if (currPosition.isLure) {
       if (currPosition.lureType === 'n-1') {
@@ -3370,9 +3448,9 @@ function trackMissedStimuli() {
   }
   
   // Word stimulus
-  if (currWord && currWord.isMatching && enableWordCheck) {
+  if (currWord && currWord.isMatching && enableWordCheck && canScore(currWord)) {
     sessionMetrics.misses++;
-  } else if (currWord && !currWord.isMatching && enableWordCheck) {
+  } else if (currWord && !currWord.isMatching && enableWordCheck && canScore(currWord)) {
     sessionMetrics.correctRejections++;
     if (currWord.isLure) {
       if (currWord.lureType === 'n-1') {
@@ -3392,9 +3470,9 @@ function trackMissedStimuli() {
   }
   
   // Shape stimulus
-  if (currShape && currShape.isMatching && enableShapeCheck) {
+  if (currShape && currShape.isMatching && enableShapeCheck && canScore(currShape)) {
     sessionMetrics.misses++;
-  } else if (currShape && !currShape.isMatching && enableShapeCheck) {
+  } else if (currShape && !currShape.isMatching && enableShapeCheck && canScore(currShape)) {
     sessionMetrics.correctRejections++;
     if (currShape.isLure) {
       if (currShape.lureType === 'n-1') {
@@ -3414,9 +3492,9 @@ function trackMissedStimuli() {
   }
   
   // Corner stimulus
-  if (currCorner && currCorner.isMatching && enableCornerCheck) {
+  if (currCorner && currCorner.isMatching && enableCornerCheck && canScore(currCorner)) {
     sessionMetrics.misses++;
-  } else if (currCorner && !currCorner.isMatching && enableCornerCheck) {
+  } else if (currCorner && !currCorner.isMatching && enableCornerCheck && canScore(currCorner)) {
     sessionMetrics.correctRejections++;
     if (currCorner.isLure) {
       if (currCorner.lureType === 'n-1') {
@@ -3436,9 +3514,9 @@ function trackMissedStimuli() {
   }
   
   // Sound stimulus
-  if (currSound && currSound.isMatching && enableSoundCheck) {
+  if (currSound && currSound.isMatching && enableSoundCheck && canScore(currSound)) {
     sessionMetrics.misses++;
-  } else if (currSound && !currSound.isMatching && enableSoundCheck) {
+  } else if (currSound && !currSound.isMatching && enableSoundCheck && canScore(currSound)) {
     sessionMetrics.correctRejections++;
     if (currSound.isLure) {
       if (currSound.lureType === 'n-1') {
@@ -3458,9 +3536,9 @@ function trackMissedStimuli() {
   }
   
   // Color stimulus
-  if (currColor && currColor.isMatching && enableColorCheck) {
+  if (currColor && currColor.isMatching && enableColorCheck && canScore(currColor)) {
     sessionMetrics.misses++;
-  } else if (currColor && !currColor.isMatching && enableColorCheck) {
+  } else if (currColor && !currColor.isMatching && enableColorCheck && canScore(currColor)) {
     sessionMetrics.correctRejections++;
     if (currColor.isLure) {
       if (currColor.lureType === 'n-1') {
@@ -3481,9 +3559,9 @@ function trackMissedStimuli() {
 }
 
 // Rotation stimulus
-if (currRotation && currRotation.isMatching && enableRotationCheck) {
+if (currRotation && currRotation.isMatching && enableRotationCheck && canScore(currRotation)) {
   sessionMetrics.misses++;
-} else if (currRotation && !currRotation.isMatching && enableRotationCheck) {
+} else if (currRotation && !currRotation.isMatching && enableRotationCheck && canScore(currRotation)) {
   sessionMetrics.correctRejections++;
   if (currRotation.isLure) {
     if (currRotation.lureType === 'n-1') {
@@ -3937,64 +4015,75 @@ function getGameCycle(n) {
 
   console.log(`Current micro-level: ${formatMicroLevel(currentMicroLevel)}, Phase progress: ${(phaseProgress * 100).toFixed(0)}%, Lure frequency: ${(lureFrequency * 100).toFixed(1)}%`);
   
+  // Clear history if N-level changed
+  if (stimulusHistory.currentN !== n) {
+    console.log(`N-level changed from ${stimulusHistory.currentN} to ${n}, clearing history`);
+    Object.keys(stimulusHistory).forEach(key => {
+      if (Array.isArray(stimulusHistory[key])) {
+        stimulusHistory[key] = [];
+      }
+    });
+    stimulusHistory.currentN = n;
+  }
+  
   let walls;
   if (wallsEnabled) {
-    walls = createBlocksWithLures(wallColorsList, n, 0.25, lureFrequency);
+    walls = createBlocksWithLures(wallColorsList, n, 0.25, lureFrequency, stimulusHistory.walls);
     matchingWalls = walls.filter(block => block && block.isMatching).length;
     matchingStimuli += matchingWalls;
   }
   let cameras;
   if (cameraEnabled) {
-    cameras = createBlocksWithLures(points, n, 0.25, lureFrequency);
+    cameras = createBlocksWithLures(points, n, 0.25, lureFrequency, stimulusHistory.cameras);
     matchingCamera = cameras.filter(block => block && block.isMatching).length;
     matchingStimuli += matchingCamera;
   }
   let faces;
   if (faceEnabled) {
-    faces = createBlocksWithLures(numbers, n, 0.25, lureFrequency);
+    faces = createBlocksWithLures(numbers, n, 0.25, lureFrequency, stimulusHistory.faces);
     matchingFace = faces.filter(block => block && block.isMatching).length;
     matchingStimuli += matchingFace;
   }
   let positions;
   if (positionEnabled) {
-    positions = createBlocksWithLures(moves, n, 0.25, lureFrequency);
+    positions = createBlocksWithLures(moves, n, 0.25, lureFrequency, stimulusHistory.positions);
     matchingPosition = positions.filter(block => block && block.isMatching).length;
     matchingStimuli += matchingPosition;
   }
   
   let words;
   if (wordEnabled) {
-    words = createBlocksWithLures(wordsList, n, 0.25, lureFrequency);
+    words = createBlocksWithLures(wordsList, n, 0.25, lureFrequency, stimulusHistory.words);
     matchingWord = words.filter(block => block && block.isMatching).length;
     matchingStimuli += matchingWord;
   }
   let shapes;
   if (shapeEnabled) {
-    shapes = createBlocksWithLures(shapeClasses, n, 0.25, lureFrequency);
+    shapes = createBlocksWithLures(shapeClasses, n, 0.25, lureFrequency, stimulusHistory.shapes);
     matchingShape = shapes.filter(block => block && block.isMatching).length;
     matchingStimuli += matchingShape;
   }
   let corners;
   if (cornerEnabled) {
-    corners = createBlocksWithLures(cornersList, n, 0.25, lureFrequency);
+    corners = createBlocksWithLures(cornersList, n, 0.25, lureFrequency, stimulusHistory.corners);
     matchingCorner = corners.filter(block => block && block.isMatching).length;
     matchingStimuli += matchingCorner;
   }
   let sounds;
   if (soundEnabled) {
-    sounds = createBlocksWithLures(letters, n, 0.25, lureFrequency);
+    sounds = createBlocksWithLures(letters, n, 0.25, lureFrequency, stimulusHistory.sounds);
     matchingSound = sounds.filter(block => block && block.isMatching).length;
     matchingStimuli += matchingSound;
   }
   let colors;
   if (colorEnabled) {
-    colors = createBlocksWithLures(colorClasses, n, 0.25, lureFrequency);
+    colors = createBlocksWithLures(colorClasses, n, 0.25, lureFrequency, stimulusHistory.colors);
     matchingColor = colors.filter(block => block && block.isMatching).length;
     matchingStimuli += matchingColor;
   }
   let rotations_blocks;
   if (rotationEnabled) {
-    rotations_blocks = createBlocksWithLures(rotations, n, 0.25, lureFrequency);
+    rotations_blocks = createBlocksWithLures(rotations, n, 0.25, lureFrequency, stimulusHistory.rotations);
     matchingRotation = rotations_blocks.filter(block => block && block.isMatching).length;
     matchingStimuli += matchingRotation;
   }
@@ -4810,6 +4899,31 @@ function getGameCycle(n) {
         wall.classList.remove("text-white");
       });
       
+      // Save last N stimuli to history before starting new round
+      function saveToHistory(blocks, historyArray, n) {
+        if (blocks && blocks.length > 0) {
+          const lastN = blocks.slice(-n).map(b => ({ symbol: b.symbol }));
+          historyArray.push(...lastN);
+          // Trim to buffer size
+          if (historyArray.length > HISTORY_BUFFER_SIZE) {
+            historyArray.splice(0, historyArray.length - HISTORY_BUFFER_SIZE);
+          }
+          console.log(`Saved ${lastN.length} stimuli to history (total: ${historyArray.length})`);
+        }
+      }
+      
+      const nForHistory = Math.floor(newMicroLevel);
+      if (wallsEnabled && walls) saveToHistory(walls, stimulusHistory.walls, nForHistory);
+      if (cameraEnabled && cameras) saveToHistory(cameras, stimulusHistory.cameras, nForHistory);
+      if (faceEnabled && faces) saveToHistory(faces, stimulusHistory.faces, nForHistory);
+      if (positionEnabled && positions) saveToHistory(positions, stimulusHistory.positions, nForHistory);
+      if (wordEnabled && words) saveToHistory(words, stimulusHistory.words, nForHistory);
+      if (shapeEnabled && shapes) saveToHistory(shapes, stimulusHistory.shapes, nForHistory);
+      if (cornerEnabled && corners) saveToHistory(corners, stimulusHistory.corners, nForHistory);
+      if (soundEnabled && sounds) saveToHistory(sounds, stimulusHistory.sounds, nForHistory);
+      if (colorEnabled && colors) saveToHistory(colors, stimulusHistory.colors, nForHistory);
+      if (rotationEnabled && rotations_blocks) saveToHistory(rotations_blocks, stimulusHistory.rotations, nForHistory);
+      
       // Start next round immediately (no delay)
       const nextGameCycle = getGameCycle(Math.floor(newMicroLevel));
       nextGameCycle(); // Call immediately to show first stimulus instantly
@@ -5186,36 +5300,45 @@ function checkHandler(stimulus) {
 
   console.log(stimulus, curr, button, enable);
   
-  // Update signal detection metrics based on response
-  if (curr.isMatching) {
-    // Hit: User correctly identified a match
-    sessionMetrics.hits++;
-  } else {
-    // False Alarm: User incorrectly claimed a match
-    sessionMetrics.falseAlarms++;
-    
-    // Check if this was a lure (for interference measurement)
-    if (curr.isLure) {
-      if (curr.lureType === 'n-1') {
-        // Initialize counters if needed
-        sessionMetrics.n1LureEncounters = sessionMetrics.n1LureEncounters || 0;
-        sessionMetrics.n1LureFalseAlarms = sessionMetrics.n1LureFalseAlarms || 0;
-        
-        // Track N-1 lure response (fell for the lure)
-        sessionMetrics.n1LureEncounters++;
-        sessionMetrics.n1LureFalseAlarms++;
-        
-        console.log("User fell for N-1 lure", stimulus);
-      } else if (curr.lureType === 'n+1') {
-        // Initialize counters if needed
-        sessionMetrics.nPlusLureEncounters = sessionMetrics.nPlusLureEncounters || 0;
-        sessionMetrics.nPlusLureFalseAlarms = sessionMetrics.nPlusLureFalseAlarms || 0;
-        
-        // Track N+1 lure response (fell for the lure)
-        sessionMetrics.nPlusLureEncounters++;
-        sessionMetrics.nPlusLureFalseAlarms++;
-        
-        console.log("User fell for N+1 lure", stimulus);
+  // Check if this trial can be scored (has valid N-back history)
+  const canScore = curr.canScore !== false; // Default to true if not specified
+  
+  if (!canScore) {
+    console.log(`Trial cannot be scored (no valid N-back history), skipping d-prime calculation`);
+  }
+  
+  // Update signal detection metrics based on response (only if scorable)
+  if (canScore) {
+    if (curr.isMatching) {
+      // Hit: User correctly identified a match
+      sessionMetrics.hits++;
+    } else {
+      // False Alarm: User incorrectly claimed a match
+      sessionMetrics.falseAlarms++;
+      
+      // Check if this was a lure (for interference measurement)
+      if (curr.isLure) {
+        if (curr.lureType === 'n-1') {
+          // Initialize counters if needed
+          sessionMetrics.n1LureEncounters = sessionMetrics.n1LureEncounters || 0;
+          sessionMetrics.n1LureFalseAlarms = sessionMetrics.n1LureFalseAlarms || 0;
+          
+          // Track N-1 lure response (fell for the lure)
+          sessionMetrics.n1LureEncounters++;
+          sessionMetrics.n1LureFalseAlarms++;
+          
+          console.log("User fell for N-1 lure", stimulus);
+        } else if (curr.lureType === 'n+1') {
+          // Initialize counters if needed
+          sessionMetrics.nPlusLureEncounters = sessionMetrics.nPlusLureEncounters || 0;
+          sessionMetrics.nPlusLureFalseAlarms = sessionMetrics.nPlusLureFalseAlarms || 0;
+          
+          // Track N+1 lure response (fell for the lure)
+          sessionMetrics.nPlusLureEncounters++;
+          sessionMetrics.nPlusLureFalseAlarms++;
+          
+          console.log("User fell for N+1 lure", stimulus);
+        }
       }
     }
   }
