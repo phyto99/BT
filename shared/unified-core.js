@@ -577,6 +577,22 @@ class UnifiedBrainTraining {
           this.toggleTheme();
         });
       }
+      
+      // Statistics button
+      const statisticsBtn = document.getElementById('statistics-btn');
+      if (statisticsBtn) {
+        // Initialize from settings
+        if (this.settings.statisticsTracking === undefined) {
+          this.settings.statisticsTracking = true;
+        }
+        statisticsBtn.textContent = this.settings.statisticsTracking ? 'Statistics: ON' : 'Statistics: OFF';
+        
+        statisticsBtn.addEventListener('click', () => {
+          this.settings.statisticsTracking = !this.settings.statisticsTracking;
+          statisticsBtn.textContent = this.settings.statisticsTracking ? 'Statistics: ON' : 'Statistics: OFF';
+          console.log('Statistics tracking:', this.settings.statisticsTracking ? 'ON' : 'OFF');
+        });
+      }
     }, 100);
   }
 
@@ -1759,6 +1775,7 @@ class UnifiedBrainTraining {
             <button id="test-sync-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 4px 8px; margin-right: 4px; cursor: pointer; font-size: 11px;">Test Sync</button>
             <button id="set-settings-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 4px 8px; margin-right: 4px; cursor: pointer; font-size: 11px;">Set Settings</button>
             <button id="keybinds-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 4px 8px; margin-right: 4px; cursor: pointer; font-size: 11px;">Keybinds</button>
+            <button id="statistics-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 4px 8px; margin-right: 4px; cursor: pointer; font-size: 11px;">Statistics: ON</button>
             <button id="theme-toggle-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 4px 8px; cursor: pointer; font-size: 11px;">🌙</button>
           </div>
         </div>
@@ -1978,14 +1995,29 @@ class UnifiedBrainTraining {
     for (let folderName in this.gui.__folders) {
       this.gui.removeFolder(this.gui.__folders[folderName]);
     }
+    
+    // Clear any custom separator elements
+    const ul = this.gui.domElement.querySelector('ul');
+    if (ul) {
+      const separators = ul.querySelectorAll('li[style*="height: 1px"]');
+      separators.forEach(sep => sep.remove());
+    }
 
-    // Add game loading buttons
-    this.gui.add(this.settings, 'loadJiggleFactorial').name('Jiggle Factorial');
-    this.gui.add(this.settings, 'loadHyperNBack').name("3D Hyper N-Back d'prime");
-    this.gui.add(this.settings, 'loadDichoticDualNBack').name('Dichotic Dual N-back');
-    this.gui.add(this.settings, 'loadQuadBox').name('Quad Box');
-    this.gui.add(this.settings, 'loadFastSequenceNBack').name('Fast Sequence Synesthesia N-back');
-    this.gui.add(this.settings, 'loadMultiple').name('Load Multiple N-back');
+    // Add game loading buttons in a folder for clean separation
+    const gamesFolder = this.gui.addFolder('Load Game');
+    gamesFolder.add(this.settings, 'loadJiggleFactorial').name('Jiggle Factorial');
+    gamesFolder.add(this.settings, 'loadHyperNBack').name("3D Hyper N-Back d'prime");
+    gamesFolder.add(this.settings, 'loadDichoticDualNBack').name('Dichotic Dual N-back');
+    gamesFolder.add(this.settings, 'loadQuadBox').name('Quad Box');
+    gamesFolder.add(this.settings, 'loadFastSequenceNBack').name('Fast Sequence Synesthesia N-back');
+    gamesFolder.add(this.settings, 'loadMultiple').name('Multiple N-back');
+    gamesFolder.open(); // Keep it open by default
+    
+    // Add separator after Load Game folder
+    const separatorAfterGames = document.createElement('li');
+    separatorAfterGames.style.cssText = 'height: 1px; background: #444; margin: 10px 0; list-style: none; pointer-events: none;';
+    separatorAfterGames.className = 'games-separator'; // Add class for easy identification
+    this.gui.domElement.querySelector('ul').appendChild(separatorAfterGames);
 
     // Add ONLY the settings for the currently loaded game
     const currentGame = this.currentGameId || 'jiggle-factorial';
@@ -2071,9 +2103,14 @@ class UnifiedBrainTraining {
 
     this.gui.add(this.settings, 'trialStartDelay').name('Trial Start Delay (ms)');
     
+    // Add separator
+    const separatorLi = document.createElement('li');
+    separatorLi.style.cssText = 'height: 1px; background: #444; margin: 10px 0; list-style: none; pointer-events: none;';
+    this.gui.domElement.querySelector('ul').appendChild(separatorLi);
+    
     // Reset button
     this.settings.resetJiggleSettings = () => this.resetGameSettings('jiggle-factorial');
-    this.gui.add(this.settings, 'resetJiggleSettings').name('🔄 Reset to Defaults');
+    this.gui.add(this.settings, 'resetJiggleSettings').name('Reset Settings to Default');
   }
 
   build3DHyperNBackGUI() {
@@ -2132,9 +2169,14 @@ class UnifiedBrainTraining {
     this.gui.add(this.settings, 'previousLevelThreshold').name('Level Down Correct Stimuli %');
     this.gui.add(this.settings, 'nextLevelThreshold').name('Level Up Correct Stimuli %');
     
+    // Add separator
+    const separatorLi = document.createElement('li');
+    separatorLi.style.cssText = 'height: 1px; background: #444; margin: 10px 0; list-style: none; pointer-events: none;';
+    this.gui.domElement.querySelector('ul').appendChild(separatorLi);
+    
     // Reset button
     this.settings.resetHyperNBackSettings = () => this.resetGameSettings('3d-hyper-nback');
-    this.gui.add(this.settings, 'resetHyperNBackSettings').name('🔄 Reset to Defaults');
+    this.gui.add(this.settings, 'resetHyperNBackSettings').name('Reset Settings to Default');
   }
 
   buildDichoticDualNBackGUI() {
@@ -2167,9 +2209,14 @@ class UnifiedBrainTraining {
     this.gui.add(this.settings, 'feedback').name('Clue Feedback');
     this.gui.add(this.settings, 'dailyGoal', 1, 50, 1).name('Daily Goal');
     
+    // Add separator
+    const separatorLi = document.createElement('li');
+    separatorLi.style.cssText = 'height: 1px; background: #444; margin: 10px 0; list-style: none; pointer-events: none;';
+    this.gui.domElement.querySelector('ul').appendChild(separatorLi);
+    
     // Reset button
     this.settings.resetDichoticSettings = () => this.resetGameSettings('dichotic-dual-nback');
-    this.gui.add(this.settings, 'resetDichoticSettings').name('🔄 Reset to Defaults');
+    this.gui.add(this.settings, 'resetDichoticSettings').name('Reset Settings to Default');
   }
 
   buildQuadBoxGUI() {
@@ -2230,9 +2277,14 @@ class UnifiedBrainTraining {
     tallyFolder.add(this.settings, 'positionWidth', 1, 4, 1).name('Position Width');
     tallyFolder.add(this.settings, 'enablePositionWidthSequence').name('Enable Position Width Sequence');
     
+    // Add separator
+    const separatorLi = document.createElement('li');
+    separatorLi.style.cssText = 'height: 1px; background: #444; margin: 10px 0; list-style: none; pointer-events: none;';
+    this.gui.domElement.querySelector('ul').appendChild(separatorLi);
+    
     // Reset button
     this.settings.resetQuadBoxSettings = () => this.resetGameSettings('quad-box');
-    this.gui.add(this.settings, 'resetQuadBoxSettings').name('🔄 Reset to Defaults');
+    this.gui.add(this.settings, 'resetQuadBoxSettings').name('Reset Settings to Default');
   }
 
   buildFastSequenceNBackGUI() {
@@ -2274,9 +2326,14 @@ class UnifiedBrainTraining {
     synesthesiaFolder.add(this.settings, 'spatialMusic', 0, 100, 1).name('Spatial-Music (%)');
     synesthesiaFolder.open();
     
+    // Add separator
+    const separatorLi = document.createElement('li');
+    separatorLi.style.cssText = 'height: 1px; background: #444; margin: 10px 0; list-style: none; pointer-events: none;';
+    this.gui.domElement.querySelector('ul').appendChild(separatorLi);
+    
     // Reset button
     this.settings.resetFastSequenceSettings = () => this.resetGameSettings('fast-sequence-nback');
-    this.gui.add(this.settings, 'resetFastSequenceSettings').name('🔄 Reset to Defaults');
+    this.gui.add(this.settings, 'resetFastSequenceSettings').name('Reset Settings to Default');
   }
 
   buildMultipleGUI() {
@@ -2303,9 +2360,14 @@ class UnifiedBrainTraining {
     const relationalFolder = this.gui.addFolder('Relational Settings');
     relationalFolder.add(this.settings, 'relationalComplexity', ['1back', '2back']).name('Relational Complexity');
     
+    // Add separator
+    const separatorLi = document.createElement('li');
+    separatorLi.style.cssText = 'height: 1px; background: #444; margin: 10px 0; list-style: none; pointer-events: none;';
+    this.gui.domElement.querySelector('ul').appendChild(separatorLi);
+    
     // Reset button
     this.settings.resetMultipleSettings = () => this.resetGameSettings('multiple');
-    this.gui.add(this.settings, 'resetMultipleSettings').name('🔄 Reset to Defaults');
+    this.gui.add(this.settings, 'resetMultipleSettings').name('Reset Settings to Default');
   }
 
 

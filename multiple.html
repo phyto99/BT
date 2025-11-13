@@ -382,6 +382,53 @@
       from { opacity: 0; }
       to { opacity: 1; }
     }
+    
+    /* Corner Button Styling */
+    .corner-btn {
+      background: rgba(128, 128, 128, 0.8);
+      color: #fff;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      padding: 25px 35px;
+      font-size: 1.3rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      min-width: 180px;
+      text-align: center;
+      border-radius: 8px;
+    }
+    .corner-btn:hover {
+      background: rgba(160, 160, 160, 0.9);
+      transform: scale(1.05);
+    }
+    .corner-btn.correct {
+      background: rgba(39, 174, 96, 0.9);
+      border-color: #27ae60;
+      animation: correctPulse 0.5s ease;
+    }
+    .corner-btn.incorrect {
+      background: rgba(231, 76, 60, 0.9);
+      border-color: #e74c3c;
+      animation: incorrectShake 0.5s ease;
+    }
+    .corner-btn.missed {
+      background: rgba(241, 196, 15, 0.9);
+      border-color: #f1c40f;
+      animation: missedFlash 0.5s ease;
+    }
+    @keyframes correctPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+    @keyframes incorrectShake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+    @keyframes missedFlash {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
   </style>
 </head>
 <body>
@@ -470,9 +517,27 @@
       </div>
       <div id="controls">
         <button id="restart">Restart</button>
-        <button id="match">Match (n‑back)</button>
-        <button id="visualMatch">Visual Match</button>
+        <button id="match" style="display: none;">Match (n‑back)</button>
+        <button id="visualMatch" style="display: none;">Visual Match</button>
       </div>
+      
+      <!-- Circle Mode Corner Buttons -->
+      <button id="positionMatch" class="corner-btn" style="display: none; position: fixed; top: 80px; left: 20px; z-index: 100;">
+        <div>Position</div>
+        <div style="font-size: 0.8em; opacity: 0.8;">(F)</div>
+      </button>
+      <button id="colorMatch" class="corner-btn" style="display: none; position: fixed; top: 80px; right: 20px; z-index: 100;">
+        <div>Color</div>
+        <div style="font-size: 0.8em; opacity: 0.8;">(J)</div>
+      </button>
+      <button id="knightMoveMatch" class="corner-btn" style="display: none; position: fixed; bottom: 80px; left: 20px; z-index: 100;">
+        <div>Knight Move</div>
+        <div style="font-size: 0.8em; opacity: 0.8;">(G)</div>
+      </button>
+      <button id="takeMatch" class="corner-btn" style="display: none; position: fixed; bottom: 80px; right: 20px; z-index: 100;">
+        <div>Take</div>
+        <div style="font-size: 0.8em; opacity: 0.8;">(H)</div>
+      </button>
       <div id="score">Score: 0</div>
     </div>
     
@@ -538,7 +603,15 @@
       const mod = document.getElementById("modality").value;
       document.getElementById("gaborParams").style.display = (mod === "gabor") ? "block" : "none";
       document.getElementById("relationalParams").style.display = (mod === "relational") ? "block" : "none";
-      document.getElementById("visualMatch").style.display = (mod === "circle") ? "inline-block" : "none";
+      document.getElementById("visualMatch").style.display = "none"; // Hide old button
+      
+      // Show/hide circle mode buttons
+      const showCircle = (mod === "circle") ? "block" : "none";
+      document.getElementById("positionMatch").style.display = showCircle;
+      document.getElementById("colorMatch").style.display = showCircle;
+      document.getElementById("knightMoveMatch").style.display = showCircle;
+      document.getElementById("takeMatch").style.display = showCircle;
+      
       document.getElementById("showDictionary").style.display = (mod === "synesthesia") ? "inline-block" : "none";
     }
     
@@ -584,6 +657,14 @@
     let stimulusTimeout = null;
     let trialTimeout = null;
     let currentStreak = 0;
+    
+    // Circle mode scoring
+    let circleScores = {
+      position: { correct: 0, total: 0 },
+      color: { correct: 0, total: 0 },
+      knightMove: { correct: 0, total: 0 },
+      take: { correct: 0, total: 0 }
+    };
     
     // For improved statistics, record "matchTrial" on match-intended trials.
     function computePossibleMatches() {
@@ -652,6 +733,14 @@
       trialsData = [];
       score = 0;
       isRunning = true;
+      
+      // Reset circle mode scores
+      circleScores = {
+        position: { correct: 0, total: 0 },
+        color: { correct: 0, total: 0 },
+        knightMove: { correct: 0, total: 0 },
+        take: { correct: 0, total: 0 }
+      };
       responseRecorded = false;
       currentTrialData = null;
       clearTimeout(stimulusTimeout);
@@ -737,34 +826,40 @@
     
     function nextTrialCircle() {
       if (currentTrial >= settings.totalTrials) { endTask(); return; }
+      
+      // Check for missed matches from previous trial
+      if (currentTrial > 0) {
+        checkMissedMatches();
+      }
+      
       clearTimeout(stimulusTimeout);
       clearTimeout(trialTimeout);
       clearGrid();
+      circleResponses = {}; // Reset responses for new trial
+      
       let trial = {};
-      if (currentTrial < settings.nValue) {
-        trial.isMatch = false;
-        trial.matchTrial = false;
-        trial.cell = getRandomInt(0, 8);
-      } else {
+      trial.cell = getRandomInt(0, 8);
+      trial.color = Math.random() < 0.5 ? 'white' : 'black';
+      
+      // Calculate match types if we have n-back history
+      if (currentTrial >= settings.nValue) {
         let nBack = trialsData[currentTrial - settings.nValue];
-        if (Math.random() < 0.40) {
-          if (Math.random() < 0.5) { trial.cell = nBack.cell; trial.isMatch = true; trial.matchTrial = true; }
-          else {
-            let candidates = getKnightMoveCells(nBack.cell);
-            if (candidates.length > 0) { trial.cell = candidates[getRandomInt(0, candidates.length - 1)]; trial.isMatch = true; trial.matchTrial = true; }
-            else { trial.cell = getRandomInt(0, 8); trial.isMatch = isKnightMove(nBack.cell, trial.cell); trial.matchTrial = trial.isMatch; }
-          }
-        } else {
-          trial.cell = getRandomInt(0, 8);
-          trial.isMatch = isKnightMove(nBack.cell, trial.cell);
-          trial.matchTrial = trial.isMatch;
-        }
+        trial.positionMatch = (trial.cell === nBack.cell);
+        trial.colorMatch = (trial.color === nBack.color);
+        trial.knightMoveMatch = isKnightMove(nBack.cell, trial.cell) && trial.color === nBack.color;
+        trial.takeMatch = isKnightMove(nBack.cell, trial.cell) && trial.color !== nBack.color;
+      } else {
+        trial.positionMatch = false;
+        trial.colorMatch = false;
+        trial.knightMoveMatch = false;
+        trial.takeMatch = false;
       }
+      
       trialsData.push(trial);
       currentTrialData = trial;
       let canvas = document.getElementById("cell" + trial.cell);
       let ctx = cellContexts[canvas.id];
-      drawCircle(ctx, settings.gaborSize, settings.gaborSize);
+      drawCircle(ctx, settings.gaborSize, settings.gaborSize, trial.color);
       createGlowTrail(canvas);
       responseRecorded = false;
       canvas.classList.add("pop-animation");
@@ -896,13 +991,15 @@
       ctx.putImageData(imageData, 0, 0);
     }
     
-    function drawCircle(ctx, width, height) {
-      const knightImage = Math.random() < 0.5 ? whiteKnight : blackKnight;
-      let size = width * 0.5; // Fixed size: 50% of cell width
+    function drawCircle(ctx, width, height, color) {
+      // Use specified color or random if not provided
+      const knightImage = color === 'white' ? whiteKnight : (color === 'black' ? blackKnight : (Math.random() < 0.5 ? whiteKnight : blackKnight));
+      let size = width * 0.6; // Fixed size: 60% of cell width
       let x = width/2 - size/2;
       let y = height/2 - size/2;
       
       ctx.drawImage(knightImage, x, y, size, size);
+      return knightImage === whiteKnight ? 'white' : 'black';
     }
     
     function drawSynesthesiaStimulus(ctx, width, height, color) {
@@ -994,21 +1091,139 @@
       document.getElementById("score").textContent = "Score: " + score;
     }
     
+    let circleResponses = {}; // Track responses for current trial
+    
+    function handleCircleMatch(matchType) {
+      if (settings.modality !== "circle") return;
+      if (!currentTrialData || currentTrial < settings.nValue) return;
+      if (circleResponses[matchType]) return; // Already responded to this match type
+      
+      circleResponses[matchType] = true;
+      
+      let correct = false;
+      let buttonId = '';
+      if (matchType === 'position') { correct = currentTrialData.positionMatch; buttonId = 'positionMatch'; }
+      else if (matchType === 'color') { correct = currentTrialData.colorMatch; buttonId = 'colorMatch'; }
+      else if (matchType === 'knightMove') { correct = currentTrialData.knightMoveMatch; buttonId = 'knightMoveMatch'; }
+      else if (matchType === 'take') { correct = currentTrialData.takeMatch; buttonId = 'takeMatch'; }
+      
+      let button = document.getElementById(buttonId);
+      let feedbackCell = currentTrialData.cell;
+      
+      if (correct) {
+        circleScores[matchType].correct++;
+        score++;
+        currentStreak++;
+        flashCell(feedbackCell, "#27ae60");
+        pulseScore();
+        playCorrectSound();
+        button.classList.add('correct');
+        setTimeout(() => button.classList.remove('correct'), 500);
+      } else {
+        currentStreak = 0;
+        flashCell(feedbackCell, "#ff2d95");
+        playIncorrectSound();
+        button.classList.add('incorrect');
+        setTimeout(() => button.classList.remove('incorrect'), 500);
+      }
+      updateStreakDisplay();
+      document.getElementById("score").textContent = "Score: " + score;
+    }
+    
+    function checkMissedMatches() {
+      if (settings.modality !== "circle" || !currentTrialData || currentTrial < settings.nValue) return;
+      
+      // Check for missed matches and update totals
+      const matchTypes = ['position', 'color', 'knightMove', 'take'];
+      const buttonIds = ['positionMatch', 'colorMatch', 'knightMoveMatch', 'takeMatch'];
+      
+      for (let i = 0; i < matchTypes.length; i++) {
+        const matchType = matchTypes[i];
+        const buttonId = buttonIds[i];
+        let wasMatch = false;
+        
+        if (matchType === 'position') wasMatch = currentTrialData.positionMatch;
+        else if (matchType === 'color') wasMatch = currentTrialData.colorMatch;
+        else if (matchType === 'knightMove') wasMatch = currentTrialData.knightMoveMatch;
+        else if (matchType === 'take') wasMatch = currentTrialData.takeMatch;
+        
+        if (wasMatch) {
+          circleScores[matchType].total++;
+          if (!circleResponses[matchType]) {
+            // Missed a match
+            let button = document.getElementById(buttonId);
+            button.classList.add('missed');
+            setTimeout(() => button.classList.remove('missed'), 500);
+          }
+        }
+      }
+    }
+    
     document.getElementById("match").addEventListener("click", handleMatch);
     document.getElementById("visualMatch").addEventListener("click", handleVisualMatch);
+    
+    // Circle mode multi-modal match handlers
+    document.getElementById("positionMatch").addEventListener("click", () => handleCircleMatch('position'));
+    document.getElementById("colorMatch").addEventListener("click", () => handleCircleMatch('color'));
+    document.getElementById("knightMoveMatch").addEventListener("click", () => handleCircleMatch('knightMove'));
+    document.getElementById("takeMatch").addEventListener("click", () => handleCircleMatch('take'));
+    
+    // Keyboard shortcuts for circle mode
+    document.addEventListener("keydown", (e) => {
+      if (settings.modality !== "circle" || !isRunning) return;
+      if (e.key === 'f' || e.key === 'F') handleCircleMatch('position');
+      else if (e.key === 'j' || e.key === 'J') handleCircleMatch('color');
+      else if (e.key === 'g' || e.key === 'G') handleCircleMatch('knightMove');
+      else if (e.key === 'h' || e.key === 'H') handleCircleMatch('take');
+    });
     
     function endTask() {
       isRunning = false;
       document.getElementById("game").style.display = "none";
       const resultsEl = document.getElementById("results");
-      let possibleMatches = computePossibleMatches();
-      let accuracyValue = possibleMatches > 0 ? (score / possibleMatches) * 100 : 0;
-      let accuracyPercentage = possibleMatches > 0 ? accuracyValue.toFixed(0) : "N/A";
+      
+      let resultsHTML = '';
+      let accuracyValue = 0;
+      
+      if (settings.modality === "circle") {
+        // Circle mode: show detailed breakdown
+        const posAcc = circleScores.position.total > 0 ? Math.round((circleScores.position.correct / circleScores.position.total) * 100) : 0;
+        const colAcc = circleScores.color.total > 0 ? Math.round((circleScores.color.correct / circleScores.color.total) * 100) : 0;
+        const knightAcc = circleScores.knightMove.total > 0 ? Math.round((circleScores.knightMove.correct / circleScores.knightMove.total) * 100) : 0;
+        const takeAcc = circleScores.take.total > 0 ? Math.round((circleScores.take.correct / circleScores.take.total) * 100) : 0;
+        
+        accuracyValue = (posAcc + colAcc + knightAcc + takeAcc) / 4;
+        
+        resultsHTML = `
+          <h2>Task Complete!</h2>
+          <div style="font-size: 1.2rem; margin-bottom: 20px; line-height: 1.8; text-align: left; max-width: 500px; margin-left: auto; margin-right: auto;">
+            <div>Your score: ${circleScores.position.correct} out of ${circleScores.position.total} position matches</div>
+            <div style="padding-left: 95px;">${circleScores.color.correct} out of ${circleScores.color.total} color matches</div>
+            <div style="padding-left: 95px;">${circleScores.knightMove.correct} out of ${circleScores.knightMove.total} knight move matches</div>
+            <div style="padding-left: 95px;">${circleScores.take.correct} out of ${circleScores.take.total} take matches</div>
+          </div>
+          <p style="font-size: 1.3rem; font-weight: bold;">
+            Accuracy: ${posAcc}% ${colAcc}% ${knightAcc}% ${takeAcc}%
+          </p>
+        `;
+      } else {
+        // Other modes: show standard results
+        let possibleMatches = computePossibleMatches();
+        accuracyValue = possibleMatches > 0 ? (score / possibleMatches) * 100 : 0;
+        let accuracyPercentage = possibleMatches > 0 ? accuracyValue.toFixed(0) : "N/A";
+        resultsHTML = `
+          <h2>Task Complete!</h2>
+          <p>Your Score: ${score} out of ${possibleMatches} possible matches.</p>
+          <p>Accuracy: ${accuracyPercentage}%</p>
+        `;
+      }
+      
       const robotImage = document.getElementById("robotImage");
       robotImage.classList.remove("happy", "sad");
       if (accuracyValue >= 70) { robotImage.classList.add("happy"); }
       else if (accuracyValue < 40) { robotImage.classList.add("sad"); }
       let message = getEncouragement(accuracyValue);
+      
       resultsEl.innerHTML = `
         <div id="robotContainer">
           <div id="robotImage">
@@ -1046,9 +1261,7 @@
           </div>
           <div id="robotText">${message}</div>
         </div>
-        <h2>Task Complete!</h2>
-        <p>Your Score: ${score} out of ${possibleMatches} possible matches.</p>
-        <p>Accuracy: ${accuracyPercentage}%</p>
+        ${resultsHTML}
         <button id="playAgain">Play Again</button>
       `;
       resultsEl.style.display = "block";
