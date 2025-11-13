@@ -1188,6 +1188,50 @@
 
       // Save daily progress
       saveDailyProgress(trialScore);
+
+      // 📊 Send comprehensive statistics to unified system
+      if (window.parent !== window && window.parent.gameStats) {
+        const totalScore = trialScores.reduce((a, b) => a + b, 0);
+        const averageScore = totalScore / trialScores.length;
+        const averageAccuracy = (cumulativeCorrectSelections / cumulativeTotalTargets) * 100;
+        
+        window.parent.gameStats.recordSession({
+          // Core metrics
+          score: trialScore,
+          averageScore: averageScore,
+          accuracy: averageAccuracy / 100,
+          level: settings.level,
+          
+          // Trial counts
+          totalTrials: totalTrials,
+          correctAnswersCount: correctAnswersCount,
+          incorrectAnswersCount: incorrectAnswersCount,
+          
+          // Cumulative metrics
+          cumulativeScore: cumulativeScore,
+          cumulativeCorrectSelections: cumulativeCorrectSelections,
+          cumulativeTotalTargets: cumulativeTotalTargets,
+          
+          // Settings/configuration
+          movementMode: settings.movementMode,
+          isRandomMode: settings.isRandomMode,
+          orderMode: settings.orderMode,
+          isNonConsecutiveMode: settings.isNonConsecutiveMode,
+          isRegular3DMOT: settings.isRegular3DMOT,
+          numBlueDistractors: settings.numBlueDistractors,
+          numColoredDistractors: settings.numColoredDistractors,
+          ballSpeed: settings.ballSpeed,
+          highlightDuration: settings.highlightDuration,
+          delayAfterSequence: settings.delayAfterSequence,
+          flashMode: settings.flashMode,
+          
+          // Auto progression settings
+          autoProgression: settings.autoProgression,
+          
+          // Session info
+          sessionId: sessionId
+        });
+      }
     }
 
     function updateAverageDisplay() {

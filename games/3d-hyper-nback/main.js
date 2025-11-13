@@ -4768,6 +4768,71 @@ function getGameCycle(n) {
         accuracy: accuracy
       });
 
+      // 📊 Send comprehensive statistics to unified system
+      if (window.parent !== window && window.parent.gameStats) {
+        window.parent.gameStats.recordSession({
+          // Core metrics
+          score: Math.round(accuracy * 100),
+          accuracy: accuracy,
+          level: nLevel,
+          microLevel: currentMicroLevel,
+          
+          // Signal detection theory metrics
+          dPrime: sessionMetrics.dPrime,
+          responseBias: sessionMetrics.responseBias,
+          hits: sessionMetrics.hits,
+          misses: sessionMetrics.misses,
+          falseAlarms: sessionMetrics.falseAlarms,
+          correctRejections: sessionMetrics.correctRejections,
+          
+          // Lure resistance metrics
+          n1LureEncounters: sessionMetrics.n1LureEncounters || 0,
+          n1LureCorrectRejections: sessionMetrics.n1LureCorrectRejections || 0,
+          n1LureFalseAlarms: sessionMetrics.n1LureFalseAlarms || 0,
+          n1LureResistance: sessionMetrics.n1LureResistance || 0,
+          nPlusLureEncounters: sessionMetrics.nPlusLureEncounters || 0,
+          nPlusLureCorrectRejections: sessionMetrics.nPlusLureCorrectRejections || 0,
+          nPlusLureFalseAlarms: sessionMetrics.nPlusLureFalseAlarms || 0,
+          nPlusLureResistance: sessionMetrics.nPlusLureResistance || 0,
+          totalLureResistance: sessionMetrics.totalLureResistance || 0,
+          
+          // Response time metrics
+          responseTimes: sessionMetrics.responseTimes || [],
+          meanRT: sessionMetrics.meanRT || 0,
+          medianRT: sessionMetrics.medianRT || 0,
+          hitRT: sessionMetrics.hitRT || 0,
+          correctRejectionRT: sessionMetrics.correctRejectionRT || 0,
+          speedScore: sessionMetrics.speedScore || 0,
+          rtImprovement: sessionMetrics.rtImprovement || 0,
+          
+          // Per-stimulus performance
+          rightWalls, wrongWalls, matchingWalls,
+          rightCamera, wrongCamera, matchingCamera,
+          rightFace, wrongFace, matchingFace,
+          rightPosition, wrongPosition, matchingPosition,
+          rightWord, wrongWord, matchingWord,
+          rightShape, wrongShape, matchingShape,
+          rightCorner, wrongCorner, matchingCorner,
+          rightSound, wrongSound, matchingSound,
+          rightColor, wrongColor, matchingColor,
+          rightRotation, wrongRotation, matchingRotation,
+          
+          // Configuration
+          numStimuli: currentConfigKey,
+          wallsEnabled, cameraEnabled, faceEnabled, positionEnabled,
+          wordEnabled, shapeEnabled, cornerEnabled, soundEnabled,
+          colorEnabled, rotationEnabled,
+          
+          // Speed/timing
+          speedTarget: getSpeedTarget(currentMicroLevel),
+          baseDelay: baseDelay,
+          
+          // Session info
+          stimuliCount: stimuliCount,
+          matchingStimuli: matchingStimuli
+        });
+      }
+
       if (sessionHistoriesByConfig[currentConfigKey].length > 20) {
         sessionHistoriesByConfig[currentConfigKey].shift(); // Remove oldest session if more than 20
       }

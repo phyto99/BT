@@ -182,18 +182,63 @@ var game = {
     // a simple alias for enviroment object, used below
     var e = enviroment;
 
+    var wrongPositions = this.score[1] + this.score[2] + this.score[10] + this.score[11];
+    var wrongSounds = this.score[4] + this.score[5] + this.score[7] + this.score[8];
+    var tolleratedErrors = Math.floor(this.clues * 0.3);
+
     // puts a report into resultsPopup
     document.getElementById(e.resultsPopup.innerID).innerHTML =
-      this.buildHTMLReport(
-        this.score[1] + this.score[2] + this.score[10] + this.score[11], // wrongPositions
-        this.score[4] + this.score[5] + this.score[7] + this.score[8], // wrongSounds
-        Math.floor(this.clues * 0.3) // tolleratedErrors
-      );
+      this.buildHTMLReport(wrongPositions, wrongSounds, tolleratedErrors);
 
     // updates N level of #set-level within the slide menu
     $("#set-level").val(this.n);
     $("#set-level-span").text(this.n);
     $("#N-level").text("N = " + this.n);
+
+    // 📊 Send comprehensive statistics to unified system
+    if (window.parent !== window && window.parent.gameStats) {
+      var totalCorrect = this.score[0] + this.score[9] + this.score[3] + this.score[6];
+      var totalMissed = this.score[1] + this.score[10] + this.score[4] + this.score[7];
+      var totalWrong = this.score[2] + this.score[11] + this.score[5] + this.score[8];
+      var totalAttempts = totalCorrect + totalMissed + totalWrong;
+      var accuracy = totalAttempts > 0 ? totalCorrect / totalAttempts : 0;
+      
+      window.parent.gameStats.recordSession({
+        // Core metrics
+        score: totalCorrect,
+        accuracy: accuracy,
+        level: this.n,
+        nBack: this.n,
+        
+        // Detailed scores
+        visualLeftCorrect: this.score[0],
+        visualLeftMissed: this.score[1],
+        visualLeftWrong: this.score[2],
+        audioLeftCorrect: this.score[3],
+        audioLeftMissed: this.score[4],
+        audioLeftWrong: this.score[5],
+        audioRightCorrect: this.score[6],
+        audioRightMissed: this.score[7],
+        audioRightWrong: this.score[8],
+        visualRightCorrect: this.score[9],
+        visualRightMissed: this.score[10],
+        visualRightWrong: this.score[11],
+        
+        // Summary by type
+        totalCorrect: totalCorrect,
+        totalMissed: totalMissed,
+        totalWrong: totalWrong,
+        wrongPositions: wrongPositions,
+        wrongSounds: wrongSounds,
+        
+        // Configuration
+        stimulusTime: this.time,
+        matchingClues: this.clues,
+        soundsLeft: window.settings?.soundsLeft || 'Letters English (USA)',
+        soundsRight: window.settings?.soundsRight || 'Numbers English (USA)',
+        feedback: this.feedback
+      });
+    }
 
     // stops the game, shows resultsPopup, moves progressBar
     this.stop();

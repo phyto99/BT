@@ -2384,27 +2384,233 @@ class UnifiedBrainTraining {
   }
 }
 
-// Initialize game stats system
+// Initialize comprehensive game stats system
 window.gameStats = {
   init: () => {
-    console.log('Game stats initialized for:', window.unifiedBrainTraining?.currentGameId);
+    console.log('📊 [STATS] Game stats initialized for:', window.unifiedBrainTraining?.currentGameId);
   },
-  recordScore: (score) => {
+  
+  // Record comprehensive session statistics
+  recordSession: (sessionData) => {
     const gameId = window.unifiedBrainTraining?.currentGameId;
-    if (gameId) {
-      const stats = JSON.parse(localStorage.getItem('brainTrainingStats') || '{}');
-      if (!stats[gameId]) stats[gameId] = [];
-      stats[gameId].push({
-        score: score,
-        timestamp: Date.now(),
-        date: new Date().toISOString().split('T')[0]
-      });
-      localStorage.setItem('brainTrainingStats', JSON.stringify(stats));
-      console.log('Score recorded:', score, 'for game:', gameId);
+    if (!gameId) {
+      console.warn('📊 [STATS] No game ID available for recording session');
+      return;
     }
+    
+    const stats = JSON.parse(localStorage.getItem('brainTrainingStats') || '{}');
+    if (!stats[gameId]) stats[gameId] = [];
+    
+    // Create comprehensive session record
+    const session = {
+      timestamp: Date.now(),
+      date: new Date().toISOString().split('T')[0],
+      time: new Date().toISOString().split('T')[1].split('.')[0],
+      ...sessionData
+    };
+    
+    stats[gameId].push(session);
+    
+    // Keep only last 1000 sessions per game to prevent storage bloat
+    if (stats[gameId].length > 1000) {
+      stats[gameId] = stats[gameId].slice(-1000);
+    }
+    
+    localStorage.setItem('brainTrainingStats', JSON.stringify(stats));
+    console.log('📊 [STATS] Session recorded for', gameId, ':', session);
+    
+    return session;
   },
+  
+  // Legacy method for backward compatibility
+  recordScore: (score) => {
+    return window.gameStats.recordSession({ score });
+  },
+  
+  // Get all stats for a game
   getStats: (gameId) => {
     const stats = JSON.parse(localStorage.getItem('brainTrainingStats') || '{}');
     return stats[gameId] || [];
+  },
+  
+  // Get summary statistics for a game
+  getSummary: (gameId) => {
+    const sessions = window.gameStats.getStats(gameId);
+    if (sessions.length === 0) return null;
+    
+    const summary = {
+      totalSessions: sessions.length,
+      firstSession: sessions[0].date,
+      lastSession: sessions[sessions.length - 1].date,
+      averages: {},
+      totals: {},
+      recent: sessions.slice(-10) // Last 10 sessions
+    };
+    
+    // Calculate averages for numeric fields
+    const numericFields = ['score', 'accuracy', 'level', 'nBack', 'dPrime', 'hits', 'misses', 
+                           'falseAlarms', 'correctRejections', 'responseBias', 'microLevel',
+                           'meanRT', 'medianRT', 'speedScore'];
+    
+    numericFields.forEach(field => {
+      const values = sessions.map(s => s[field]).filter(v => v !== undefined && !isNaN(v));
+      if (values.length > 0) {
+        summary.averages[field] = values.reduce((a, b) => a + b, 0) / values.length;
+        summary.totals[field] = values.reduce((a, b) => a + b, 0);
+      }
+    });
+    
+    return summary;
+  },
+  
+  // Clear stats for a specific game or all games
+  clearStats: (gameId = null) => {
+    if (gameId) {
+      const stats = JSON.parse(localStorage.getItem('brainTrainingStats') || '{}');
+      delete stats[gameId];
+      localStorage.setItem('brainTrainingStats', JSON.stringify(stats));
+      console.log('📊 [STATS] Cleared stats for:', gameId);
+    } else {
+      localStorage.removeItem('brainTrainingStats');
+      console.log('📊 [STATS] Cleared all stats');
+    }
+  },
+  
+  // Export stats as JSON
+  exportStats: (gameId = null) => {
+    const stats = JSON.parse(localStorage.getItem('brainTrainingStats') || '{}');
+    const data = gameId ? { [gameId]: stats[gameId] } : stats;
+    const json = JSON.stringify(data, null, 2);
+    
+    // Create download link
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `brain-training-stats-${gameId || 'all'}-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    console.log('📊 [STATS] Exported stats for:', gameId || 'all games');
+  },
+  
+  // Get detailed analytics for a specific game
+  getDetailedAnalytics: (gameId) => {
+    const sessions = window.gameStats.getStats(gameId);
+    if (!sessions || sessions.length === 0) return null;
+    
+    // Game-specific analytics
+    switch(gameId) {
+      case '3d-hyper-nback':
+        return window.gameStats.getHyperNBackAnalytics(sessions);
+      case 'jiggle-factorial':
+        return window.gameStats.getJiggleFactorialAnalytics(sessions);
+      case 'quad-box':
+        return window.gameStats.getQuadBoxAnalytics(sessions);
+      case 'dichotic-dual-nback':
+        return window.gameStats.getDichoticAnalytics(sessions);
+      default:
+        return window.gameStats.getGenericAnalytics(sessions);
+    }
+  },
+  
+  // Hyper N-Back specific analytics
+  getHyperNBackAnalytics: (sessions) => {
+    const latest = sessions[sessions.length - 1];
+    const avgDPrime = sessions.map(s => s.dPrime || 0).filter(d => d > 0).reduce((a, b) => a + b, 0) / sessions.filter(s => s.dPrime).length || 0;
+    const avgAccuracy = sessions.map(s => s.accuracy || 0).reduce((a, b) => a + b, 0) / sessions.length;
+    const avgLevel = sessions.map(s => s.microLevel || s.level || 0).reduce((a, b) => a + b, 0) / sessions.length;
+    
+    return {
+      type: 'hyper-nback',
+      sessions: sessions.length,
+      latest: latest,
+      averages: {
+        dPrime: avgDPrime,
+        accuracy: avgAccuracy,
+        level: avgLevel,
+        responseBias: sessions.map(s => s.responseBias || 0).reduce((a, b) => a + b, 0) / sessions.length,
+        lureResistance: sessions.map(s => s.totalLureResistance || 0).filter(l => l > 0).reduce((a, b) => a + b, 0) / sessions.filter(s => s.totalLureResistance).length || 0
+      },
+      stimuliBreakdown: {
+        walls: { correct: sessions.reduce((a, s) => a + (s.rightWalls || 0), 0), wrong: sessions.reduce((a, s) => a + (s.wrongWalls || 0), 0) },
+        camera: { correct: sessions.reduce((a, s) => a + (s.rightCamera || 0), 0), wrong: sessions.reduce((a, s) => a + (s.wrongCamera || 0), 0) },
+        face: { correct: sessions.reduce((a, s) => a + (s.rightFace || 0), 0), wrong: sessions.reduce((a, s) => a + (s.wrongFace || 0), 0) },
+        position: { correct: sessions.reduce((a, s) => a + (s.rightPosition || 0), 0), wrong: sessions.reduce((a, s) => a + (s.wrongPosition || 0), 0) },
+        word: { correct: sessions.reduce((a, s) => a + (s.rightWord || 0), 0), wrong: sessions.reduce((a, s) => a + (s.wrongWord || 0), 0) },
+        shape: { correct: sessions.reduce((a, s) => a + (s.rightShape || 0), 0), wrong: sessions.reduce((a, s) => a + (s.wrongShape || 0), 0) },
+        corner: { correct: sessions.reduce((a, s) => a + (s.rightCorner || 0), 0), wrong: sessions.reduce((a, s) => a + (s.wrongCorner || 0), 0) },
+        sound: { correct: sessions.reduce((a, s) => a + (s.rightSound || 0), 0), wrong: sessions.reduce((a, s) => a + (s.wrongSound || 0), 0) },
+        color: { correct: sessions.reduce((a, s) => a + (s.rightColor || 0), 0), wrong: sessions.reduce((a, s) => a + (s.wrongColor || 0), 0) },
+        rotation: { correct: sessions.reduce((a, s) => a + (s.rightRotation || 0), 0), wrong: sessions.reduce((a, s) => a + (s.wrongRotation || 0), 0) }
+      }
+    };
+  },
+  
+  // Jiggle Factorial specific analytics
+  getJiggleFactorialAnalytics: (sessions) => {
+    const latest = sessions[sessions.length - 1];
+    const avgScore = sessions.map(s => s.score || 0).reduce((a, b) => a + b, 0) / sessions.length;
+    const avgAccuracy = sessions.map(s => s.accuracy || 0).reduce((a, b) => a + b, 0) / sessions.length;
+    const avgLevel = sessions.map(s => s.level || 0).reduce((a, b) => a + b, 0) / sessions.length;
+    const avgBallSpeed = sessions.map(s => s.ballSpeed || 0).filter(s => s > 0).reduce((a, b) => a + b, 0) / sessions.filter(s => s.ballSpeed).length || 0;
+    
+    // Get most common settings
+    const movementModes = sessions.map(s => s.movementMode).filter(m => m);
+    const orderModes = sessions.map(s => s.orderMode).filter(m => m);
+    const mostCommonMovement = movementModes.length > 0 ? movementModes.sort((a,b) =>
+      movementModes.filter(v => v===a).length - movementModes.filter(v => v===b).length
+    ).pop() : 'N/A';
+    const mostCommonOrder = orderModes.length > 0 ? orderModes.sort((a,b) =>
+      orderModes.filter(v => v===a).length - orderModes.filter(v => v===b).length
+    ).pop() : 'N/A';
+    
+    return {
+      type: 'jiggle-factorial',
+      sessions: sessions.length,
+      latest: latest,
+      averages: {
+        score: avgScore,
+        accuracy: avgAccuracy,
+        level: avgLevel,
+        ballSpeed: avgBallSpeed,
+        highlightDuration: sessions.map(s => s.highlightDuration || 0).filter(h => h > 0).reduce((a, b) => a + b, 0) / sessions.filter(s => s.highlightDuration).length || 0
+      },
+      totals: {
+        trials: sessions.reduce((a, s) => a + (s.totalTrials || 0), 0),
+        correct: sessions.reduce((a, s) => a + (s.correctAnswersCount || 0), 0),
+        incorrect: sessions.reduce((a, s) => a + (s.incorrectAnswersCount || 0), 0)
+      },
+      settings: {
+        movementMode: mostCommonMovement,
+        orderMode: mostCommonOrder,
+        numBlueDistractors: latest?.numBlueDistractors || 'N/A',
+        numColoredDistractors: latest?.numColoredDistractors || 'N/A',
+        highlightDuration: latest?.highlightDuration || 'N/A',
+        autoProgression: latest?.autoProgression || false
+      },
+      progression: {
+        levels: sessions.map(s => s.level || 0),
+        ballSpeeds: sessions.map(s => s.ballSpeed || 0),
+        scores: sessions.map(s => s.score || 0)
+      }
+    };
+  },
+  
+  // Generic analytics for other games
+  getGenericAnalytics: (sessions) => {
+    const latest = sessions[sessions.length - 1];
+    const avgScore = sessions.map(s => s.score || 0).reduce((a, b) => a + b, 0) / sessions.length;
+    const avgAccuracy = sessions.map(s => s.accuracy || 0).reduce((a, b) => a + b, 0) / sessions.length;
+    
+    return {
+      type: 'generic',
+      sessions: sessions.length,
+      latest: latest,
+      averages: {
+        score: avgScore,
+        accuracy: avgAccuracy
+      }
+    };
   }
 };

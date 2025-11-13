@@ -43,6 +43,46 @@ const createAnalyticsStore = () => {
         status
       })
       set(await loadAnalytics())
+
+      // 📊 Send comprehensive statistics to unified system
+      if (window.parent !== window && window.parent.gameStats) {
+        // Calculate overall accuracy
+        let totalHits = 0
+        let totalAttempts = 0
+        for (const tag of gameInfo.tags) {
+          totalHits += scores[tag].hits
+          totalAttempts += scores[tag].hits + scores[tag].misses
+        }
+        const accuracy = totalAttempts > 0 ? totalHits / totalAttempts : 0
+        
+        window.parent.gameStats.recordSession({
+          // Core metrics
+          score: totalHits,
+          accuracy: accuracy,
+          level: gameInfo.nBack,
+          nBack: gameInfo.nBack,
+          
+          // Trial info
+          completedTrials: scoresheet.length,
+          totalTrials: gameInfo.numTrials,
+          status: status,
+          
+          // Per-stimulus scores
+          scores: scores,
+          
+          // Timing
+          trialTime: gameInfo.trialTime,
+          matchChance: gameInfo.matchChance,
+          
+          // Configuration
+          mode: gameInfo.mode,
+          tags: gameInfo.tags,
+          
+          // Session timing
+          startTime: gameInfo.start,
+          duration: Date.now() - gameInfo.start
+        })
+      }
     },
 
     scoreTallyTrials: async (gameInfo, scoresheet, status) => {
@@ -58,6 +98,39 @@ const createAnalyticsStore = () => {
         status,
       })
       set(await loadAnalytics())
+
+      // 📊 Send comprehensive statistics to unified system
+      if (window.parent !== window && window.parent.gameStats) {
+        const accuracy = scores.tally.possible > 0 ? scores.tally.hits / scores.tally.possible : 0
+        
+        window.parent.gameStats.recordSession({
+          // Core metrics
+          score: scores.tally.hits,
+          accuracy: accuracy,
+          level: gameInfo.nBack,
+          nBack: gameInfo.nBack,
+          
+          // Tally-specific metrics
+          tallyHits: scores.tally.hits,
+          tallyPossible: scores.tally.possible,
+          
+          // Trial info
+          completedTrials: scoresheet.length,
+          totalTrials: gameInfo.numTrials,
+          status: status,
+          
+          // Timing
+          trialTime: gameInfo.trialTime,
+          
+          // Configuration
+          mode: gameInfo.mode,
+          tags: gameInfo.tags,
+          
+          // Session timing
+          startTime: gameInfo.start,
+          duration: Date.now() - gameInfo.start
+        })
+      }
     }
   }
 }
