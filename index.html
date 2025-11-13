@@ -81,7 +81,7 @@
             width: 2px;
             height: var(--modal-height, 400px);
             background: #999999;
-            z-index: 2000;
+            z-index: 500;
             color: white;
             font-family: Arial, sans-serif;
             font-size: 16px;
@@ -172,13 +172,147 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.25);
-            z-index: 1999;
+            z-index: 499;
             opacity: 0;
             transition: opacity 0.3s ease;
         }
         
         .modal-backdrop.visible {
             opacity: 1;
+        }
+
+        /* dat.gui-style Stats Panel */
+        .stats-panel-datgui {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            max-height: 80vh;
+            background: #1a1a1a;
+            border: 1px solid #2c2c2c;
+            font-family: 'Lucida Grande', sans-serif;
+            font-size: 11px;
+            color: #eee;
+            z-index: 500;
+            overflow-y: auto;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+        }
+
+        .stats-panel-datgui.visible {
+            display: block;
+            opacity: 1;
+        }
+
+        .stats-panel-datgui-header {
+            background: #2c2c2c;
+            padding: 8px 10px;
+            border-bottom: 1px solid #3c3c3c;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .stats-panel-datgui-title {
+            font-weight: bold;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #ddd;
+        }
+
+        .stats-panel-datgui-close {
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+            color: #ddd;
+        }
+
+        .stats-panel-datgui-close:hover {
+            opacity: 1;
+        }
+
+        .stats-datgui-section {
+            border-bottom: 1px solid #2c2c2c;
+        }
+
+        .stats-datgui-section-title {
+            background: #252525;
+            padding: 6px 10px;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #999;
+            border-bottom: 1px solid #2c2c2c;
+        }
+
+        .stats-datgui-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 10px;
+            font-size: 11px;
+            background: #1a1a1a;
+            border-bottom: 1px solid #222;
+        }
+
+        .stats-datgui-row:hover {
+            background: #202020;
+        }
+
+        .stats-datgui-label {
+            color: #aaa;
+        }
+
+        .stats-datgui-value {
+            color: #fff;
+            font-weight: normal;
+        }
+
+        .stats-datgui-chart {
+            padding: 10px;
+            background: #1a1a1a;
+        }
+
+        .stats-datgui-chart canvas {
+            width: 100% !important;
+            height: 150px !important;
+        }
+
+        .stats-datgui-empty {
+            padding: 30px 20px;
+            text-align: center;
+            color: #666;
+        }
+
+        .stats-datgui-empty-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+            opacity: 0.3;
+        }
+
+        /* Scrollbar styling for stats panel */
+        .stats-panel-datgui::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .stats-panel-datgui::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        .stats-panel-datgui::-webkit-scrollbar-thumb {
+            background: #3c3c3c;
+            border-radius: 3px;
+        }
+
+        .stats-panel-datgui::-webkit-scrollbar-thumb:hover {
+            background: #4c4c4c;
         }
     </style>
 </head>
@@ -213,19 +347,84 @@
             // Add test function for debugging
             window.testConnection = () => window.unifiedBrainTraining.testDirectConnection();
             
-            // Info button handler
+            // Info button handler - toggle if already open
             document.getElementById('unified-info-btn').addEventListener('click', () => {
-                showInfoPopup();
+                const existingModal = document.querySelector('.custom-modal');
+                if (existingModal) {
+                    // Info popup is already open, close it
+                    closeAnyOpenModal();
+                } else {
+                    // Close stats if open, then show info
+                    closeAnyOpenModal();
+                    showInfoPopup();
+                }
             });
             
-            // Stats button handler  
+            // Stats button handler - toggle if already open
             document.getElementById('unified-stats-btn').addEventListener('click', () => {
-                showStatsPopup();
+                const existingStatsPanel = document.querySelector('.stats-panel-datgui');
+                if (existingStatsPanel) {
+                    // Stats panel is already open, close it
+                    closeAnyOpenModal();
+                } else {
+                    // Close info if open, then show stats
+                    closeAnyOpenModal();
+                    showStatsPopup();
+                }
             });
             
-            // Load default game
-            window.unifiedBrainTraining.loadGame('jiggle-factorial');
+            // Track current game to detect switches
+            let lastGameId = null;
+            
+            // Load default game and show info on first visit
+            window.unifiedBrainTraining.loadGame('jiggle-factorial').then(() => {
+                lastGameId = window.unifiedBrainTraining?.currentGameId;
+                
+                // Show info popup on first visit (after a short delay for game to load)
+                setTimeout(() => {
+                    const currentGame = window.unifiedBrainTraining?.currentGameId;
+                    const hasSeenInfo = localStorage.getItem(`hasSeenInfo_${currentGame}`);
+                    if (!hasSeenInfo) {
+                        showInfoPopup(true);
+                        localStorage.setItem(`hasSeenInfo_${currentGame}`, 'true');
+                    }
+                }, 1000);
+            });
+            
+            // Watch for game switches and close popups
+            setInterval(() => {
+                const currentGameId = window.unifiedBrainTraining?.currentGameId;
+                if (currentGameId && currentGameId !== lastGameId) {
+                    console.log('Game switched from', lastGameId, 'to', currentGameId);
+                    closeAnyOpenModal();
+                    lastGameId = currentGameId;
+                }
+            }, 500);
+            
+            // Listen for game load events (including reloads of same game)
+            window.addEventListener('gameLoadInitiated', (e) => {
+                console.log('Game load initiated:', e.detail.gameId);
+                closeAnyOpenModal();
+            });
+            
+            // Close modal when clicking on settings panel (dat.GUI)
+            document.addEventListener('click', (e) => {
+                // Check if click is on dat.GUI elements
+                if (e.target.closest('.dg') || e.target.closest('#unified-gui-container')) {
+                    closeAnyOpenModal();
+                }
+            });
         });
+
+        // Close any open modal instantly
+        function closeAnyOpenModal() {
+            const existingModal = document.querySelector('.custom-modal');
+            const existingBackdrop = document.querySelector('.modal-backdrop');
+            const existingStatsPanel = document.querySelector('.stats-panel-datgui');
+            if (existingModal) existingModal.remove();
+            if (existingBackdrop) existingBackdrop.remove();
+            if (existingStatsPanel) existingStatsPanel.remove();
+        }
 
         function showInfoPopup(autoShow = false) {
             const currentGame = window.unifiedBrainTraining?.currentGameId || 'none';
@@ -233,22 +432,6 @@
             // Prevent duplicate popups - check if one is already open
             if (document.querySelector('.custom-modal')) {
                 return;
-            }
-            
-            // Check if user has disabled auto-show for this game
-            if (autoShow && localStorage.getItem(`hideInfo_${currentGame}`) === 'true') {
-                return;
-            }
-            
-            // Prevent multiple auto-shows for the same game in quick succession
-            if (autoShow) {
-                const lastShown = window._lastInfoPopupShown || {};
-                const now = Date.now();
-                if (lastShown[currentGame] && (now - lastShown[currentGame]) < 2000) {
-                    return;
-                }
-                window._lastInfoPopupShown = window._lastInfoPopupShown || {};
-                window._lastInfoPopupShown[currentGame] = now;
             }
             
             const gameInfo = getGameInfo(currentGame);
@@ -388,6 +571,13 @@
         }
 
         function showStatsPopup() {
+            // Close existing panel if open
+            const existingPanel = document.querySelector('.stats-panel-datgui');
+            if (existingPanel) {
+                existingPanel.remove();
+                return;
+            }
+
             // Get current game info
             const currentGame = window.unifiedBrainTraining?.currentGameId || 'none';
             const gameNames = {
@@ -402,50 +592,87 @@
             // Get game statistics
             const gameData = getGameStatistics(currentGame);
             
-            // Build content
-            let content = '';
+            // Create dat.gui-style panel
+            const panel = document.createElement('div');
+            panel.className = 'stats-panel-datgui';
             
-            // Current game
-            content += `<div style="margin-bottom: 20px; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 4px;">`;
-            content += `<div style="color: #aaa; font-size: 11px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px;">Current Game</div>`;
-            content += `<div style="font-size: 14px; font-weight: bold;">${gameNames[currentGame] || 'None'}</div>`;
-            content += `</div>`;
+            let html = `
+                <div class="stats-panel-datgui-header">
+                    <div class="stats-panel-datgui-title">Statistics</div>
+                    <div class="stats-panel-datgui-close">×</div>
+                </div>
+            `;
             
-            // Game statistics
+            // Current Game Section
+            html += `
+                <div class="stats-datgui-section">
+                    <div class="stats-datgui-section-title">Current Game</div>
+                    <div class="stats-datgui-row">
+                        <span class="stats-datgui-label">Game</span>
+                        <span class="stats-datgui-value">${gameNames[currentGame] || 'None'}</span>
+                    </div>
+                </div>
+            `;
+            
+            // Game Statistics
             if (gameData && gameData.hasData) {
-                content += '<div style="margin-bottom: 20px;">';
-                content += '<div style="color: #aaa; font-size: 11px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Game Statistics</div>';
-                content += '<div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 4px; margin-bottom: 15px;">';
-                content += `<div style="display: flex; justify-content: space-between; margin: 6px 0; font-size: 13px;"><span>Sessions:</span><span style="color: #4CAF50; font-weight: bold;">${gameData.sessions}</span></div>`;
-                content += `<div style="display: flex; justify-content: space-between; margin: 6px 0; font-size: 13px;"><span>Avg Score:</span><span style="color: #4CAF50; font-weight: bold;">${gameData.avgScore}</span></div>`;
-                content += `<div style="display: flex; justify-content: space-between; margin: 6px 0; font-size: 13px;"><span>Best Score:</span><span style="color: #FFC107; font-weight: bold;">${gameData.bestScore}</span></div>`;
-                content += '</div>';
-                content += '<div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 4px;">';
-                content += '<canvas id="unified-stats-chart" width="500" height="250"></canvas>';
-                content += '</div>';
-                content += '</div>';
+                html += `
+                    <div class="stats-datgui-section">
+                        <div class="stats-datgui-section-title">Performance</div>
+                        <div class="stats-datgui-row">
+                            <span class="stats-datgui-label">Sessions</span>
+                            <span class="stats-datgui-value">${gameData.sessions}</span>
+                        </div>
+                        <div class="stats-datgui-row">
+                            <span class="stats-datgui-label">Avg Score</span>
+                            <span class="stats-datgui-value">${gameData.avgScore}</span>
+                        </div>
+                        <div class="stats-datgui-row">
+                            <span class="stats-datgui-label">Best Score</span>
+                            <span class="stats-datgui-value">${gameData.bestScore}</span>
+                        </div>
+                    </div>
+                    <div class="stats-datgui-section">
+                        <div class="stats-datgui-section-title">Progress Chart</div>
+                        <div class="stats-datgui-chart">
+                            <canvas id="unified-stats-chart-datgui"></canvas>
+                        </div>
+                    </div>
+                `;
             } else {
-                content += '<div style="padding: 40px 20px; text-align: center;">';
-                content += '<div style="font-size: 64px; margin-bottom: 20px;">📊</div>';
-                content += '<div style="color: #aaa; font-size: 14px; margin-bottom: 10px; font-weight: bold;">No statistics yet</div>';
-                content += '<div style="color: #888; font-size: 12px; line-height: 1.6;">Complete a training session to see your performance graphs and statistics here.</div>';
-                content += '</div>';
+                html += `
+                    <div class="stats-datgui-section">
+                        <div class="stats-datgui-empty">
+                            <div class="stats-datgui-empty-icon">📊</div>
+                            <div style="font-size: 10px; margin-bottom: 5px;">No statistics yet</div>
+                            <div style="font-size: 9px; color: #555;">Complete a session to see stats</div>
+                        </div>
+                    </div>
+                `;
             }
             
-            // Use the existing modal system
-            createCustomModal({
-                title: '📊 Training Statistics',
-                content: content
+            panel.innerHTML = html;
+            document.body.appendChild(panel);
+            
+            // Close button handler
+            panel.querySelector('.stats-panel-datgui-close').addEventListener('click', () => {
+                panel.classList.remove('visible');
+                setTimeout(() => panel.remove(), 300);
+            });
+            
+            // Fade in
+            requestAnimationFrame(() => {
+                panel.classList.add('visible');
             });
             
             // Render chart if we have data
             if (gameData && gameData.hasData && typeof Chart !== 'undefined') {
                 setTimeout(() => {
-                    const canvas = document.getElementById('unified-stats-chart');
+                    const canvas = document.getElementById('unified-stats-chart-datgui');
                     if (canvas) {
-                        renderUnifiedChart(gameData);
+                        renderUnifiedChart(gameData, canvas);
                     }
-                }, 300);
+                }, 100);
             }
         }
         
@@ -473,8 +700,8 @@
         }
         
         // Render chart using Chart.js
-        function renderUnifiedChart(gameData) {
-            const canvas = document.getElementById('unified-stats-chart');
+        function renderUnifiedChart(gameData, canvasElement) {
+            const canvas = canvasElement || document.getElementById('unified-stats-chart');
             if (!canvas || !gameData || !gameData.chartData) {
                 return;
             }
@@ -675,11 +902,12 @@
             // Build checkbox HTML if needed
             let checkboxHtml = '';
             if (showCheckbox && gameId) {
-                const isChecked = localStorage.getItem(`hideInfo_${gameId}`) === 'true';
+                // Check by default (user has to uncheck to see it again)
+                const dontShowAgain = localStorage.getItem(`dontShowInfo_${gameId}`) !== 'false';
                 checkboxHtml = `
                     <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.2);">
                         <label style="display: flex; align-items: center; cursor: pointer; font-size: 13px;">
-                            <input type="checkbox" id="dont-show-again" ${isChecked ? 'checked' : ''} 
+                            <input type="checkbox" id="dont-show-again" ${dontShowAgain ? 'checked' : ''} 
                                    style="margin-right: 8px; cursor: pointer; width: 16px; height: 16px;">
                             <span>Don't show this again</span>
                         </label>
@@ -749,7 +977,13 @@
                     const checkbox = document.getElementById('dont-show-again');
                     if (checkbox) {
                         checkbox.addEventListener('change', (e) => {
-                            localStorage.setItem(`hideInfo_${gameId}`, e.target.checked);
+                            // Store as 'false' if unchecked (show again), otherwise don't store or store 'true'
+                            if (!e.target.checked) {
+                                localStorage.setItem(`dontShowInfo_${gameId}`, 'false');
+                                localStorage.removeItem(`hasSeenInfo_${gameId}`);
+                            } else {
+                                localStorage.setItem(`dontShowInfo_${gameId}`, 'true');
+                            }
                         });
                     }
                 }

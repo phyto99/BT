@@ -1334,6 +1334,9 @@ class UnifiedBrainTraining {
   }
 
   loadGameWithStatus(gameId) {
+    // Dispatch event for game load (including reloads)
+    window.dispatchEvent(new CustomEvent('gameLoadInitiated', { detail: { gameId } }));
+    
     // Close the sidebar/menu immediately when loading a game
     this.closeSidebar();
     
@@ -1952,11 +1955,11 @@ class UnifiedBrainTraining {
     }
 
     // Add game loading buttons
-    this.gui.add(this.settings, 'loadJiggleFactorial').name('Load Jiggle Factorial 3D');
-    this.gui.add(this.settings, 'loadHyperNBack').name('Load 3D Hyper N-back');
-    this.gui.add(this.settings, 'loadDichoticDualNBack').name('Load Dichotic Dual N-back');
-    this.gui.add(this.settings, 'loadQuadBox').name('Load Quad Box');
-    this.gui.add(this.settings, 'loadFastSequenceNBack').name('Load Fast Sequence N-back');
+    this.gui.add(this.settings, 'loadJiggleFactorial').name('Jiggle Factorial');
+    this.gui.add(this.settings, 'loadHyperNBack').name("3D Hyper N-Back d'prime");
+    this.gui.add(this.settings, 'loadDichoticDualNBack').name('Dichotic Dual N-back');
+    this.gui.add(this.settings, 'loadQuadBox').name('Quad Box');
+    this.gui.add(this.settings, 'loadFastSequenceNBack').name('Fast Sequence Synesthesia N-back');
     this.gui.add(this.settings, 'loadMultiple').name('Load Multiple N-back');
 
     // Add ONLY the settings for the currently loaded game
