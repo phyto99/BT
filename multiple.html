@@ -520,6 +520,12 @@
   </div>
   
   <script>
+    // Preload knight images
+    const whiteKnight = new Image();
+    whiteKnight.src = 'wn.png';
+    const blackKnight = new Image();
+    blackKnight.src = 'bn.png';
+    
     // Global Variables and Arrays
     let audioCtx = null;
     const toneFrequencies = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25, 587.33, 659.25, 739.99, 783.99];
@@ -885,12 +891,28 @@
     }
     
     function drawCircle(ctx, width, height) {
-      ctx.fillStyle = "#00ffea";
+      // Randomly choose white or black knight
+      const knightImage = Math.random() < 0.5 ? whiteKnight : blackKnight;
+      
+      // Size range same as original circle
       let minR = width / 5, maxR = width / 3;
       let radius = minR + Math.random() * (maxR - minR);
-      ctx.beginPath();
-      ctx.arc(width/2, height/2, radius, 0, 2 * Math.PI);
-      ctx.fill();
+      let size = radius * 2;
+      
+      // Center the image
+      let x = width/2 - size/2;
+      let y = height/2 - size/2;
+      
+      // Draw knight image
+      if (knightImage.complete) {
+        ctx.drawImage(knightImage, x, y, size, size);
+      } else {
+        // Fallback to cyan circle if images not loaded
+        ctx.fillStyle = "#00ffea";
+        ctx.beginPath();
+        ctx.arc(width/2, height/2, radius, 0, 2 * Math.PI);
+        ctx.fill();
+      }
     }
     
     function drawSynesthesiaStimulus(ctx, width, height, color) {
@@ -1185,12 +1207,28 @@
     }
     
     function drawCircle(ctx, width, height) {
-      ctx.fillStyle = "#00ffea";
+      // Randomly choose white or black knight
+      const knightImage = Math.random() < 0.5 ? whiteKnight : blackKnight;
+      
+      // Size range same as original circle
       let minR = width / 5, maxR = width / 3;
       let radius = minR + Math.random() * (maxR - minR);
-      ctx.beginPath();
-      ctx.arc(width/2, height/2, radius, 0, 2 * Math.PI);
-      ctx.fill();
+      let size = radius * 2;
+      
+      // Center the image
+      let x = width/2 - size/2;
+      let y = height/2 - size/2;
+      
+      // Draw knight image
+      if (knightImage.complete) {
+        ctx.drawImage(knightImage, x, y, size, size);
+      } else {
+        // Fallback to cyan circle if images not loaded
+        ctx.fillStyle = "#00ffea";
+        ctx.beginPath();
+        ctx.arc(width/2, height/2, radius, 0, 2 * Math.PI);
+        ctx.fill();
+      }
     }
     
     function drawSynesthesiaStimulus(ctx, width, height, color) {
