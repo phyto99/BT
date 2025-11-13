@@ -1776,6 +1776,31 @@ class UnifiedBrainTraining {
 
 
 
+  resetGameSettings(gameId) {
+    const defaults = this.getGameSpecificSettings(gameId);
+    
+    // Update reactive settings with defaults
+    Object.keys(defaults).forEach(key => {
+      if (this.settings && key in this.settings) {
+        this.settings[key] = defaults[key];
+      }
+    });
+    
+    // Update GUI controllers to reflect new values
+    if (this.gui && this.gui.__controllers) {
+      this.gui.__controllers.forEach(controller => {
+        if (controller.updateDisplay) {
+          controller.updateDisplay();
+        }
+      });
+    }
+    
+    // Save to localStorage
+    this.saveSettings();
+    
+    console.log(`✅ Reset settings for ${gameId} to defaults`);
+  }
+
   getGameSpecificSettings(gameId) {
     const settingsMap = {
       'jiggle-factorial': {
@@ -2045,6 +2070,10 @@ class UnifiedBrainTraining {
     levelAdjustmentFolder.add(this.settings, 'everyIncorrectLevel').name('Every Incorrect').min(1).step(1);
 
     this.gui.add(this.settings, 'trialStartDelay').name('Trial Start Delay (ms)');
+    
+    // Reset button
+    this.settings.resetJiggleSettings = () => this.resetGameSettings('jiggle-factorial');
+    this.gui.add(this.settings, 'resetJiggleSettings').name('🔄 Reset to Defaults');
   }
 
   build3DHyperNBackGUI() {
@@ -2102,6 +2131,10 @@ class UnifiedBrainTraining {
     this.gui.add(this.settings, 'maxAllowedMistakes').name('Maximum Allowed Mistakes');
     this.gui.add(this.settings, 'previousLevelThreshold').name('Level Down Correct Stimuli %');
     this.gui.add(this.settings, 'nextLevelThreshold').name('Level Up Correct Stimuli %');
+    
+    // Reset button
+    this.settings.resetHyperNBackSettings = () => this.resetGameSettings('3d-hyper-nback');
+    this.gui.add(this.settings, 'resetHyperNBackSettings').name('🔄 Reset to Defaults');
   }
 
   buildDichoticDualNBackGUI() {
@@ -2133,6 +2166,10 @@ class UnifiedBrainTraining {
     // Game options
     this.gui.add(this.settings, 'feedback').name('Clue Feedback');
     this.gui.add(this.settings, 'dailyGoal', 1, 50, 1).name('Daily Goal');
+    
+    // Reset button
+    this.settings.resetDichoticSettings = () => this.resetGameSettings('dichotic-dual-nback');
+    this.gui.add(this.settings, 'resetDichoticSettings').name('🔄 Reset to Defaults');
   }
 
   buildQuadBoxGUI() {
@@ -2192,6 +2229,10 @@ class UnifiedBrainTraining {
     const tallyFolder = this.gui.addFolder('Tally Mode Settings');
     tallyFolder.add(this.settings, 'positionWidth', 1, 4, 1).name('Position Width');
     tallyFolder.add(this.settings, 'enablePositionWidthSequence').name('Enable Position Width Sequence');
+    
+    // Reset button
+    this.settings.resetQuadBoxSettings = () => this.resetGameSettings('quad-box');
+    this.gui.add(this.settings, 'resetQuadBoxSettings').name('🔄 Reset to Defaults');
   }
 
   buildFastSequenceNBackGUI() {
@@ -2232,6 +2273,10 @@ class UnifiedBrainTraining {
     synesthesiaFolder.add(this.settings, 'uncoloredLetter', 0, 100, 1).name('Uncolored Letter (%)');
     synesthesiaFolder.add(this.settings, 'spatialMusic', 0, 100, 1).name('Spatial-Music (%)');
     synesthesiaFolder.open();
+    
+    // Reset button
+    this.settings.resetFastSequenceSettings = () => this.resetGameSettings('fast-sequence-nback');
+    this.gui.add(this.settings, 'resetFastSequenceSettings').name('🔄 Reset to Defaults');
   }
 
   buildMultipleGUI() {
@@ -2257,6 +2302,10 @@ class UnifiedBrainTraining {
     // Relational settings
     const relationalFolder = this.gui.addFolder('Relational Settings');
     relationalFolder.add(this.settings, 'relationalComplexity', ['1back', '2back']).name('Relational Complexity');
+    
+    // Reset button
+    this.settings.resetMultipleSettings = () => this.resetGameSettings('multiple');
+    this.gui.add(this.settings, 'resetMultipleSettings').name('🔄 Reset to Defaults');
   }
 
 
