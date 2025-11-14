@@ -205,6 +205,63 @@ class UnifiedBrainTraining {
     }, 2000);
   }
   
+  // Custom tooltip for dat.GUI elements
+  addCustomTooltip(element, getContentFn) {
+    let tooltipDiv = null;
+    
+    const showTooltip = () => {
+      const content = getContentFn();
+      const htmlContent = typeof content === 'object' ? content.html : content;
+      
+      if (!tooltipDiv) {
+        tooltipDiv = document.createElement('div');
+        tooltipDiv.style.cssText = `
+          position: fixed;
+          background: rgba(30, 30, 30, 0.95);
+          color: #eee;
+          padding: 12px;
+          border-radius: 4px;
+          border: 1px solid #555;
+          font-size: 11px;
+          z-index: 10000;
+          pointer-events: none;
+          max-width: 300px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        `;
+        document.body.appendChild(tooltipDiv);
+      }
+      
+      tooltipDiv.innerHTML = htmlContent;
+      tooltipDiv.style.display = 'block';
+      
+      // Position tooltip - try to show above the element, or to the right if at bottom
+      const rect = element.getBoundingClientRect();
+      const tooltipRect = tooltipDiv.getBoundingClientRect();
+      
+      // Check if element is near bottom of screen
+      const isNearBottom = rect.bottom > window.innerHeight - 200;
+      
+      if (isNearBottom) {
+        // Position above the element
+        tooltipDiv.style.left = rect.left + 'px';
+        tooltipDiv.style.top = (rect.top - tooltipRect.height - 10) + 'px';
+      } else {
+        // Position to the right of the element
+        tooltipDiv.style.left = (rect.right + 10) + 'px';
+        tooltipDiv.style.top = rect.top + 'px';
+      }
+    };
+    
+    const hideTooltip = () => {
+      if (tooltipDiv) {
+        tooltipDiv.style.display = 'none';
+      }
+    };
+    
+    element.addEventListener('mouseenter', showTooltip);
+    element.addEventListener('mouseleave', hideTooltip);
+  }
+  
   // Test reactive functionality (Task 4 - Requirements 6.1, 6.2)
   testReactiveSettings() {
     console.log('🧪 [REACTIVE-TEST] Testing reactive settings functionality...');
@@ -1793,7 +1850,140 @@ class UnifiedBrainTraining {
 
 
 
+  getTimingSyncPreview() {
+    const currentGame = this.currentGameId;
+    let stimulusTime, intervalTime;
+    
+    // Get timing from current game
+    if (currentGame === 'jiggle-factorial') {
+      stimulusTime = this.settings.highlightDuration || 1000;
+      intervalTime = this.settings.delayAfterSequence || 1000;
+    } else if (currentGame === '3d-hyper-nback') {
+      stimulusTime = this.settings.baseDelay || 5000;
+      intervalTime = 0;
+    } else if (currentGame === 'quad-box') {
+      stimulusTime = this.settings.trialTime || 2500;
+      intervalTime = 0;
+    } else if (currentGame === 'dichotic-dual-nback') {
+      stimulusTime = this.settings.flashTime || 300;
+      intervalTime = this.settings.flashDelay || 25;
+    } else if (currentGame === 'fast-sequence-nback') {
+      stimulusTime = this.settings.flashDurationMin || 160;
+      intervalTime = this.settings.intervalDurationMin || 2000;
+    } else if (currentGame === 'multiple') {
+      stimulusTime = this.settings.stimulusDuration || 500;
+      intervalTime = this.settings.isiDuration || 1000;
+    }
+    
+    const total = stimulusTime + intervalTime;
+    
+    return {
+      html: `<div style="font-family: monospace; font-size: 11px; line-height: 1.6;">
+        <div style="margin-bottom: 8px; font-weight: bold;">Current: <span style="color: #4CAF50">${stimulusTime}ms</span> + <span style="color: #2196F3">${intervalTime}ms</span> = <span style="color: #FFC107">${total}ms</span></div>
+        <div style="border-top: 1px solid #555; padding-top: 8px; margin-top: 8px;">
+          <div style="margin-bottom: 4px; color: #aaa;">Will sync to:</div>
+          <div>• Jiggle: <span style="color: #4CAF50">${stimulusTime}</span> + <span style="color: #2196F3">${intervalTime}</span></div>
+          <div>• 3D Hyper: <span style="color: #FFC107">${total}</span></div>
+          <div>• Quad Box: <span style="color: #FFC107">${total}</span></div>
+          <div>• Dichotic: <span style="color: #4CAF50">${stimulusTime}</span> + <span style="color: #2196F3">${intervalTime}</span></div>
+          <div>• Fast Seq: <span style="color: #4CAF50">${stimulusTime}</span> + <span style="color: #2196F3">${intervalTime}</span></div>
+          <div>• Multiple: <span style="color: #4CAF50">${stimulusTime}</span> + <span style="color: #2196F3">${intervalTime}</span></div>
+        </div>
+      </div>`,
+      text: `Current: ${stimulusTime}ms + ${intervalTime}ms = ${total}ms`
+    };
+  }
+
+  syncBaseTimingAcrossGames() {
+    // Show confirmation dialog
+    if (!confirm('Sync timing across all games?\n\nThis will set the base stimulus timing for all games to match the current game\'s timing settings.')) {
+      return; // User cancelled
+    }
+    
+    const currentGame = this.currentGameId;
+    let stimulusTime, intervalTime;
+    
+    // Get timing from current game
+    if (currentGame === 'jiggle-factorial') {
+      stimulusTime = this.settings.highlightDuration || 1000;
+      intervalTime = this.settings.delayAfterSequence || 1000;
+    } else if (currentGame === '3d-hyper-nback') {
+      stimulusTime = this.settings.baseDelay || 5000;
+      intervalTime = 0; // Single timing value
+    } else if (currentGame === 'quad-box') {
+      stimulusTime = this.settings.trialTime || 2500;
+      intervalTime = 0; // Single timing value
+    } else if (currentGame === 'dichotic-dual-nback') {
+      stimulusTime = this.settings.flashTime || 300;
+      intervalTime = this.settings.flashDelay || 25;
+    } else if (currentGame === 'fast-sequence-nback') {
+      stimulusTime = this.settings.flashDurationMin || 160;
+      intervalTime = this.settings.intervalDurationMin || 2000;
+    } else if (currentGame === 'multiple') {
+      stimulusTime = this.settings.stimulusDuration || 500;
+      intervalTime = this.settings.isiDuration || 1000;
+    }
+    
+    // Apply to all games
+    const allSettings = this.loadAllGameSettings();
+    
+    // Jiggle Factorial
+    allSettings['jiggle-factorial'] = allSettings['jiggle-factorial'] || {};
+    allSettings['jiggle-factorial'].highlightDuration = stimulusTime;
+    allSettings['jiggle-factorial'].delayAfterSequence = intervalTime;
+    
+    // 3D Hyper N-Back (uses total time)
+    allSettings['3d-hyper-nback'] = allSettings['3d-hyper-nback'] || {};
+    allSettings['3d-hyper-nback'].baseDelay = stimulusTime + intervalTime;
+    
+    // Quad Box (uses total time)
+    allSettings['quad-box'] = allSettings['quad-box'] || {};
+    allSettings['quad-box'].trialTime = stimulusTime + intervalTime;
+    
+    // Dichotic Dual N-back
+    allSettings['dichotic-dual-nback'] = allSettings['dichotic-dual-nback'] || {};
+    allSettings['dichotic-dual-nback'].flashTime = stimulusTime;
+    allSettings['dichotic-dual-nback'].flashDelay = intervalTime;
+    
+    // Fast Sequence N-back
+    allSettings['fast-sequence-nback'] = allSettings['fast-sequence-nback'] || {};
+    allSettings['fast-sequence-nback'].flashDurationMin = stimulusTime;
+    allSettings['fast-sequence-nback'].flashDurationMax = stimulusTime;
+    allSettings['fast-sequence-nback'].intervalDurationMin = intervalTime;
+    allSettings['fast-sequence-nback'].intervalDurationMax = intervalTime;
+    
+    // Multiple N-back
+    allSettings['multiple'] = allSettings['multiple'] || {};
+    allSettings['multiple'].stimulusDuration = stimulusTime;
+    allSettings['multiple'].isiDuration = intervalTime;
+    
+    // Save all settings
+    Object.keys(allSettings).forEach(gameId => {
+      localStorage.setItem(`unified-brain-training-${gameId}`, JSON.stringify(allSettings[gameId]));
+    });
+    
+    // Reload current game settings to reflect changes
+    this.settings = this.createReactiveSettings(currentGame);
+    this.buildGameSpecificGUI();
+    
+    console.log(`✅ Synced timing across all games: ${stimulusTime}ms stimulus + ${intervalTime}ms interval`);
+  }
+  
+  loadAllGameSettings() {
+    const games = ['jiggle-factorial', '3d-hyper-nback', 'dichotic-dual-nback', 'quad-box', 'fast-sequence-nback', 'multiple'];
+    const allSettings = {};
+    games.forEach(gameId => {
+      allSettings[gameId] = this.loadSettingsFromStorage(gameId);
+    });
+    return allSettings;
+  }
+
   resetGameSettings(gameId) {
+    // Show confirmation dialog
+    if (!confirm('Are you sure? This action is irreversible.\n\nAll settings for this game will be reset to their default values.')) {
+      return; // User cancelled
+    }
+    
     const defaults = this.getGameSpecificSettings(gameId);
     
     // Update reactive settings with defaults
@@ -1986,24 +2176,22 @@ class UnifiedBrainTraining {
   }
 
   buildGameSpecificGUI() {
-    // Clear existing controllers and folders instead of destroying the whole GUI
+    // Clear existing controllers and folders
     while (this.gui.__controllers.length > 0) {
       this.gui.remove(this.gui.__controllers[0]);
     }
     
-    // Clear existing folders
     for (let folderName in this.gui.__folders) {
       this.gui.removeFolder(this.gui.__folders[folderName]);
     }
     
-    // Clear any custom separator elements
     const ul = this.gui.domElement.querySelector('ul');
     if (ul) {
       const separators = ul.querySelectorAll('li[style*="height: 1px"]');
       separators.forEach(sep => sep.remove());
     }
 
-    // Add game loading buttons in a folder for clean separation
+    // Add game loading buttons
     const gamesFolder = this.gui.addFolder('Load Game');
     gamesFolder.add(this.settings, 'loadJiggleFactorial').name('Jiggle Factorial');
     gamesFolder.add(this.settings, 'loadHyperNBack').name("3D Hyper N-Back d'prime");
@@ -2011,15 +2199,13 @@ class UnifiedBrainTraining {
     gamesFolder.add(this.settings, 'loadQuadBox').name('Quad Box');
     gamesFolder.add(this.settings, 'loadFastSequenceNBack').name('Fast Sequence Synesthesia N-back');
     gamesFolder.add(this.settings, 'loadMultiple').name('Multiple N-back');
-    gamesFolder.open(); // Keep it open by default
+    gamesFolder.open();
     
-    // Add separator after Load Game folder
     const separatorAfterGames = document.createElement('li');
     separatorAfterGames.style.cssText = 'height: 1px; background: #444; margin: 10px 0; list-style: none; pointer-events: none;';
-    separatorAfterGames.className = 'games-separator'; // Add class for easy identification
     this.gui.domElement.querySelector('ul').appendChild(separatorAfterGames);
 
-    // Add ONLY the settings for the currently loaded game
+    // Build game-specific settings
     const currentGame = this.currentGameId || 'jiggle-factorial';
     
     if (currentGame === 'jiggle-factorial') {
@@ -2034,13 +2220,28 @@ class UnifiedBrainTraining {
       this.buildFastSequenceNBackGUI();
     } else if (currentGame === 'multiple') {
       this.buildMultipleGUI();
-    } else {
-      // Default message if no specific game is loaded
-      const note = document.createElement('div');
-      note.style.cssText = 'color: #aaa; font-size: 12px; text-align: center; margin: 20px; line-height: 1.4;';
-      note.textContent = 'Load a game to see its settings';
-      this.gui.domElement.appendChild(note);
     }
+    
+    // Add common bottom section
+    this.addCommonBottomButtons();
+  }
+  
+  addCommonBottomButtons() {
+    // Add separator
+    const separator = document.createElement('li');
+    separator.style.cssText = 'height: 1px; background: #444; margin: 10px 0; list-style: none; pointer-events: none;';
+    this.gui.domElement.querySelector('ul').appendChild(separator);
+    
+    // Reset button - use generic function name
+    this.settings.resetCurrentGame = () => this.resetGameSettings(this.currentGameId);
+    this.gui.add(this.settings, 'resetCurrentGame').name('Reset Settings to Default');
+    
+    // Sync timing button - use generic function name
+    this.settings.syncTiming = () => this.syncBaseTimingAcrossGames();
+    const syncBtn = this.gui.add(this.settings, 'syncTiming').name('Sync Base Stimulus Time');
+    setTimeout(() => {
+      this.addCustomTooltip(syncBtn.domElement.parentElement, () => this.getTimingSyncPreview());
+    }, 10);
   }
 
   buildJiggleFactorialGUI() {
@@ -2103,14 +2304,6 @@ class UnifiedBrainTraining {
 
     this.gui.add(this.settings, 'trialStartDelay').name('Trial Start Delay (ms)');
     
-    // Add separator
-    const separatorLi = document.createElement('li');
-    separatorLi.style.cssText = 'height: 1px; background: #444; margin: 10px 0; list-style: none; pointer-events: none;';
-    this.gui.domElement.querySelector('ul').appendChild(separatorLi);
-    
-    // Reset button
-    this.settings.resetJiggleSettings = () => this.resetGameSettings('jiggle-factorial');
-    this.gui.add(this.settings, 'resetJiggleSettings').name('Reset Settings to Default');
   }
 
   build3DHyperNBackGUI() {
@@ -2169,14 +2362,6 @@ class UnifiedBrainTraining {
     this.gui.add(this.settings, 'previousLevelThreshold').name('Level Down Correct Stimuli %');
     this.gui.add(this.settings, 'nextLevelThreshold').name('Level Up Correct Stimuli %');
     
-    // Add separator
-    const separatorLi = document.createElement('li');
-    separatorLi.style.cssText = 'height: 1px; background: #444; margin: 10px 0; list-style: none; pointer-events: none;';
-    this.gui.domElement.querySelector('ul').appendChild(separatorLi);
-    
-    // Reset button
-    this.settings.resetHyperNBackSettings = () => this.resetGameSettings('3d-hyper-nback');
-    this.gui.add(this.settings, 'resetHyperNBackSettings').name('Reset Settings to Default');
   }
 
   buildDichoticDualNBackGUI() {
@@ -2209,14 +2394,6 @@ class UnifiedBrainTraining {
     this.gui.add(this.settings, 'feedback').name('Clue Feedback');
     this.gui.add(this.settings, 'dailyGoal', 1, 50, 1).name('Daily Goal');
     
-    // Add separator
-    const separatorLi = document.createElement('li');
-    separatorLi.style.cssText = 'height: 1px; background: #444; margin: 10px 0; list-style: none; pointer-events: none;';
-    this.gui.domElement.querySelector('ul').appendChild(separatorLi);
-    
-    // Reset button
-    this.settings.resetDichoticSettings = () => this.resetGameSettings('dichotic-dual-nback');
-    this.gui.add(this.settings, 'resetDichoticSettings').name('Reset Settings to Default');
   }
 
   buildQuadBoxGUI() {
@@ -2277,14 +2454,6 @@ class UnifiedBrainTraining {
     tallyFolder.add(this.settings, 'positionWidth', 1, 4, 1).name('Position Width');
     tallyFolder.add(this.settings, 'enablePositionWidthSequence').name('Enable Position Width Sequence');
     
-    // Add separator
-    const separatorLi = document.createElement('li');
-    separatorLi.style.cssText = 'height: 1px; background: #444; margin: 10px 0; list-style: none; pointer-events: none;';
-    this.gui.domElement.querySelector('ul').appendChild(separatorLi);
-    
-    // Reset button
-    this.settings.resetQuadBoxSettings = () => this.resetGameSettings('quad-box');
-    this.gui.add(this.settings, 'resetQuadBoxSettings').name('Reset Settings to Default');
   }
 
   buildFastSequenceNBackGUI() {
@@ -2326,14 +2495,6 @@ class UnifiedBrainTraining {
     synesthesiaFolder.add(this.settings, 'spatialMusic', 0, 100, 1).name('Spatial-Music (%)');
     synesthesiaFolder.open();
     
-    // Add separator
-    const separatorLi = document.createElement('li');
-    separatorLi.style.cssText = 'height: 1px; background: #444; margin: 10px 0; list-style: none; pointer-events: none;';
-    this.gui.domElement.querySelector('ul').appendChild(separatorLi);
-    
-    // Reset button
-    this.settings.resetFastSequenceSettings = () => this.resetGameSettings('fast-sequence-nback');
-    this.gui.add(this.settings, 'resetFastSequenceSettings').name('Reset Settings to Default');
   }
 
   buildMultipleGUI() {
@@ -2360,14 +2521,6 @@ class UnifiedBrainTraining {
     const relationalFolder = this.gui.addFolder('Relational Settings');
     relationalFolder.add(this.settings, 'relationalComplexity', ['1back', '2back']).name('Relational Complexity');
     
-    // Add separator
-    const separatorLi = document.createElement('li');
-    separatorLi.style.cssText = 'height: 1px; background: #444; margin: 10px 0; list-style: none; pointer-events: none;';
-    this.gui.domElement.querySelector('ul').appendChild(separatorLi);
-    
-    // Reset button
-    this.settings.resetMultipleSettings = () => this.resetGameSettings('multiple');
-    this.gui.add(this.settings, 'resetMultipleSettings').name('Reset Settings to Default');
   }
 
 
