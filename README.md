@@ -127,5 +127,3 @@ This collection wouldn't exist without their amazing work!
 All original code maintains its original copyright and license. This collection respects intellectual property rights and provides proper attribution. If you're a creator and have concerns, please contact us immediately.
 
 ---
-
-**Made with 🧠 for cognitive enhancement enthusiasts**
