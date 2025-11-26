@@ -1,38 +1,49 @@
 # Implementation Plan
 
-- [ ] 1. Set up project structure and core interfaces
+- [x] 1. Set up project structure and core interfaces
+
+
+
   - Create directory structure for Syllogimous integration
   - Define TypeScript interfaces for all data models (Question, Session, Profile, Settings)
   - Set up testing framework (Jest/Vitest) with fast-check for property-based testing
   - _Requirements: All requirements - foundational setup_
 
-- [ ] 2. Implement Unified Popup Manager
-- [ ] 2.1 Create popup manager core functionality
+- [x] 2. Implement Unified Popup Manager
+
+
+- [x] 2.1 Create popup manager core functionality
+
+
   - Implement PopupManager class with show/hide/hideAll methods
   - Implement popup configuration interface (type, position, theme, animation)
   - Implement popup instance management with unique IDs
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
 
-- [ ] 2.2 Implement popup positioning system
+- [x] 2.2 Implement popup positioning system
+
   - Implement center, top, bottom, left, right positioning
   - Implement mouse-follow positioning
   - Implement custom coordinate positioning
   - Add responsive positioning for mobile devices
   - _Requirements: 2.3_
 
-- [ ] 2.3 Implement popup theming and animations
+- [x] 2.3 Implement popup theming and animations
+
   - Create CSS themes (dark, light, success, warning, error, info)
   - Implement animations (fade, slide, scale, bounce, none)
   - Add GPU-accelerated CSS transforms
   - _Requirements: 2.4, 2.5_
 
-- [ ] 2.4 Implement popup queue and stack management
+- [x] 2.4 Implement popup queue and stack management
+
   - Implement queue system for sequential popups
   - Implement stack system for simultaneous popups
   - Add z-index management for stacked popups
   - _Requirements: 2.6_
 
-- [ ] 2.5 Implement popup cleanup and callbacks
+- [x] 2.5 Implement popup cleanup and callbacks
+
   - Implement DOM cleanup on popup close
   - Implement callback system (onShow, onHide, onClose)
   - Add event listener cleanup
@@ -45,50 +56,62 @@
   - **Property 8: Popup cleanup completeness**
   - **Validates: Requirements 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8**
 
-- [ ] 3. Implement Explanation Renderer
-- [ ] 3.1 Create explanation renderer core
+- [x] 3. Implement Explanation Renderer
+
+
+- [x] 3.1 Create explanation renderer core
+
+
+
   - Implement ExplanationRenderer class
   - Implement question type detection
   - Implement render method dispatcher
   - _Requirements: 3.1, 3.2_
 
-- [ ] 3.2 Implement 2D grid visualization
+- [x] 3.2 Implement 2D grid visualization
+
   - Implement createGridFromMap for 2D coordinates
   - Implement HTML table rendering with centered text
   - Add color-coding for word positions
   - _Requirements: 3.3_
 
-- [ ] 3.3 Implement 3D grid visualization
+- [x] 3.3 Implement 3D grid visualization
+
   - Implement layered 2D grid rendering
   - Add CSS perspective transforms for depth
   - Implement plane labeling
   - _Requirements: 3.4_
 
-- [ ] 3.4 Implement 4D space-time visualization
+- [x] 3.4 Implement 4D space-time visualization
+
   - Implement multiple 3D grid rendering
   - Add time slice labeling
   - Implement horizontal layout for time progression
   - _Requirements: 3.5_
 
-- [ ] 3.5 Implement distinction bucket visualization
+- [x] 3.5 Implement distinction bucket visualization
+
   - Implement bucket grouping renderer
   - Add visual separators between buckets
   - Implement flexbox layout for buckets
   - _Requirements: 3.6_
 
-- [ ] 3.6 Implement linear sequence visualization
+- [x] 3.6 Implement linear sequence visualization
+
   - Implement ordered sequence renderer
   - Add directional arrows between items
   - Implement comparison operator display
   - _Requirements: 3.7, 3.8_
 
-- [ ] 3.7 Implement binary nested visualization
+- [x] 3.7 Implement binary nested visualization
+
   - Implement recursive sub-explanation rendering
   - Add visual separators between sub-results
   - Handle deep nesting gracefully
   - _Requirements: 3.9_
 
-- [ ] 3.8 Integrate explanation renderer with popup manager
+- [x] 3.8 Integrate explanation renderer with popup manager
+
   - Connect explanation button to popup manager
   - Implement hover preview tooltips
   - Add explanation close handling
@@ -98,14 +121,19 @@
   - **Property 9: Explanation visualization correctness**
   - **Validates: Requirements 3.1-3.12**
 
-- [ ] 4. Implement Tutorial and Tips System
-- [ ] 4.1 Create tips manager
+- [x] 4. Implement Tutorial and Tips System
+
+
+
+- [x] 4.1 Create tips manager
+
   - Implement TipsManager class
   - Implement tip dismissal tracking in localStorage
   - Implement tip reset functionality
   - _Requirements: 4.7_
 
-- [ ] 4.2 Implement contextual tip triggers
+- [x] 4.2 Implement contextual tip triggers
+
   - Implement first-time play detection
   - Implement new question type detection
   - Implement struggle detection (low accuracy threshold)
@@ -113,7 +141,8 @@
   - Implement feature enable detection
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-- [ ] 4.3 Create tip content library
+- [x] 4.3 Create tip content library
+
   - Write introductory tutorial content
   - Write question type explanation content
   - Write strategy tip content
@@ -121,7 +150,8 @@
   - Write feature explanation content
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-- [ ] 4.4 Integrate tips with popup manager
+- [x] 4.4 Integrate tips with popup manager
+
   - Connect tip triggers to popup manager
   - Apply appropriate styling for tips
   - Implement tip dismissal callbacks
@@ -132,11 +162,19 @@
   - **Property 11: Tip dismissal persistence**
   - **Validates: Requirements 4.1-4.7**
 
-- [ ] 5. Implement Question Generator (v3 features)
+- [-] 5. Implement Question Generator (v3 features)
+
+
+
+
+
+
 - [ ] 5.1 Create question generator base
   - Implement QuestionGenerator base class
   - Implement question type registry
   - Implement random question type selection with weights
+
+
   - _Requirements: 5.1_
 
 - [ ] 5.2 Implement distinction question generator
@@ -197,6 +235,43 @@
 - [ ]* 5.11 Write property test for question generation
   - **Property 12: Feature availability completeness (v3 features)**
   - **Validates: Requirements 5.1-5.12**
+
+- [ ] 5.12 Implement fill-in-the-blank question mode
+- [ ] 5.12.1 Implement answer mode selection logic
+  - Implement logic to choose between validity, fill-in-the-blank, or mixed mode
+  - Implement random mode selection for mixed mode
+  - _Requirements: 8.8, 8.9_
+
+- [ ] 5.12.2 Implement element hiding logic
+  - Implement random selection of premise or conclusion to hide
+  - Store hidden element index and correct answer
+  - _Requirements: 8.1_
+
+- [ ] 5.12.3 Implement alternative generation
+  - Generate 3-5 plausible but incorrect alternatives
+  - Ensure grammatical consistency with question structure
+  - Ensure logical distinctness from correct answer
+  - _Requirements: 8.2, 8.5_
+
+- [ ] 5.12.4 Implement fill-in-the-blank UI components
+  - Create blank placeholder display
+  - Create multiple choice button/option display
+  - Implement option selection handling
+  - Implement correct answer highlighting on incorrect response
+  - _Requirements: 8.3, 8.7_
+
+- [ ] 5.12.5 Implement fill-in-the-blank answer checking
+  - Compare selected option with correct answer
+  - Handle string matching and semantic equivalence
+  - Provide appropriate feedback
+  - _Requirements: 8.4, 8.6_
+
+- [ ] 5.12.6 Update statistics tracking for answer modes
+  - Track separate accuracy for validity vs fill-in-the-blank
+  - Store answer mode with each question record
+  - Calculate mode-specific metrics
+  - Display mode breakdown in statistics
+  - _Requirements: 8.10_
 
 - [ ] 6. Implement Settings System (v3 features)
 - [ ] 6.1 Create settings manager

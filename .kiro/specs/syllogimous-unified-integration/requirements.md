@@ -15,6 +15,8 @@ This specification defines the integration of Syllogimous (both v3 and v4) into 
 - **Cognitive Domain**: One of six cognitive abilities tracked (working memory, attention, processing speed, executive functions, perceptual processing, long-term memory)
 - **Session**: A single play-through of a game from start to end
 - **Time Tracking**: Recording and analyzing time spent per game and per cognitive domain
+- **Fill-in-the-Blank Mode**: Question format where one premise or the conclusion is hidden and must be selected from multiple choices
+- **Answer Mode**: The question format type - either validity judgment (true/false) or fill-in-the-blank (multiple choice)
 
 ## Requirements
 
@@ -128,7 +130,24 @@ This specification defines the integration of Syllogimous (both v3 and v4) into 
 6. WHEN difficulty changes THEN the system SHALL provide visual feedback to the user
 7. WHEN the user disables auto-progression THEN the system SHALL maintain manual settings
 
-### Requirement 8: Adaptive Timer System
+### Requirement 8: Fill-in-the-Blank Question Mode
+
+**User Story:** As a user, I want to answer questions by filling in missing premises or conclusions from multiple choices, so that I have cognitive variety beyond true/false judgments.
+
+#### Acceptance Criteria
+
+1. WHEN the fill-in-the-blank mode is enabled THEN the system SHALL randomly hide one premise or the conclusion
+2. WHEN a premise or conclusion is hidden THEN the system SHALL generate 3-5 plausible alternative options
+3. WHEN displaying fill-in-the-blank questions THEN the system SHALL show the hidden element as a blank with multiple choice options
+4. WHEN the user selects an option THEN the system SHALL check if it matches the correct hidden element
+5. WHEN generating alternatives THEN the system SHALL ensure they are grammatically consistent but logically distinct
+6. WHEN the user answers correctly THEN the system SHALL provide the same feedback as validity judgment mode
+7. WHEN the user answers incorrectly THEN the system SHALL show which option was correct
+8. WHEN configuring the game THEN the system SHALL allow users to choose between validity judgment mode, fill-in-the-blank mode, or mixed mode
+9. WHEN in mixed mode THEN the system SHALL randomly alternate between validity judgment and fill-in-the-blank questions
+10. WHEN tracking statistics THEN the system SHALL separately track performance for each answer mode
+
+### Requirement 9: Adaptive Timer System
 
 **User Story:** As a user, I want intelligent timer adaptation based on my historical performance, so that I have appropriate time pressure for my skill level.
 
@@ -141,7 +160,7 @@ This specification defines the integration of Syllogimous (both v3 and v4) into 
 5. WHEN meta-relations are present THEN the system SHALL add bonus time per meta-relation (default 4 seconds)
 6. WHEN insufficient data exists THEN the system SHALL use default timer values (default 90 seconds)
 
-### Requirement 9: Time Tracking Per Game
+### Requirement 10: Time Tracking Per Game
 
 **User Story:** As a user, I want to see how much time I spend on each game, so that I can understand my training patterns and balance my cognitive development.
 
@@ -155,7 +174,7 @@ This specification defines the integration of Syllogimous (both v3 and v4) into 
 6. WHEN displaying statistics THEN the system SHALL show daily and weekly time totals per game
 7. WHEN calculating cognitive scores THEN the system SHALL weight contributions by time spent
 
-### Requirement 10: Unified Progress Visualization
+### Requirement 11: Unified Progress Visualization
 
 **User Story:** As a user, I want to see my Syllogimous progress integrated with my overall cognitive development, so that I understand how logical reasoning fits into my broader training.
 
@@ -167,7 +186,7 @@ This specification defines the integration of Syllogimous (both v3 and v4) into 
 4. WHEN viewing trends THEN the system SHALL display Syllogimous performance over time
 5. WHEN viewing achievements THEN the system SHALL include Syllogimous-specific achievements
 
-### Requirement 11: Settings Synchronization
+### Requirement 12: Settings Synchronization
 
 **User Story:** As a user, I want my Syllogimous settings to sync with the unified system, so that I have a consistent experience and my preferences are preserved.
 
@@ -179,7 +198,7 @@ This specification defines the integration of Syllogimous (both v3 and v4) into 
 4. WHEN the game loads THEN the system SHALL restore settings from localStorage
 5. WHEN settings sync fails THEN the system SHALL log the error and use default values
 
-### Requirement 12: Question Type Mapping to Cognitive Domains
+### Requirement 13: Question Type Mapping to Cognitive Domains
 
 **User Story:** As a developer, I want clear mappings between Syllogimous question types and cognitive domains, so that performance data contributes accurately to cognitive scores.
 
@@ -192,7 +211,7 @@ This specification defines the integration of Syllogimous (both v3 and v4) into 
 5. WHEN a syllogism question is completed THEN the system SHALL contribute to executive functions (weight 0.85) and long-term memory (weight 0.40)
 6. WHEN calculating contributions THEN the system SHALL normalize scores to the 000-999 inverted scale
 
-### Requirement 13: Performance Metrics Calculation
+### Requirement 14: Performance Metrics Calculation
 
 **User Story:** As a user, I want scientifically valid performance metrics, so that I can trust the accuracy of my cognitive assessments.
 
@@ -204,7 +223,7 @@ This specification defines the integration of Syllogimous (both v3 and v4) into 
 4. WHEN calculating progression rate THEN the system SHALL use linear regression over the last 30 days
 5. WHEN displaying metrics THEN the system SHALL show confidence intervals based on sample size
 
-### Requirement 14: Visual Feedback System
+### Requirement 15: Visual Feedback System
 
 **User Story:** As a user, I want immediate visual feedback on my answers, so that I can learn from my performance in real-time.
 
@@ -217,7 +236,7 @@ This specification defines the integration of Syllogimous (both v3 and v4) into 
 5. WHEN settings sync THEN the system SHALL display a brief sync indicator
 6. WHEN animations are disabled (fast UI mode) THEN the system SHALL use minimal visual feedback
 
-### Requirement 15: Neuroscience-Backed Metrics Tracking
+### Requirement 16: Neuroscience-Backed Metrics Tracking
 
 **User Story:** As a user, I want to see advanced cognitive metrics beyond accuracy and speed, so that I can understand my cognitive development in depth.
 
@@ -234,7 +253,7 @@ This specification defines the integration of Syllogimous (both v3 and v4) into 
 9. WHEN viewing trends THEN the system SHALL show historical development of each neuroscience-backed metric
 10. WHEN calculating metrics THEN the system SHALL normalize scores to a 0-100 scale for easy interpretation
 
-### Requirement 16: Interactive Three.js Explanation System
+### Requirement 17: Interactive Three.js Explanation System
 
 **User Story:** As a user, I want interactive 3D visualizations of logical questions, so that I can manipulate and explore the spatial relationships to deepen my understanding.
 

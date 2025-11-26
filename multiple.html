@@ -383,36 +383,35 @@
       to { opacity: 1; }
     }
     
-    /* Corner Button Styling */
+    /* Match Button Styling - Responsive like dichotic dual n-back */
     .corner-btn {
-      background: rgba(128, 128, 128, 0.8);
-      color: #fff;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      padding: 25px 35px;
-      font-size: 1.3rem;
-      font-weight: bold;
-      cursor: pointer;
-      transition: all 0.2s;
-      min-width: 180px;
+      position: fixed;
       text-align: center;
-      border-radius: 8px;
+      background: rgba(128, 128, 128, 0.8);
+      color: #fffff1;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      cursor: pointer;
+      transition: background 0.2s;
+      user-select: none;
+      -moz-user-select: none;
+      -webkit-user-select: none;
+      font-family: 'Roboto', sans-serif;
     }
     .corner-btn:hover {
       background: rgba(160, 160, 160, 0.9);
-      transform: scale(1.05);
     }
     .corner-btn.correct {
-      background: rgba(39, 174, 96, 0.9);
+      background: rgba(39, 174, 96, 0.9) !important;
       border-color: #27ae60;
       animation: correctPulse 0.5s ease;
     }
     .corner-btn.incorrect {
-      background: rgba(231, 76, 60, 0.9);
+      background: rgba(231, 76, 60, 0.9) !important;
       border-color: #e74c3c;
       animation: incorrectShake 0.5s ease;
     }
     .corner-btn.missed {
-      background: rgba(241, 196, 15, 0.9);
+      background: rgba(241, 196, 15, 0.9) !important;
       border-color: #f1c40f;
       animation: missedFlash 0.5s ease;
     }
@@ -428,6 +427,93 @@
     @keyframes missedFlash {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.5; }
+    }
+    
+    /* Portrait layout (mobile) */
+    @media (orientation: portrait) {
+      .corner-btn {
+        width: 49svw;
+        height: 10svh;
+        line-height: 10svh;
+        font-size: 4svh;
+      }
+      #positionMatch, #colorMatch {
+        bottom: 11svh;
+      }
+      #knightMoveMatch, #takeMatch {
+        bottom: 0.5svh;
+      }
+      #positionMatch, #knightMoveMatch {
+        left: 0.5svw;
+      }
+      #colorMatch, #takeMatch {
+        right: 0.5svw;
+      }
+      #positionMatch {
+        border-top-right-radius: 4px;
+        border-bottom-right-radius: 4px;
+      }
+      #colorMatch {
+        border-top-left-radius: 4px;
+        border-bottom-left-radius: 4px;
+      }
+      #knightMoveMatch {
+        border-top-right-radius: 4px;
+      }
+      #takeMatch {
+        border-top-left-radius: 4px;
+      }
+      #nBackMatch {
+        bottom: 0.5svh;
+        left: 0.5svw;
+        right: 0.5svw;
+        width: calc(100svw - 1svw);
+        height: 10svh;
+        line-height: 10svh;
+      }
+    }
+    
+    /* Landscape layout (desktop/tablet) */
+    @media (orientation: landscape) {
+      .corner-btn {
+        width: 12svw;
+        height: 22svh;
+        line-height: 22svh;
+        font-size: 3svh;
+      }
+      #positionMatch {
+        top: 15svh;
+        left: 1svw;
+        border-top-right-radius: 4px;
+        border-bottom-right-radius: 4px;
+      }
+      #knightMoveMatch {
+        top: 38svh;
+        left: 1svw;
+        border-top-right-radius: 4px;
+        border-bottom-right-radius: 4px;
+      }
+      #colorMatch {
+        top: 15svh;
+        right: 1svw;
+        border-top-left-radius: 4px;
+        border-bottom-left-radius: 4px;
+      }
+      #takeMatch {
+        top: 38svh;
+        right: 1svw;
+        border-top-left-radius: 4px;
+        border-bottom-left-radius: 4px;
+      }
+      #nBackMatch {
+        bottom: 4svh;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 25svw;
+        height: 12svh;
+        line-height: 12svh;
+        border-radius: 4px;
+      }
     }
   </style>
 </head>
@@ -522,22 +608,13 @@
       </div>
       
       <!-- Circle Mode Corner Buttons -->
-      <button id="positionMatch" class="corner-btn" style="display: none; position: fixed; top: 80px; left: 20px; z-index: 100;">
-        <div>Position</div>
-        <div style="font-size: 0.8em; opacity: 0.8;">(F)</div>
-      </button>
-      <button id="colorMatch" class="corner-btn" style="display: none; position: fixed; top: 80px; right: 20px; z-index: 100;">
-        <div>Color</div>
-        <div style="font-size: 0.8em; opacity: 0.8;">(J)</div>
-      </button>
-      <button id="knightMoveMatch" class="corner-btn" style="display: none; position: fixed; bottom: 80px; left: 20px; z-index: 100;">
-        <div>Knight Move</div>
-        <div style="font-size: 0.8em; opacity: 0.8;">(G)</div>
-      </button>
-      <button id="takeMatch" class="corner-btn" style="display: none; position: fixed; bottom: 80px; right: 20px; z-index: 100;">
-        <div>Take</div>
-        <div style="font-size: 0.8em; opacity: 0.8;">(H)</div>
-      </button>
+      <button id="positionMatch" class="corner-btn" style="display: none; z-index: 100;">Position (F)</button>
+      <button id="colorMatch" class="corner-btn" style="display: none; z-index: 100;">Color (J)</button>
+      <button id="knightMoveMatch" class="corner-btn" style="display: none; z-index: 100;">Knight (G)</button>
+      <button id="takeMatch" class="corner-btn" style="display: none; z-index: 100;">Take (H)</button>
+      
+      <!-- Gabor/Synesthesia/Relational Mode Corner Button -->
+      <button id="nBackMatch" class="corner-btn" style="display: none; z-index: 100;">Match (SPACE)</button>
       <div id="score">Score: 0</div>
     </div>
     
@@ -611,6 +688,13 @@
       document.getElementById("colorMatch").style.display = showCircle;
       document.getElementById("knightMoveMatch").style.display = showCircle;
       document.getElementById("takeMatch").style.display = showCircle;
+      
+      // Show/hide corner n-back button for non-circle modes
+      const showNBack = (mod !== "circle") ? "block" : "none";
+      document.getElementById("nBackMatch").style.display = showNBack;
+      
+      // Hide old match button in controls
+      document.getElementById("match").style.display = "none";
       
       document.getElementById("showDictionary").style.display = (mod === "synesthesia") ? "inline-block" : "none";
     }
@@ -724,6 +808,9 @@
       document.getElementById("synesthesiaDictionary").style.display = "none";
       document.getElementById("results").style.display = "none";
       document.getElementById("game").style.display = "flex";
+      
+      // Update button visibility based on modality
+      updateAdditionalParams();
       
       // Reset streak
       currentStreak = 0;
@@ -1068,6 +1155,42 @@
       document.getElementById("score").textContent = "Score: " + score;
     }
     
+    function handleNBackMatch() {
+      if (responseRecorded || currentTrialData === null) return;
+      if (settings.modality === "circle") return; // Circle mode uses different handlers
+      
+      responseRecorded = true;
+      let feedbackCell = currentTrialData.cell;
+      let correct = false;
+      let button = document.getElementById("nBackMatch");
+      
+      if (settings.modality === "gabor") {
+        if (currentTrial >= settings.nValue) {
+          if (currentTrialData.isMatch === true) correct = true;
+        }
+      } else {
+        if (currentTrialData.isMatch === true) correct = true;
+      }
+      
+      if (correct) {
+        score++;
+        currentStreak++;
+        flashCell(feedbackCell, "#27ae60");
+        pulseScore();
+        if (settings.modality !== "synesthesia") { playCorrectSound(); }
+        button.classList.add('correct');
+        setTimeout(() => button.classList.remove('correct'), 500);
+      } else {
+        currentStreak = 0;
+        flashCell(feedbackCell, "#ff2d95");
+        if (settings.modality !== "synesthesia") { playIncorrectSound(); }
+        button.classList.add('incorrect');
+        setTimeout(() => button.classList.remove('incorrect'), 500);
+      }
+      updateStreakDisplay();
+      document.getElementById("score").textContent = "Score: " + score;
+    }
+    
     function handleVisualMatch() {
       if (document.getElementById("modality").value !== "circle") return;
       if (responseRecorded || currentTrialData === null) return;
@@ -1168,13 +1291,26 @@
     document.getElementById("knightMoveMatch").addEventListener("click", () => handleCircleMatch('knightMove'));
     document.getElementById("takeMatch").addEventListener("click", () => handleCircleMatch('take'));
     
-    // Keyboard shortcuts for circle mode
+    // N-back match handler for non-circle modes
+    document.getElementById("nBackMatch").addEventListener("click", handleNBackMatch);
+    
+    // Keyboard shortcuts
     document.addEventListener("keydown", (e) => {
-      if (settings.modality !== "circle" || !isRunning) return;
-      if (e.key === 'f' || e.key === 'F') handleCircleMatch('position');
-      else if (e.key === 'j' || e.key === 'J') handleCircleMatch('color');
-      else if (e.key === 'g' || e.key === 'G') handleCircleMatch('knightMove');
-      else if (e.key === 'h' || e.key === 'H') handleCircleMatch('take');
+      if (!isRunning) return;
+      
+      if (settings.modality === "circle") {
+        // Circle mode shortcuts
+        if (e.key === 'f' || e.key === 'F') handleCircleMatch('position');
+        else if (e.key === 'j' || e.key === 'J') handleCircleMatch('color');
+        else if (e.key === 'g' || e.key === 'G') handleCircleMatch('knightMove');
+        else if (e.key === 'h' || e.key === 'H') handleCircleMatch('take');
+      } else {
+        // Other modes: spacebar for n-back match
+        if (e.key === ' ' || e.key === 'Spacebar') {
+          e.preventDefault();
+          handleNBackMatch();
+        }
+      }
     });
     
     function endTask() {
