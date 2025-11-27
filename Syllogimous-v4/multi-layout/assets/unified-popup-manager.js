@@ -242,8 +242,8 @@ class UnifiedPopupManager {
       position: absolute;
       pointer-events: auto;
       opacity: 0;
-      transform: scale(0.95);
-      transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+      transform: scale(0.9);
+      transition: opacity 0.3s, transform 0.3s;
     `;
 
     // Apply theme
@@ -255,20 +255,17 @@ class UnifiedPopupManager {
     // Apply z-index
     popup.style.zIndex = config.zIndex || (10000 + this.popups.size);
 
-    // Create content wrapper with standardized styling
+    // Create content wrapper
     const contentWrapper = document.createElement('div');
     contentWrapper.className = 'popup-content';
     contentWrapper.style.cssText = `
-      padding: 30px !important;
-      max-width: 600px !important;
-      max-height: 80vh !important;
-      overflow-y: auto !important;
-      font-size: 16px !important;
-      line-height: 1.6 !important;
-      color: inherit !important;
+      padding: 20px;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
     `;
 
-    // Add content with standardized formatting
+    // Add content
     if (typeof config.content === 'string') {
       contentWrapper.innerHTML = config.content;
     } else if (config.content instanceof HTMLElement) {
@@ -276,9 +273,6 @@ class UnifiedPopupManager {
     } else if (config.content && config.content.html) {
       contentWrapper.innerHTML = config.content.html;
     }
-
-    // Apply standardized text styling to content
-    this.applyContentStyling(contentWrapper);
 
     popup.appendChild(contentWrapper);
 
@@ -289,24 +283,23 @@ class UnifiedPopupManager {
       closeBtn.innerHTML = '×';
       closeBtn.style.cssText = `
         position: absolute;
-        top: 15px;
-        right: 15px;
+        top: 10px;
+        right: 10px;
         background: none;
         border: none;
-        font-size: 28px;
+        font-size: 24px;
         cursor: pointer;
         color: inherit;
-        opacity: 0.5;
+        opacity: 0.6;
         transition: opacity 0.2s;
         padding: 0;
-        width: 32px;
-        height: 32px;
-        line-height: 32px;
+        width: 30px;
+        height: 30px;
+        line-height: 30px;
         text-align: center;
-        z-index: 1;
       `;
       closeBtn.onmouseover = () => closeBtn.style.opacity = '1';
-      closeBtn.onmouseout = () => closeBtn.style.opacity = '0.5';
+      closeBtn.onmouseout = () => closeBtn.style.opacity = '0.6';
       closeBtn.onclick = () => this.hide(id);
       popup.appendChild(closeBtn);
     }
@@ -321,10 +314,8 @@ class UnifiedPopupManager {
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.6);
+        background: rgba(0, 0, 0, 0.5);
         z-index: -1;
-        opacity: 0;
-        transition: opacity 0.3s ease-out;
       `;
       overlay.onclick = () => {
         if (config.closeButton !== false) {
@@ -332,121 +323,9 @@ class UnifiedPopupManager {
         }
       };
       popup.appendChild(overlay);
-      
-      // Fade in overlay
-      requestAnimationFrame(() => {
-        overlay.style.opacity = '1';
-      });
     }
 
     return popup;
-  }
-
-  /**
-   * Apply standardized content styling to popup content
-   * @param {HTMLElement} contentWrapper - Content wrapper element
-   */
-  applyContentStyling(contentWrapper) {
-    // Style all headings
-    const h1s = contentWrapper.querySelectorAll('h1');
-    h1s.forEach(h1 => {
-      h1.style.cssText = `
-        font-size: 28px;
-        font-weight: 700;
-        margin: 0 0 20px 0;
-        color: inherit;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-      `;
-    });
-
-    const h2s = contentWrapper.querySelectorAll('h2');
-    h2s.forEach(h2 => {
-      h2.style.cssText = `
-        font-size: 22px;
-        font-weight: 600;
-        margin: 20px 0 15px 0;
-        color: inherit;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-      `;
-    });
-
-    const h3s = contentWrapper.querySelectorAll('h3');
-    h3s.forEach(h3 => {
-      h3.style.cssText = `
-        font-size: 18px;
-        font-weight: 600;
-        margin: 15px 0 10px 0;
-        color: inherit;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-      `;
-    });
-
-    // Style paragraphs
-    const paragraphs = contentWrapper.querySelectorAll('p');
-    paragraphs.forEach(p => {
-      p.style.cssText = `
-        font-size: 16px;
-        line-height: 1.6;
-        margin: 0 0 15px 0;
-        color: inherit;
-        text-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
-      `;
-    });
-
-    // Style lists
-    const lists = contentWrapper.querySelectorAll('ul, ol');
-    lists.forEach(list => {
-      list.style.cssText = `
-        font-size: 16px;
-        line-height: 1.6;
-        margin: 0 0 15px 0;
-        padding-left: 25px;
-        color: inherit;
-      `;
-    });
-
-    const listItems = contentWrapper.querySelectorAll('li');
-    listItems.forEach(li => {
-      li.style.cssText = `
-        margin: 8px 0;
-        color: inherit;
-        text-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
-      `;
-    });
-
-    // Style links
-    const links = contentWrapper.querySelectorAll('a');
-    links.forEach(link => {
-      link.style.cssText = `
-        color: #4a9eff;
-        text-decoration: none;
-        font-weight: 500;
-        transition: color 0.2s;
-      `;
-      link.onmouseover = () => link.style.color = '#6bb3ff';
-      link.onmouseout = () => link.style.color = '#4a9eff';
-    });
-
-    // Style strong/bold text
-    const strongs = contentWrapper.querySelectorAll('strong, b');
-    strongs.forEach(strong => {
-      strong.style.cssText = `
-        font-weight: 600;
-        color: inherit;
-      `;
-    });
-
-    // Style code elements
-    const codes = contentWrapper.querySelectorAll('code');
-    codes.forEach(code => {
-      code.style.cssText = `
-        background: rgba(0, 0, 0, 0.1);
-        padding: 2px 6px;
-        border-radius: 3px;
-        font-family: 'Courier New', monospace;
-        font-size: 14px;
-      `;
-    });
   }
 
   /**
@@ -457,52 +336,45 @@ class UnifiedPopupManager {
   applyTheme(element, theme) {
     const themes = {
       dark: {
-        background: '#2a2a2a !important',
-        color: '#eee !important',
-        border: '1px solid #444',
-        shadow: '0 8px 32px rgba(0, 0, 0, 0.4)'
+        background: '#1a1a1a',
+        color: '#eee',
+        border: '1px solid #444'
       },
       light: {
-        background: '#ffffff !important',
-        color: '#333 !important',
-        border: '1px solid #e0e0e0',
-        shadow: '0 8px 32px rgba(0, 0, 0, 0.15)'
+        background: '#ffffff',
+        color: '#333',
+        border: '1px solid #ddd'
       },
       success: {
-        background: '#4caf50 !important',
-        color: '#fff !important',
-        border: '1px solid #45a049',
-        shadow: '0 8px 32px rgba(76, 175, 80, 0.3)'
+        background: '#4caf50',
+        color: '#fff',
+        border: '1px solid #45a049'
       },
       warning: {
-        background: '#ff9800 !important',
-        color: '#fff !important',
-        border: '1px solid #f57c00',
-        shadow: '0 8px 32px rgba(255, 152, 0, 0.3)'
+        background: '#ff9800',
+        color: '#fff',
+        border: '1px solid #f57c00'
       },
       error: {
-        background: '#f44336 !important',
-        color: '#fff !important',
-        border: '1px solid #d32f2f',
-        shadow: '0 8px 32px rgba(244, 67, 54, 0.3)'
+        background: '#f44336',
+        color: '#fff',
+        border: '1px solid #d32f2f'
       },
       info: {
-        background: '#2196f3 !important',
-        color: '#fff !important',
-        border: '1px solid #1976d2',
-        shadow: '0 8px 32px rgba(33, 150, 243, 0.3)'
+        background: '#2196f3',
+        color: '#fff',
+        border: '1px solid #1976d2'
       }
     };
 
     const themeStyle = themes[theme] || themes.dark;
-    // Use cssText to apply !important flags
-    element.style.cssText += `
-      background: ${themeStyle.background.replace(' !important', '')} !important;
-      color: ${themeStyle.color.replace(' !important', '')} !important;
-      border: ${themeStyle.border} !important;
-      border-radius: 12px !important;
-      box-shadow: ${themeStyle.shadow} !important;
-    `;
+    Object.assign(element.style, {
+      background: themeStyle.background,
+      color: themeStyle.color,
+      border: themeStyle.border,
+      borderRadius: '8px',
+      boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
+    });
   }
 
   /**
@@ -568,16 +440,16 @@ class UnifiedPopupManager {
 
     if (direction === 'in') {
       element.style.opacity = '1';
-      element.style.transform = element.style.transform.replace('scale(0.95)', 'scale(1)');
+      element.style.transform = element.style.transform.replace('scale(0.9)', 'scale(1)');
       
       if (animation === 'slide') {
         element.style.transform += ' translateY(0)';
       } else if (animation === 'bounce') {
-        element.style.animation = 'popup-bounce-in 0.5s ease-out';
+        element.style.animation = 'popup-bounce-in 0.5s';
       }
     } else {
       element.style.opacity = '0';
-      element.style.transform = element.style.transform.replace('scale(1)', 'scale(0.95)');
+      element.style.transform = element.style.transform.replace('scale(1)', 'scale(0.9)');
       
       if (animation === 'slide') {
         element.style.transform += ' translateY(-20px)';
@@ -621,9 +493,4 @@ document.head.appendChild(style);
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = UnifiedPopupManager;
-}
-
-// Export to window for browser usage
-if (typeof window !== 'undefined') {
-  window.UnifiedPopupManager = UnifiedPopupManager;
 }

@@ -41,6 +41,9 @@ class UnifiedBrainTraining {
     gameSettings.loadMultiple = () => {
       this.loadGameWithStatus('multiple');
     };
+    gameSettings.loadSyllogimousV4 = () => {
+      this.loadGameWithStatus('syllogimous-v4');
+    };
     
     // Create a simple reactive proxy
     this.reactiveSettings = new Proxy(gameSettings, {
@@ -1012,6 +1015,36 @@ class UnifiedBrainTraining {
     // Cleanup blob URL after load (but now it's faster since it's a blob)
     iframe.onload = () => {
       console.log('Game iframe loaded successfully via blob URL:', gameId);
+      
+      // For syllogimous-v4, show the intro popup from the parent window
+      if (gameId === 'syllogimous-v4') {
+        const hasSeenIntro = sessionStorage.getItem('syllogimous-v4-intro-shown');
+        if (!hasSeenIntro && typeof window.createCustomModal === 'function') {
+          // Mark as shown for this session
+          sessionStorage.setItem('syllogimous-v4-intro-shown', '1');
+          
+          // Show immediately with minimal delay
+          setTimeout(() => {
+            console.log('[Syllogimous] Showing intro popup from parent (blob URL)');
+            window.createCustomModal({
+              title: 'Welcome to Syllogimous!',
+              content: `
+                <p>Syllogimous v4 takes classic logic challenges and turns them into a brain workout. This latest version introduces new features designed to enhance your brain training experience.</p>
+                <p>Syllogimous is based on <a href="https://en.wikipedia.org/wiki/Relational_frame_theory" target="_blank" style="color: #4a9eff;">Relational Frame Theory (RFT)</a>, a psychological theory that suggests that the fundamental process of human thought involves forming relationships between concepts.</p>
+                <p>Therefore, by playing Syllogimous, you're boosting your problem-solving skills, hopefully while having fun.</p>
+                <h3>Useful Links</h3>
+                <ul>
+                  <li><a href="https://groups.google.com/g/brain-training" target="_blank" style="color: #4a9eff;">Brain Training Google Groups</a></li>
+                  <li><a href="https://t.me/brain_training" target="_blank" style="color: #4a9eff;">Brain Training Telegram</a></li>
+                </ul>
+              `,
+              showCheckbox: true,
+              gameId: 'syllogimous-v4-intro'
+            });
+          }, 100);
+        }
+      }
+      
       // Don't revoke immediately - keep it available for potential reloads
       setTimeout(() => {
         if (this.currentBlobUrl) {
@@ -1576,6 +1609,118 @@ class UnifiedBrainTraining {
             this.onCognitiveUpdate(event.data.payload);
           }
         });
+        
+        // Listen for Syllogimous intro request (global listener)
+        window.addEventListener('message', (event) => {
+          if (event.data && event.data.type === 'syllogimous-show-intro') {
+            console.log('[Parent] Received intro request');
+            
+            // Check if user clicked "don't show again" THIS SESSION
+            const userClickedDontShow = sessionStorage.getItem('syllogimous-v4-intro-dont-show');
+            console.log('[Parent] userClickedDontShow:', userClickedDontShow);
+            console.log('[Parent] createCustomModal exists:', typeof window.createCustomModal);
+            
+            if (!userClickedDontShow && typeof window.createCustomModal === 'function') {
+              console.log('[Parent] Showing intro modal');
+              window.createCustomModal({
+                title: 'Welcome to Syllogimous!',
+                content: `
+                  <p>Syllogimous v4 takes classic logic challenges and turns them into a brain workout. This latest version introduces new features designed to enhance your brain training experience.</p>
+                  <p>Syllogimous is based on <a href="https://en.wikipedia.org/wiki/Relational_frame_theory" target="_blank" style="color: #4a9eff;">Relational Frame Theory (RFT)</a>, a psychological theory that suggests that the fundamental process of human thought involves forming relationships between concepts.</p>
+                  <p>Therefore, by playing Syllogimous, you're boosting your problem-solving skills, hopefully while having fun.</p>
+                  <h3>Useful Links</h3>
+                  <ul>
+                    <li><a href="https://groups.google.com/g/brain-training" target="_blank" style="color: #4a9eff;">Brain Training Google Groups</a></li>
+                    <li><a href="https://t.me/brain_training" target="_blank" style="color: #4a9eff;">Brain Training Telegram</a></li>
+                  </ul>
+                `,
+                showCheckbox: true,
+                gameId: 'syllogimous-v4-intro'
+              });
+              
+              // Set up checkbox handler to track user's choice
+              setTimeout(() => {
+                const checkbox = document.getElementById('dont-show-again');
+                if (checkbox) {
+                  checkbox.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                      sessionStorage.setItem('syllogimous-v4-intro-dont-show', '1');
+                    } else {
+                      sessionStorage.removeItem('syllogimous-v4-intro-dont-show');
+                    }
+                  });
+                }
+              }, 100);
+            } else {
+              console.log('[Parent] NOT showing intro - user clicked dont show or createCustomModal not available');
+            }
+          }
+        });
+        
+        // Listen for Syllogimous progress updates (global listener)
+        window.addEventListener('message', (event) => {
+          if (event.data && event.data.type === 'syllogimous-progress-update') {
+            const { questionsCorrect, questionGoal, dailyProgressPercent } = event.data;
+            
+            // Update questions progress bar (streak style)
+            const questionsFill = document.getElementById('questions-progress-fill');
+            const questionsText = document.getElementById('questions-progress-text');
+            if (questionsFill && questionsText) {
+              const questionsPercent = Math.min(100, (questionsCorrect / questionGoal) * 100);
+              questionsFill.style.width = questionsPercent + '%';
+              questionsText.textContent = `${questionsCorrect} / ${questionGoal}`;
+            }
+            
+            // Update daily progress bar (XP style)
+            const dailyFill = document.getElementById('daily-progress-fill');
+            const dailyText = document.getElementById('daily-progress-text');
+            if (dailyFill && dailyText) {
+              dailyFill.style.width = dailyProgressPercent + '%';
+              if (dailyProgressPercent >= 100) {
+                dailyText.textContent = 'Daily Goal Complete!';
+              } else {
+                dailyText.textContent = `${Math.round(dailyProgressPercent)}% to goal`;
+              }
+            }
+          }
+        });
+        
+        // Listen for Syllogimous tutorial requests (global listener)
+        window.addEventListener('message', (event) => {
+          if (event.data && event.data.type === 'syllogimous-show-tutorial') {
+            const { questionType, content } = event.data;
+            const tutorialId = `syllogimous-v4-${questionType}`;
+            
+            // Check if user has clicked "don't show" THIS SESSION (using sessionStorage)
+            const hasClickedDontShowThisSession = sessionStorage.getItem(`SYL_DONT_SHOW:${questionType}`);
+            
+            if (!hasClickedDontShowThisSession && typeof window.createCustomModal === 'function') {
+              // Create modal with custom checkbox handler
+              window.createCustomModal({
+                title: `How to Play: ${questionType}`,
+                content: content,
+                showCheckbox: true,
+                gameId: tutorialId
+              });
+              
+              // Update sessionStorage when checkbox is checked (only for this session)
+              setTimeout(() => {
+                const checkbox = document.getElementById('dont-show-again');
+                if (checkbox) {
+                  checkbox.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                      // Store in sessionStorage (resets on page reload)
+                      sessionStorage.setItem(`SYL_DONT_SHOW:${questionType}`, '1');
+                    } else {
+                      // Remove from sessionStorage
+                      sessionStorage.removeItem(`SYL_DONT_SHOW:${questionType}`);
+                    }
+                  });
+                }
+              }, 100);
+            }
+          }
+        });
       } else {
         console.warn('⚠️ Cognitive progression system not available');
       }
@@ -1601,7 +1746,9 @@ class UnifiedBrainTraining {
     const specialPaths = {
       'quad-box': 'games/quad-box/dist/index.html',  // Compiled Svelte app
       'fast-sequence-nback': 'FastSequenceNBack/index.html',  // Single file game
-      'multiple': 'multiple.html'  // Single file game
+      'multiple': 'multiple.html',  // Single file game
+      'syllogimous': 'games/syllogimous/index.html',  // Syllogimous game
+      'syllogimous-v4': 'http://localhost:4200/'  // Angular Syllogimous v4 dev server
     };
     
     // Return special path if exists, otherwise use standard path
@@ -1613,7 +1760,9 @@ class UnifiedBrainTraining {
     const specialBaseURLs = {
       'quad-box': `${window.location.origin}/games/quad-box/dist/`,
       'fast-sequence-nback': `${window.location.origin}/FastSequenceNBack/`,  // Single file in root folder
-      'multiple': `${window.location.origin}/`  // Single file in root
+      'multiple': `${window.location.origin}/`,  // Single file in root
+      'syllogimous': `${window.location.origin}/games/syllogimous/`,
+      'syllogimous-v4': `http://localhost:4200/`
     };
     
     // Return special base URL if exists, otherwise use standard base URL
@@ -1624,7 +1773,8 @@ class UnifiedBrainTraining {
     // Games that need special handling due to dynamic resource loading or compilation
     // dichotic-dual-nback: Howler.js can't load audio from blob URLs
     // quad-box: Compiled Svelte app with dynamic imports
-    const specialHandlingGames = ['quad-box', 'dichotic-dual-nback'];
+    // syllogimous-v4: Angular app with lazy loading modules
+    const specialHandlingGames = ['quad-box', 'dichotic-dual-nback', 'syllogimous-v4'];
     return specialHandlingGames.includes(gameId);
   }
 
@@ -1719,6 +1869,35 @@ class UnifiedBrainTraining {
     iframe.onload = () => {
       console.log('Game iframe loaded directly:', gameId);
       this.injectCommunicationBridge(iframe, gameId);
+      
+      // For syllogimous-v4, show the intro popup from the parent window
+      if (gameId === 'syllogimous-v4') {
+        const hasSeenIntro = sessionStorage.getItem('syllogimous-v4-intro-shown');
+        if (!hasSeenIntro && typeof window.createCustomModal === 'function') {
+          // Mark as shown for this session
+          sessionStorage.setItem('syllogimous-v4-intro-shown', '1');
+          
+          // Show immediately with minimal delay
+          setTimeout(() => {
+            console.log('[Syllogimous] Showing intro popup from parent');
+            window.createCustomModal({
+              title: 'Welcome to Syllogimous!',
+              content: `
+                <p>Syllogimous v4 takes classic logic challenges and turns them into a brain workout. This latest version introduces new features designed to enhance your brain training experience.</p>
+                <p>Syllogimous is based on <a href="https://en.wikipedia.org/wiki/Relational_frame_theory" target="_blank" style="color: #4a9eff;">Relational Frame Theory (RFT)</a>, a psychological theory that suggests that the fundamental process of human thought involves forming relationships between concepts.</p>
+                <p>Therefore, by playing Syllogimous, you're boosting your problem-solving skills, hopefully while having fun.</p>
+                <h3>Useful Links</h3>
+                <ul>
+                  <li><a href="https://groups.google.com/g/brain-training" target="_blank" style="color: #4a9eff;">Brain Training Google Groups</a></li>
+                  <li><a href="https://t.me/brain_training" target="_blank" style="color: #4a9eff;">Brain Training Telegram</a></li>
+                </ul>
+              `,
+              showCheckbox: true,
+              gameId: 'syllogimous-v4-intro'
+            });
+          }, 100);
+        }
+      }
     };
     
     iframe.onerror = (error) => {
@@ -1970,7 +2149,7 @@ class UnifiedBrainTraining {
   }
   
   loadAllGameSettings() {
-    const games = ['jiggle-factorial', '3d-hyper-nback', 'dichotic-dual-nback', 'quad-box', 'fast-sequence-nback', 'multiple'];
+    const games = ['jiggle-factorial', '3d-hyper-nback', 'dichotic-dual-nback', 'quad-box', 'fast-sequence-nback', 'multiple', 'syllogimous', 'syllogimous-v4'];
     const allSettings = {};
     games.forEach(gameId => {
       allSettings[gameId] = this.loadSettingsFromStorage(gameId);
@@ -2150,6 +2329,25 @@ class UnifiedBrainTraining {
         gaborSize: 150,
         totalTrials: 20,
         relationalComplexity: '1back'
+      },
+      'syllogimous': {
+        difficulty: 'medium',
+        timerEnabled: true,
+        soundEnabled: true,
+        showHints: true,
+        dailyGoal: 50,
+        weeklyGoal: 300,
+        monthlyGoal: 1200
+      },
+      'syllogimous-v4': {
+        timerType: '0',
+        fillInBlank: true,
+        trueFalse: false,
+        negation: false,
+        meta: false,
+        dailyGoal: 50,
+        weeklyGoal: 300,
+        monthlyGoal: 1200
       }
     };
 
@@ -2199,6 +2397,7 @@ class UnifiedBrainTraining {
     gamesFolder.add(this.settings, 'loadQuadBox').name('Quad Box');
     gamesFolder.add(this.settings, 'loadFastSequenceNBack').name('Fast Sequence Synesthesia N-back');
     gamesFolder.add(this.settings, 'loadMultiple').name('Multiple N-back');
+    gamesFolder.add(this.settings, 'loadSyllogimousV4').name('Syllogimous v4');
     gamesFolder.open();
     
     const separatorAfterGames = document.createElement('li');

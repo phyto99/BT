@@ -14,6 +14,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     
+    <!-- Unified Popup System -->
+    <script src="shared/unified-popup-manager.js"></script>
+    
     <!-- Cognitive Progression System -->
     <script src="shared/cognitive-progression.js"></script>
     <script src="shared/cognitive-ui.js"></script>
@@ -73,6 +76,64 @@
 
         .unified-info-btn:hover, .unified-stats-btn:hover {
             background-color: rgba(60, 60, 60, 0.9);
+        }
+
+        /* Duolingo-style progress bars between buttons */
+        .unified-progress-bars {
+            position: fixed;
+            top: 10px;
+            left: 60px;
+            right: 110px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .progress-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            height: 16px;
+        }
+
+        .progress-bar-icon {
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .progress-bar-track {
+            flex: 1;
+            height: 12px;
+            background: rgba(229, 229, 229, 0.3);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #58cc02, #89e219);
+            transition: width 0.3s ease;
+            border-radius: 12px;
+            position: relative;
+        }
+
+        .progress-bar-fill.daily {
+            background: linear-gradient(90deg, #ffc800, #ffd900);
+        }
+
+        .progress-bar-text {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 10px;
+            color: #fff;
+            font-family: 'DIN Round', Arial, sans-serif;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            white-space: nowrap;
         }
 
         /* Custom Modal Styling - Dynamic Sizing */
@@ -320,6 +381,26 @@
     </style>
 </head>
 <body>
+    <!-- Duolingo-style progress bars between buttons -->
+    <div class="unified-progress-bars">
+        <div class="progress-bar-row">
+            <div class="progress-bar-icon">🔥</div>
+            <div class="progress-bar-track">
+                <div class="progress-bar-fill" id="questions-progress-fill" style="width: 0%">
+                    <div class="progress-bar-text" id="questions-progress-text">0 / 100</div>
+                </div>
+            </div>
+        </div>
+        <div class="progress-bar-row">
+            <div class="progress-bar-icon">⚡</div>
+            <div class="progress-bar-track">
+                <div class="progress-bar-fill daily" id="daily-progress-fill" style="width: 0%">
+                    <div class="progress-bar-text" id="daily-progress-text">Daily Goal</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Right side buttons -->
     <div class="unified-right-buttons">
         <button class="unified-info-btn" id="unified-info-btn" title="Information">
@@ -344,6 +425,10 @@
     <script>
         // Initialize exactly like the test version
         document.addEventListener('DOMContentLoaded', () => {
+            // Create the unified popup manager FIRST
+            window.popupManager = new UnifiedPopupManager();
+            console.log('[Main] Unified Popup Manager initialized:', window.popupManager);
+            
             // Create the unified system instance
             window.unifiedBrainTraining = new UnifiedBrainTraining();
             
@@ -437,6 +522,12 @@
                 return;
             }
             
+            // Special handling for Syllogimous v4 - show tutorials menu
+            if (currentGame === 'syllogimous-v4') {
+                showSyllogimusTutorialsMenu();
+                return;
+            }
+            
             const gameInfo = getGameInfo(currentGame);
             
             createCustomModal({
@@ -445,6 +536,96 @@
                 showCheckbox: true,
                 gameId: currentGame
             });
+        }
+        
+        function showSyllogimusTutorialsMenu() {
+            // Tutorial content for each question type
+            const tutorials = {
+                'Welcome': `
+                    <p>Syllogimous v4 takes classic logic challenges and turns them into a brain workout. This latest version introduces new features designed to enhance your brain training experience.</p>
+                    <p>Syllogimous is based on <a href="https://en.wikipedia.org/wiki/Relational_frame_theory" target="_blank" style="color: #4a9eff;">Relational Frame Theory (RFT)</a>, a psychological theory that suggests that the fundamental process of human thought involves forming relationships between concepts.</p>
+                    <p>Therefore, by playing Syllogimous, you're boosting your problem-solving skills, hopefully while having fun.</p>
+                    <h3>Useful Links</h3>
+                    <ul>
+                      <li><a href="https://groups.google.com/g/brain-training" target="_blank" style="color: #4a9eff;">Brain Training Google Groups</a></li>
+                      <li><a href="https://t.me/brain_training" target="_blank" style="color: #4a9eff;">Brain Training Telegram</a></li>
+                    </ul>
+                `,
+                'Syllogism': 'Evaluate logical conclusions from premises using quantifiers (All, Some, No)',
+                'Distinction': 'Determine if items are the same or opposite based on given relationships',
+                'Comparison (Numerical)': 'Compare quantities using more than/less than relationships',
+                'Comparison (Chronological)': 'Determine temporal order using before/after relationships',
+                'Linear Arrangement': 'Determine positions in a linear sequence',
+                'Circular Arrangement': 'Determine positions in a circular arrangement',
+                'Direction': 'Track movements and determine final positions or directions',
+                'Direction (3D Spatial)': 'Navigate 3D space with directional movements',
+                'Direction (3D Temporal)': 'Track temporal sequences in 3D space',
+                'Graph Matching': 'Match graph structures and relationships',
+                'Analogy': 'Complete analogies by finding patterns and relationships',
+                'Binary': 'Evaluate binary logical statements'
+            };
+            
+            // Create buttons for each tutorial
+            let buttonsHTML = '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">';
+            for (const [name, desc] of Object.entries(tutorials)) {
+                const buttonId = `tutorial-btn-${name.replace(/[^a-zA-Z0-9]/g, '-')}`;
+                buttonsHTML += `
+                    <button id="${buttonId}" style="
+                        padding: 12px;
+                        background: #4a9eff;
+                        color: white;
+                        border: none;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-size: 14px;
+                        font-weight: 500;
+                        transition: background 0.2s;
+                        text-align: left;
+                    " onmouseover="this.style.background='#6bb3ff'" onmouseout="this.style.background='#4a9eff'">
+                        ${name}
+                    </button>
+                `;
+            }
+            buttonsHTML += '</div>';
+            
+            createCustomModal({
+                title: 'Syllogimous v4 - Tutorials',
+                content: `
+                    <p style="margin-bottom: 15px;">Select a tutorial to learn about each question type:</p>
+                    ${buttonsHTML}
+                `,
+                showCheckbox: false,
+                gameId: null
+            });
+            
+            // Add click handlers after modal is created
+            setTimeout(() => {
+                for (const name of Object.keys(tutorials)) {
+                    const buttonId = `tutorial-btn-${name.replace(/[^a-zA-Z0-9]/g, '-')}`;
+                    const button = document.getElementById(buttonId);
+                    if (button) {
+                        button.onclick = () => {
+                            // Close current modal
+                            const modal = document.querySelector('.custom-modal');
+                            const backdrop = document.querySelector('.modal-backdrop');
+                            if (modal) modal.remove();
+                            if (backdrop) backdrop.remove();
+                            
+                            // Show tutorial
+                            setTimeout(() => {
+                                // Request tutorial content from Syllogimous iframe
+                                const iframe = document.querySelector('iframe');
+                                if (iframe && iframe.contentWindow) {
+                                    iframe.contentWindow.postMessage({
+                                        type: 'request-tutorial-content',
+                                        questionType: name
+                                    }, '*');
+                                }
+                            }, 100);
+                        };
+                    }
+                }
+            }, 100);
         }
 
         function getGameInfo(gameId) {
@@ -533,6 +714,46 @@
                         <p class="modal-text"><strong>Controls:</strong> Press <strong>L</strong> for spatial sequence matches, <strong>K</strong> for letter sequence matches</p>
                     `
                 },
+                'syllogimous': {
+                    title: 'Syllogimous - How to Play',
+                    content: `
+                        <p class="modal-text">Syllogimous is a logical reasoning game that challenges your deductive thinking with various question types.</p>
+                        <p class="modal-text"><strong>Question Types:</strong></p>
+                        <ul class="modal-list">
+                            <li><strong>Syllogism:</strong> Evaluate logical conclusions from premises using quantifiers (All, Some, No)</li>
+                            <li><strong>Distinction:</strong> Categorize items as same or different based on relationships</li>
+                            <li><strong>Comparison:</strong> Compare quantities or chronological order</li>
+                            <li><strong>Arrangement:</strong> Determine positions in linear or circular arrangements</li>
+                            <li><strong>Direction:</strong> Track movements and determine final positions</li>
+                            <li><strong>Analogy:</strong> Complete analogies by finding patterns</li>
+                        </ul>
+                        <p class="modal-text"><strong>How to Play:</strong></p>
+                        <p class="modal-text">Read the premises carefully, then evaluate whether the conclusion logically follows. Click <strong>True</strong> if it does, or <strong>False</strong> if it doesn't. The first time you encounter a new question type, a tutorial will explain the rules.</p>
+                        <p class="modal-text"><strong>Controls:</strong> Press <strong>1</strong> for True, <strong>2</strong> for False, or click the buttons</p>
+                    `
+                },
+                'syllogimous-v4': {
+                    title: 'Syllogimous v4 (Angular) - How to Play',
+                    content: `
+                        <p class="modal-text">The full-featured Angular version of Syllogimous with advanced training modes and comprehensive analytics.</p>
+                        <p class="modal-text"><strong>Features:</strong></p>
+                        <ul class="modal-list">
+                            <li><strong>Arcade Mode:</strong> Progressive difficulty with tier-based scoring</li>
+                            <li><strong>Training Mode:</strong> Adaptive difficulty based on performance</li>
+                            <li><strong>Fill-in-the-Blank:</strong> Select missing words instead of True/False</li>
+                            <li><strong>12 Question Types:</strong> Syllogism, Distinction, Comparison, Arrangement, Direction, Graph Matching, Analogy, Binary, and more</li>
+                            <li><strong>Adaptive Timers:</strong> Timer adjusts based on your performance</li>
+                            <li><strong>Comprehensive Stats:</strong> Track accuracy, response times, and progress per question type</li>
+                        </ul>
+                        <p class="modal-text"><strong>Training Modes:</strong></p>
+                        <ul class="modal-list">
+                            <li><strong>Fill-in-Blank Only:</strong> All questions require selecting the correct word</li>
+                            <li><strong>True/False Only:</strong> Traditional logical evaluation</li>
+                            <li><strong>Mixed Mode:</strong> 50% fill-in-blank, 50% true/false</li>
+                        </ul>
+                        <p class="modal-text"><strong>Controls:</strong> Press <strong>1-4</strong> for answer options, or click the buttons</p>
+                    `
+                },
                 'multiple': {
                     title: 'Multiple N-back - How to Play',
                     content: `
@@ -562,6 +783,8 @@
                         <li>Quad Box</li>
                         <li>Fast Sequence N-back</li>
                         <li>Multiple N-back</li>
+                        <li>Syllogimous</li>
+                        <li>Syllogimous v4 (Angular)</li>
                     </ul>
                     <p class="modal-text"><strong>Features:</strong></p>
                     <ul class="modal-list">
@@ -589,7 +812,9 @@
                 'dichotic-dual-nback': 'Dichotic Dual N-back',
                 'quad-box': 'Quad Box',
                 'fast-sequence-nback': 'Fast Sequence N-back',
-                'multiple': 'Multiple N-back'
+                'multiple': 'Multiple N-back',
+                'syllogimous': 'Syllogimous',
+                'syllogimous-v4': 'Syllogimous v4'
             };
             
             // Get game statistics
@@ -1415,8 +1640,8 @@
         };
 
 
-        // Custom Modal Function
-        function createCustomModal({title, content, showCheckbox = false, gameId = null}) {
+        // Custom Modal Function - exposed globally for iframe games
+        window.createCustomModal = function({title, content, showCheckbox = false, gameId = null}) {
             // Create backdrop
             const backdrop = document.createElement('div');
             backdrop.className = 'modal-backdrop';
@@ -1461,8 +1686,8 @@
             // Build checkbox HTML if needed
             let checkboxHtml = '';
             if (showCheckbox && gameId) {
-                // Check by default (user has to uncheck to see it again)
-                const dontShowAgain = localStorage.getItem(`dontShowInfo_${gameId}`) !== 'false';
+                // Unchecked by default - user must explicitly check to hide
+                const dontShowAgain = localStorage.getItem(`dontShowInfo_${gameId}`) === 'true';
                 checkboxHtml = `
                     <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.2);">
                         <label style="display: flex; align-items: center; cursor: pointer; font-size: 13px;">
@@ -1536,12 +1761,11 @@
                     const checkbox = document.getElementById('dont-show-again');
                     if (checkbox) {
                         checkbox.addEventListener('change', (e) => {
-                            // Store as 'false' if unchecked (show again), otherwise don't store or store 'true'
-                            if (!e.target.checked) {
-                                localStorage.setItem(`dontShowInfo_${gameId}`, 'false');
-                                localStorage.removeItem(`hasSeenInfo_${gameId}`);
-                            } else {
+                            // Store 'true' when checked (don't show), remove when unchecked (show again)
+                            if (e.target.checked) {
                                 localStorage.setItem(`dontShowInfo_${gameId}`, 'true');
+                            } else {
+                                localStorage.removeItem(`dontShowInfo_${gameId}`);
                             }
                         });
                     }
