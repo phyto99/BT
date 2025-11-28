@@ -629,7 +629,7 @@ class UnifiedBrainTraining {
     const timeCounter = document.getElementById('time-counter');
     
     if (theme === 'light') {
-      // Light mode: black shadows, dark bolt/number
+      // Light mode: black shadows, dark bolt/number (for contrast)
       progressTracks.forEach(track => track.classList.add('light-mode'));
       if (timeTrack) timeTrack.classList.add('light-mode');
       if (timeFill) timeFill.classList.add('light-mode');
@@ -643,23 +643,18 @@ class UnifiedBrainTraining {
         timeCounter.style.color = '#4b5563';
       }
     } else {
-      // Dark mode: white shadows, purple bolt/number
+      // Dark mode: white shadows, light bolt/number (for contrast)
       progressTracks.forEach(track => track.classList.remove('light-mode'));
       if (timeTrack) timeTrack.classList.remove('light-mode');
       if (timeFill) timeFill.classList.remove('light-mode');
       
-      // Bolt and number colors - purple for dark mode active, grey for frozen
+      // Bolt and number colors - light for dark mode (both active and frozen)
       if (headerTime) {
-        if (headerTime.classList.contains('frozen')) {
-          headerTime.style.color = '#4b5563';
-          headerTime.style.opacity = '0.5';
-        } else {
-          headerTime.style.color = '#a855f7';
-          headerTime.style.opacity = '1';
-        }
+        headerTime.style.color = '#a855f7';
+        headerTime.style.opacity = headerTime.classList.contains('frozen') ? '0.5' : '1';
       }
       if (timeCounter) {
-        timeCounter.style.color = headerTime?.classList.contains('frozen') ? '#4b5563' : '#a855f7';
+        timeCounter.style.color = '#a855f7';
       }
     }
     
@@ -891,12 +886,22 @@ class UnifiedBrainTraining {
     if (dailyText) dailyText.textContent = 'Daily Goal';
     if (headerTime) {
       headerTime.classList.add('frozen');
-      headerTime.style.color = '#4b5563';
+      // Theme-appropriate color for frozen bolt
+      if (currentTheme === 'light') {
+        headerTime.style.color = '#4b5563'; // dark grey for light mode
+      } else {
+        headerTime.style.color = '#a855f7'; // purple for dark mode
+      }
       headerTime.style.opacity = '0.5';
     }
     if (timeCounter) {
       timeCounter.textContent = '∞';
-      timeCounter.style.color = '#4b5563';
+      // Theme-appropriate color for frozen number
+      if (currentTheme === 'light') {
+        timeCounter.style.color = '#4b5563'; // dark grey for light mode
+      } else {
+        timeCounter.style.color = '#a855f7'; // purple for dark mode
+      }
     }
     
     console.log('🧹 [CLEANUP] Progress bars reset');
@@ -1835,12 +1840,12 @@ class UnifiedBrainTraining {
                   // Apply light-mode class for frozen state if in light mode
                   if (currentTheme === 'light') {
                     dailyFill.classList.add('light-mode');
-                    headerTime.style.color = '#4b5563';
+                    headerTime.style.color = '#4b5563'; // dark grey for light mode
                     timeCounter.style.color = '#4b5563';
                   } else {
                     dailyFill.classList.remove('light-mode');
-                    headerTime.style.color = '#4b5563';
-                    timeCounter.style.color = '#4b5563';
+                    headerTime.style.color = '#a855f7'; // purple for dark mode
+                    timeCounter.style.color = '#a855f7';
                   }
                   headerTime.style.opacity = '0.5';
                   timeCounter.textContent = '∞';
