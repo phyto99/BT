@@ -23,7 +23,7 @@
     
     <script src="shared/unified-core.js"></script>
     <script src="shared/analytics-dashboard.js"></script>
-    <script src="shared/comprehensive-stats-panel.js"></script>
+    <script src="shared/unified-statistics-manager.js"></script>
     
     <style>
         body {
@@ -188,11 +188,7 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         }
 
-        /* Frozen state color is set by JS based on theme */
-
-        .header__time.frozen svg {
-            opacity: 0.5;
-        }
+        /* Frozen state color is set by JS based on theme - always full opacity */
 
         /* Time bar - purple, shrinks from right */
         .time-track {
@@ -527,16 +523,14 @@
                 }
             });
             
-            // Stats button handler - toggle if already open
+            // Stats button handler - open unified statistics manager
             document.getElementById('unified-stats-btn').addEventListener('click', () => {
-                const existingStatsPanel = document.querySelector('.stats-panel-datgui');
-                if (existingStatsPanel) {
-                    // Stats panel is already open, close it
-                    closeAnyOpenModal();
+                const existingOverlay = document.getElementById('unified-stats-overlay');
+                if (existingOverlay) {
+                    window.UnifiedStatisticsManager.destroy();
                 } else {
-                    // Close info if open, then show stats
                     closeAnyOpenModal();
-                    showStatsPopup();
+                    window.UnifiedStatisticsManager.show();
                 }
             });
             

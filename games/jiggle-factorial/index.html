@@ -433,6 +433,9 @@
       // Add "Start Game" button at the end
       gui.add(settings, 'startGame').name('Start Game');
 
+      // Close the GUI by default
+      gui.close();
+
       // Event Listeners
       window.addEventListener('resize', onWindowResize, false);
       renderer.domElement.addEventListener('pointerdown', onDocumentMouseDown, false);
