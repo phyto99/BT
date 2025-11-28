@@ -624,6 +624,7 @@ class UnifiedBrainTraining {
     // Update progress bar track shadows
     const progressTracks = document.querySelectorAll('.progress-bar-track');
     const timeTrack = document.querySelector('.time-track');
+    const timeFill = document.querySelector('.time-fill');
     const headerTime = document.getElementById('header-time');
     const timeCounter = document.getElementById('time-counter');
     
@@ -631,27 +632,34 @@ class UnifiedBrainTraining {
       // Light mode: black shadows, dark bolt/number
       progressTracks.forEach(track => track.classList.add('light-mode'));
       if (timeTrack) timeTrack.classList.add('light-mode');
+      if (timeFill) timeFill.classList.add('light-mode');
       
-      // Bolt and number colors - dark grey for light mode
-      if (headerTime && !headerTime.classList.contains('frozen')) {
+      // Bolt and number colors - dark grey for light mode (both active and frozen)
+      if (headerTime) {
         headerTime.style.color = '#4b5563';
-        headerTime.style.opacity = '1';
+        headerTime.style.opacity = headerTime.classList.contains('frozen') ? '0.5' : '1';
       }
-      if (timeCounter && !headerTime?.classList.contains('frozen')) {
+      if (timeCounter) {
         timeCounter.style.color = '#4b5563';
       }
     } else {
-      // Dark mode: white shadows, light bolt/number
+      // Dark mode: white shadows, purple bolt/number
       progressTracks.forEach(track => track.classList.remove('light-mode'));
       if (timeTrack) timeTrack.classList.remove('light-mode');
+      if (timeFill) timeFill.classList.remove('light-mode');
       
-      // Bolt and number colors - light grey for dark mode
-      if (headerTime && !headerTime.classList.contains('frozen')) {
-        headerTime.style.color = '#a855f7';
-        headerTime.style.opacity = '1';
+      // Bolt and number colors - purple for dark mode active, grey for frozen
+      if (headerTime) {
+        if (headerTime.classList.contains('frozen')) {
+          headerTime.style.color = '#4b5563';
+          headerTime.style.opacity = '0.5';
+        } else {
+          headerTime.style.color = '#a855f7';
+          headerTime.style.opacity = '1';
+        }
       }
-      if (timeCounter && !headerTime?.classList.contains('frozen')) {
-        timeCounter.style.color = '#a855f7';
+      if (timeCounter) {
+        timeCounter.style.color = headerTime?.classList.contains('frozen') ? '#4b5563' : '#a855f7';
       }
     }
     
@@ -873,6 +881,12 @@ class UnifiedBrainTraining {
     if (dailyFill) {
       dailyFill.style.width = '100%';
       dailyFill.classList.add('frozen');
+      // Apply light-mode class for frozen state if in light mode
+      if (currentTheme === 'light') {
+        dailyFill.classList.add('light-mode');
+      } else {
+        dailyFill.classList.remove('light-mode');
+      }
     }
     if (dailyText) dailyText.textContent = 'Daily Goal';
     if (headerTime) {
@@ -1818,8 +1832,16 @@ class UnifiedBrainTraining {
                   // Frozen when at 0 or completed (100%)
                   headerTime.classList.add('frozen');
                   dailyFill.classList.add('frozen');
-                  headerTime.style.color = '#4b5563';
-                  timeCounter.style.color = '#4b5563';
+                  // Apply light-mode class for frozen state if in light mode
+                  if (currentTheme === 'light') {
+                    dailyFill.classList.add('light-mode');
+                    headerTime.style.color = '#4b5563';
+                    timeCounter.style.color = '#4b5563';
+                  } else {
+                    dailyFill.classList.remove('light-mode');
+                    headerTime.style.color = '#4b5563';
+                    timeCounter.style.color = '#4b5563';
+                  }
                   headerTime.style.opacity = '0.5';
                   timeCounter.textContent = '∞';
                 }
