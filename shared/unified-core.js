@@ -604,14 +604,12 @@ class UnifiedBrainTraining {
     const themeBtn = document.getElementById('theme-toggle-btn');
     if (themeBtn) {
       if (theme === 'dark') {
-        // Moon icon for dark mode
         themeBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="display: block;">
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
         </svg>`;
         themeBtn.style.background = '#333';
         themeBtn.style.color = '#fff';
       } else {
-        // Sun icon for light mode
         themeBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="display: block;">
           <circle cx="12" cy="12" r="4"/>
           <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/>
@@ -621,48 +619,56 @@ class UnifiedBrainTraining {
       }
     }
     
-    // Update progress bar track shadows
+    // Apply light-mode class to all relevant elements
     const progressTracks = document.querySelectorAll('.progress-bar-track');
     const timeTrack = document.querySelector('.time-track');
     const timeFill = document.querySelector('.time-fill');
-    const headerTime = document.getElementById('header-time');
-    const timeCounter = document.getElementById('time-counter');
     
     if (theme === 'light') {
-      // Light mode: black shadows, dark bolt/number (for contrast)
       progressTracks.forEach(track => track.classList.add('light-mode'));
       if (timeTrack) timeTrack.classList.add('light-mode');
       if (timeFill) timeFill.classList.add('light-mode');
-      
-      // Bolt and number colors - dark grey for light mode (both active and frozen)
-      if (headerTime) {
-        headerTime.style.color = '#4b5563';
-        headerTime.style.opacity = headerTime.classList.contains('frozen') ? '0.5' : '1';
-      }
-      if (timeCounter) {
-        timeCounter.style.color = '#4b5563';
-      }
     } else {
-      // Dark mode: white shadows, light bolt/number (for contrast)
       progressTracks.forEach(track => track.classList.remove('light-mode'));
       if (timeTrack) timeTrack.classList.remove('light-mode');
       if (timeFill) timeFill.classList.remove('light-mode');
-      
-      // Bolt and number colors - light for dark mode (both active and frozen)
-      if (headerTime) {
-        headerTime.style.color = '#a855f7';
-        headerTime.style.opacity = headerTime.classList.contains('frozen') ? '0.5' : '1';
-      }
-      if (timeCounter) {
-        timeCounter.style.color = '#a855f7';
-      }
     }
+    
+    // Update bolt and number colors based on frozen state and theme
+    const headerTime = document.getElementById('header-time');
+    const isFrozen = headerTime?.classList.contains('frozen');
+    this.updateBoltColors(theme, isFrozen);
     
     // Apply theme to the unified sidebar
     const sidebar = document.getElementById('unified-sidebar');
     if (sidebar) {
       sidebar.style.background = theme === 'dark' ? '#1a1a1a' : '#f5f5f5';
       sidebar.style.color = theme === 'dark' ? '#eee' : '#333';
+    }
+  }
+  
+  // Simple helper to set bolt/number colors consistently
+  // DARK MODE: light grey (#9ca3af) frozen, purple (#a855f7) active
+  // LIGHT MODE: dark grey (#4b5563) frozen, purple (#a855f7) active
+  updateBoltColors(theme, isFrozen) {
+    const headerTime = document.getElementById('header-time');
+    const timeCounter = document.getElementById('time-counter');
+    
+    let color;
+    if (isFrozen) {
+      // Frozen: use grey based on theme
+      color = theme === 'dark' ? '#9ca3af' : '#4b5563';
+    } else {
+      // Active: always purple
+      color = '#a855f7';
+    }
+    
+    if (headerTime) {
+      headerTime.style.color = color;
+      headerTime.style.opacity = isFrozen ? '0.5' : '1';
+    }
+    if (timeCounter) {
+      timeCounter.style.color = color;
     }
   }
   
@@ -876,7 +882,6 @@ class UnifiedBrainTraining {
     if (dailyFill) {
       dailyFill.style.width = '100%';
       dailyFill.classList.add('frozen');
-      // Apply light-mode class for frozen state if in light mode
       if (currentTheme === 'light') {
         dailyFill.classList.add('light-mode');
       } else {
@@ -886,23 +891,13 @@ class UnifiedBrainTraining {
     if (dailyText) dailyText.textContent = 'Daily Goal';
     if (headerTime) {
       headerTime.classList.add('frozen');
-      // Theme-appropriate color for frozen bolt
-      if (currentTheme === 'light') {
-        headerTime.style.color = '#4b5563'; // dark grey for light mode
-      } else {
-        headerTime.style.color = '#a855f7'; // purple for dark mode
-      }
-      headerTime.style.opacity = '0.5';
     }
     if (timeCounter) {
       timeCounter.textContent = '∞';
-      // Theme-appropriate color for frozen number
-      if (currentTheme === 'light') {
-        timeCounter.style.color = '#4b5563'; // dark grey for light mode
-      } else {
-        timeCounter.style.color = '#a855f7'; // purple for dark mode
-      }
     }
+    
+    // Use helper to set colors consistently
+    this.updateBoltColors(currentTheme, true);
     
     console.log('🧹 [CLEANUP] Progress bars reset');
   }
@@ -1819,35 +1814,23 @@ class UnifiedBrainTraining {
                 const currentTheme = this.reactiveSettings?.theme || 'dark';
                 
                 if (dailyProgressPercent > 0 && dailyProgressPercent < 100) {
+                  // Active state
                   headerTime.classList.remove('frozen');
                   dailyFill.classList.remove('frozen');
-                  // Apply theme-appropriate color for active state
-                  if (currentTheme === 'light') {
-                    headerTime.style.color = '#4b5563'; // dark grey for light mode
-                    timeCounter.style.color = '#4b5563';
-                  } else {
-                    headerTime.style.color = '#a855f7'; // purple for dark mode
-                    timeCounter.style.color = '#a855f7';
-                  }
-                  headerTime.style.opacity = '1';
+                  this.updateBoltColors(currentTheme, false);
                   // Invert the number: 30% progress = 70% from goal
                   const invertedPercent = 100 - dailyProgressPercent;
                   timeCounter.textContent = Math.round(invertedPercent);
                 } else {
-                  // Frozen when at 0 or completed (100%)
+                  // Frozen state
                   headerTime.classList.add('frozen');
                   dailyFill.classList.add('frozen');
-                  // Apply light-mode class for frozen state if in light mode
                   if (currentTheme === 'light') {
                     dailyFill.classList.add('light-mode');
-                    headerTime.style.color = '#4b5563'; // dark grey for light mode
-                    timeCounter.style.color = '#4b5563';
                   } else {
                     dailyFill.classList.remove('light-mode');
-                    headerTime.style.color = '#a855f7'; // purple for dark mode
-                    timeCounter.style.color = '#a855f7';
                   }
-                  headerTime.style.opacity = '0.5';
+                  this.updateBoltColors(currentTheme, true);
                   timeCounter.textContent = '∞';
                 }
               }
