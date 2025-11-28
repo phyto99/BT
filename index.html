@@ -23,7 +23,7 @@
     
     <script src="shared/unified-core.js"></script>
     <script src="shared/analytics-dashboard.js"></script>
-    <script src="shared/cognitive-metrics-dashboard.js"></script>
+    <script src="shared/unified-statistics-manager.js"></script>
     
     <style>
         body {
@@ -523,14 +523,14 @@
                 }
             });
             
-            // Stats button handler - open cognitive metrics dashboard
+            // Stats button handler - open unified statistics manager
             document.getElementById('unified-stats-btn').addEventListener('click', () => {
-                const existingOverlay = document.getElementById('cognitive-metrics-overlay');
+                const existingOverlay = document.getElementById('unified-stats-overlay');
                 if (existingOverlay) {
-                    window.CognitiveMetricsDashboard.destroy();
+                    window.UnifiedStatisticsManager.destroy();
                 } else {
                     closeAnyOpenModal();
-                    window.CognitiveMetricsDashboard.show();
+                    window.UnifiedStatisticsManager.show();
                 }
             });
             
@@ -614,11 +614,9 @@
             const existingModal = document.querySelector('.custom-modal');
             const existingBackdrop = document.querySelector('.modal-backdrop');
             const existingStatsPanel = document.querySelector('.stats-panel-datgui');
-            const existingMetrics = document.getElementById('cognitive-metrics-overlay');
             if (existingModal) existingModal.remove();
             if (existingBackdrop) existingBackdrop.remove();
             if (existingStatsPanel) existingStatsPanel.remove();
-            if (existingMetrics) existingMetrics.remove();
         }
 
         function showInfoPopup(autoShow = false) {

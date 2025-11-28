@@ -1,9 +1,12 @@
 // Cognitive Metrics Dashboard - Category-Based Brain Training Analytics
 // Organizes all metrics by cognitive domain with transparent calculations and historical trends
+// Also provides per-game statistics views
 
 window.CognitiveMetricsDashboard = {
   charts: {},
   activeCategory: 'overview',
+  activeTab: 'cognitive', // 'cognitive' or 'games'
+  activeGame: null,
   timeRange: 'all', // 'all', '7d', '30d', '90d'
   
   // ═══════════════════════════════════════════════════════════════════════════
@@ -17,6 +20,16 @@ window.CognitiveMetricsDashboard = {
     speed: { name: 'Processing Speed', icon: '⚡', color: '#E91E63' },
     reasoning: { name: 'Reasoning & Logic', icon: '🧩', color: '#00BCD4' },
     spatial: { name: 'Spatial & Tracking', icon: '🗺️', color: '#8BC34A' }
+  },
+
+  // Game definitions for per-game stats view
+  GAMES: {
+    'jiggle-factorial': { name: 'Jiggle Factorial', icon: '🎯', color: '#4CAF50' },
+    '3d-hyper-nback': { name: '3D Hyper N-Back', icon: '🧠', color: '#2196F3' },
+    'quad-box': { name: 'Quad Box', icon: '📦', color: '#FF9800' },
+    'dichotic-dual-nback': { name: 'Dichotic Dual', icon: '🎧', color: '#9C27B0' },
+    'syllogimous-v4': { name: 'Syllogimous', icon: '🧩', color: '#00BCD4' },
+    'multiple': { name: 'Multiple N-Back', icon: '🔢', color: '#E91E63' }
   },
 
   // Game to cognitive domain mapping
@@ -242,8 +255,24 @@ window.CognitiveMetricsDashboard = {
   // ═══════════════════════════════════════════════════════════════════════════
   // MAIN INTERFACE
   // ═══════════════════════════════════════════════════════════════════════════
-  show() {
+  show(gameId = null) {
     this.destroy();
+    
+    // If a game is specified, open to that game's tab; otherwise open to cognitive overview
+    if (gameId && this.GAMES[gameId]) {
+      this.activeTab = 'games';
+      this.activeGame = gameId;
+    } else {
+      // Default: open to current game if playing, otherwise cognitive overview
+      const currentGame = window.unifiedBrainTraining?.currentGameId;
+      if (currentGame && this.GAMES[currentGame]) {
+        this.activeTab = 'games';
+        this.activeGame = currentGame;
+      } else {
+        this.activeTab = 'cognitive';
+        this.activeCategory = 'overview';
+      }
+    }
     
     const overlay = document.createElement('div');
     overlay.id = 'cognitive-metrics-overlay';
@@ -251,7 +280,7 @@ window.CognitiveMetricsDashboard = {
     document.body.appendChild(overlay);
     
     this.bindEvents();
-    this.renderCategory(this.activeCategory);
+    this.renderCurrentView();
     
     requestAnimationFrame(() => overlay.classList.add('visible'));
   },
@@ -267,30 +296,374 @@ window.CognitiveMetricsDashboard = {
       <style>${this.getStyles()}</style>
       <div class="cmd-container">
         <div class="cmd-header">
-          <div class="cmd-title">🧠 Cognitive Metrics Dashboard</div>
+          <div class="cmd-title">📊 Statistics Dashboard</div>
+          <div class="cmd-main-tabs">
+            <button class="cmd-main-tab ${this.activeTab === 'games' ? 'active' : ''}" data-main-tab="games">🎮 Games</button>
+            <button class="cmd-main-tab ${this.activeTab === 'cognitive' ? 'active' : ''}" data-main-tab="cognitive">🧠 Cognitive</button>
+          </div>
           <div class="cmd-time-filter">
-            <button class="cmd-time-btn ${this.timeRange === 'all' ? 'active' : ''}" data-range="all">All Time</button>
-            <button class="cmd-time-btn ${this.timeRange === '7d' ? 'active' : ''}" data-range="7d">7 Days</button>
-            <button class="cmd-time-btn ${this.timeRange === '30d' ? 'active' : ''}" data-range="30d">30 Days</button>
-            <button class="cmd-time-btn ${this.timeRange === '90d' ? 'active' : ''}" data-range="90d">90 Days</button>
+            <button class="cmd-time-btn ${this.timeRange === 'all' ? 'active' : ''}" data-range="all">All</button>
+            <button class="cmd-time-btn ${this.timeRange === '7d' ? 'active' : ''}" data-range="7d">7d</button>
+            <button class="cmd-time-btn ${this.timeRange === '30d' ? 'active' : ''}" data-range="30d">30d</button>
+            <button class="cmd-time-btn ${this.timeRange === '90d' ? 'active' : ''}" data-range="90d">90d</button>
           </div>
           <button class="cmd-close" onclick="CognitiveMetricsDashboard.destroy()">×</button>
         </div>
-        <div class="cmd-tabs">${this.getCategoryTabs()}</div>
+        <div class="cmd-tabs" id="cmd-sub-tabs">${this.getSubTabs()}</div>
         <div class="cmd-content" id="cmd-content"></div>
       </div>
     `;
   },
 
-  getCategoryTabs() {
-    return Object.entries(this.CATEGORIES).map(([id, cat]) => 
-      `<button class="cmd-tab ${this.activeCategory === id ? 'active' : ''}" data-category="${id}">
-        ${cat.icon} ${cat.name}
-      </button>`
-    ).join('');
+  getSubTabs() {
+    if (this.activeTab === 'games') {
+      return Object.entries(this.GAMES).map(([id, game]) => {
+        const hasData = this.hasGameData(id);
+        return `<button class="cmd-tab ${this.activeGame === id ? 'active' : ''} ${!hasData ? 'no-data' : ''}" data-game="${id}">
+          ${game.icon} ${game.name}
+        </button>`;
+      }).join('');
+    } else {
+      return Object.entries(this.CATEGORIES).map(([id, cat]) => 
+        `<button class="cmd-tab ${this.activeCategory === id ? 'active' : ''}" data-category="${id}">
+          ${cat.icon} ${cat.name}
+        </button>`
+      ).join('');
+    }
+  },
+
+  hasGameData(gameId) {
+    const stats = window.gameStats?.getStats(gameId);
+    return stats && stats.length > 0;
   },
 
   bindEvents() {
+    // Main tabs (Games vs Cognitive)
+    document.querySelectorAll('.cmd-main-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.cmd-main-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        this.activeTab = tab.dataset.mainTab;
+        // Update sub-tabs
+        document.getElementById('cmd-sub-tabs').innerHTML = this.getSubTabs();
+        this.bindSubTabEvents();
+        this.renderCurrentView();
+      });
+    });
+    
+    this.bindSubTabEvents();
+    
+    // Time range filter
+    document.querySelectorAll('.cmd-time-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.cmd-time-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.timeRange = btn.dataset.range;
+        this.renderCurrentView();
+      });
+    });
+  },
+
+  bindSubTabEvents() {
+    // Game tabs
+    document.querySelectorAll('.cmd-tab[data-game]').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.cmd-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        this.activeGame = tab.dataset.game;
+        this.renderCurrentView();
+      });
+    });
+    
+    // Category tabs
+    document.querySelectorAll('.cmd-tab[data-category]').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.cmd-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        this.activeCategory = tab.dataset.category;
+        this.renderCurrentView();
+      });
+    });
+  },
+
+  renderCurrentView() {
+    Object.values(this.charts).forEach(c => c?.destroy?.());
+    this.charts = {};
+    
+    if (this.activeTab === 'games') {
+      this.renderGameView(this.activeGame);
+    } else {
+      this.renderCategory(this.activeCategory);
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // GAME-SPECIFIC VIEW (Per-game statistics like before)
+  // ═══════════════════════════════════════════════════════════════════════════
+  renderGameView(gameId) {
+    const content = document.getElementById('cmd-content');
+    if (!content) return;
+    
+    const game = this.GAMES[gameId];
+    const sessions = this.getFilteredSessions(gameId);
+    
+    if (!sessions || sessions.length === 0) {
+      content.innerHTML = this.renderGameEmptyState(gameId, game);
+      return;
+    }
+    
+    const detailed = window.gameStats?.getDetailedAnalytics(gameId);
+    content.innerHTML = this.renderGameStats(gameId, game, sessions, detailed);
+    this.initGameCharts(gameId, sessions, detailed);
+  },
+
+  renderGameEmptyState(gameId, game) {
+    return `
+      <div class="cmd-empty-state">
+        <div class="cmd-empty-icon">${game?.icon || '📊'}</div>
+        <div class="cmd-empty-text">No data for ${game?.name || gameId}</div>
+        <div class="cmd-empty-hint">Play some sessions to see statistics</div>
+      </div>
+    `;
+  },
+
+  renderGameStats(gameId, game, sessions, detailed) {
+    const avg = this.calculateGameAverages(sessions, gameId);
+    const recent = sessions.slice(-10);
+    
+    return `
+      <div class="cmd-grid">
+        <!-- Game Header -->
+        <div class="cmd-panel cmd-panel-full cmd-game-header" style="border-top-color: ${game.color}">
+          <div class="cmd-game-icon-large">${game.icon}</div>
+          <div class="cmd-game-info">
+            <h2>${game.name}</h2>
+            <p>${sessions.length} sessions • Last played: ${sessions[sessions.length - 1]?.date || 'N/A'}</p>
+          </div>
+        </div>
+        
+        <!-- Key Metrics -->
+        <div class="cmd-panel cmd-panel-full">
+          <div class="cmd-panel-title">⚡ Key Metrics</div>
+          <div class="cmd-metrics-row">
+            ${this.renderGameMetricCard('Sessions', sessions.length, '📊', game.color)}
+            ${this.renderGameMetricCard('Avg Score', avg.score.toFixed(1), '⭐', '#FFD700')}
+            ${this.renderGameMetricCard('Accuracy', (avg.accuracy * 100).toFixed(1) + '%', '🎯', '#4CAF50')}
+            ${this.renderGameMetricCard('Avg Level', avg.level.toFixed(2), '📈', '#2196F3')}
+            ${this.renderGameMetricCard('Best Score', avg.bestScore.toFixed(1), '🏆', '#FF9800')}
+          </div>
+        </div>
+        
+        ${this.renderGameSpecificMetrics(gameId, detailed, game.color)}
+        
+        <!-- Performance Chart -->
+        <div class="cmd-panel cmd-panel-full">
+          <div class="cmd-panel-title">📈 Performance Over Time</div>
+          <canvas id="chart-game-performance"></canvas>
+        </div>
+        
+        <!-- Session History -->
+        <div class="cmd-panel cmd-panel-full">
+          <div class="cmd-panel-title">📋 Recent Sessions</div>
+          ${this.renderGameSessionTable(recent, gameId)}
+        </div>
+      </div>
+    `;
+  },
+
+  renderGameMetricCard(label, value, icon, color) {
+    return `
+      <div class="cmd-game-metric">
+        <div class="cmd-gm-icon" style="color: ${color}">${icon}</div>
+        <div class="cmd-gm-value">${value}</div>
+        <div class="cmd-gm-label">${label}</div>
+      </div>
+    `;
+  },
+
+  renderGameSpecificMetrics(gameId, detailed, color) {
+    if (!detailed) return '';
+    
+    if (gameId === '3d-hyper-nback' && detailed.type === 'hyper-nback') {
+      return `
+        <div class="cmd-panel cmd-panel-full">
+          <div class="cmd-panel-title">🧠 N-Back Specific Metrics</div>
+          <div class="cmd-metrics-row">
+            ${this.renderGameMetricCard("d' Prime", detailed.averages.dPrime?.toFixed(2) || 'N/A', '🎯', '#9C27B0')}
+            ${this.renderGameMetricCard('Lure Resist', ((detailed.averages.lureResistance || 0) * 100).toFixed(0) + '%', '🛡️', '#2196F3')}
+            ${this.renderGameMetricCard('Response Bias', detailed.averages.responseBias?.toFixed(2) || 'N/A', '⚖️', '#FF9800')}
+          </div>
+          <div class="cmd-stimuli-breakdown">
+            <div class="cmd-panel-subtitle">Per-Stimulus Performance</div>
+            ${this.renderStimuliBreakdown(detailed.stimuliBreakdown)}
+          </div>
+        </div>
+      `;
+    }
+    
+    if (gameId === 'jiggle-factorial' && detailed.type === 'jiggle-factorial') {
+      return `
+        <div class="cmd-panel cmd-panel-full">
+          <div class="cmd-panel-title">🎯 Tracking Metrics</div>
+          <div class="cmd-metrics-row">
+            ${this.renderGameMetricCard('Avg Ball Speed', detailed.averages.ballSpeed?.toFixed(1) || 'N/A', '⚡', '#E91E63')}
+            ${this.renderGameMetricCard('Total Trials', detailed.totals.trials, '🔢', '#00BCD4')}
+            ${this.renderGameMetricCard('Correct', detailed.totals.correct, '✓', '#4CAF50')}
+            ${this.renderGameMetricCard('Incorrect', detailed.totals.incorrect, '✗', '#f44336')}
+          </div>
+        </div>
+      `;
+    }
+    
+    if (gameId === 'dichotic-dual-nback') {
+      return `
+        <div class="cmd-panel cmd-panel-full">
+          <div class="cmd-panel-title">🎧 Dichotic Metrics</div>
+          <div class="cmd-metrics-row">
+            ${this.renderGameMetricCard('Visual Left', this.getDichoticAccuracy(detailed, 'visualLeft'), '👁️', '#2196F3')}
+            ${this.renderGameMetricCard('Visual Right', this.getDichoticAccuracy(detailed, 'visualRight'), '👁️', '#4CAF50')}
+            ${this.renderGameMetricCard('Audio Left', this.getDichoticAccuracy(detailed, 'audioLeft'), '🔊', '#FF9800')}
+            ${this.renderGameMetricCard('Audio Right', this.getDichoticAccuracy(detailed, 'audioRight'), '🔊', '#9C27B0')}
+          </div>
+        </div>
+      `;
+    }
+    
+    return '';
+  },
+
+  getDichoticAccuracy(detailed, channel) {
+    // Calculate from session data
+    return 'N/A';
+  },
+
+  renderStimuliBreakdown(breakdown) {
+    if (!breakdown) return '';
+    
+    const stimuli = Object.entries(breakdown).filter(([_, d]) => d.correct + d.wrong > 0);
+    if (stimuli.length === 0) return '<div class="cmd-no-data">No stimuli data</div>';
+    
+    return `
+      <div class="cmd-stimuli-grid">
+        ${stimuli.map(([name, d]) => {
+          const total = d.correct + d.wrong;
+          const acc = total > 0 ? (d.correct / total * 100).toFixed(0) : 0;
+          const color = acc >= 80 ? '#4CAF50' : acc >= 60 ? '#FF9800' : '#f44336';
+          return `
+            <div class="cmd-stimulus-item">
+              <span class="cmd-stim-name">${name}</span>
+              <span class="cmd-stim-bar"><span style="width:${acc}%;background:${color}"></span></span>
+              <span class="cmd-stim-val" style="color:${color}">${acc}%</span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  },
+
+  renderGameSessionTable(sessions, gameId) {
+    if (!sessions.length) return '<div class="cmd-no-data">No sessions</div>';
+    
+    const reversed = [...sessions].reverse();
+    let html = `<table class="cmd-table">
+      <thead><tr>
+        <th>Date</th><th>Score</th><th>Accuracy</th><th>Level</th>
+      </tr></thead><tbody>`;
+    
+    reversed.forEach(s => {
+      html += `<tr>
+        <td>${s.date || 'N/A'}</td>
+        <td>${(s.score || 0).toFixed(1)}</td>
+        <td>${((s.accuracy || 0) * 100).toFixed(1)}%</td>
+        <td>${(s.level || s.microLevel || s.nBack || 0).toFixed(2)}</td>
+      </tr>`;
+    });
+    
+    return html + '</tbody></table>';
+  },
+
+  calculateGameAverages(sessions, gameId) {
+    if (!sessions.length) return { score: 0, accuracy: 0, level: 0, bestScore: 0 };
+    
+    let scoreSum = 0, accSum = 0, levelSum = 0, bestScore = 0;
+    sessions.forEach(s => {
+      const score = s.score || 0;
+      scoreSum += score;
+      accSum += s.accuracy || 0;
+      levelSum += s.level || s.microLevel || s.nBack || 0;
+      if (score > bestScore) bestScore = score;
+    });
+    
+    return {
+      score: scoreSum / sessions.length,
+      accuracy: accSum / sessions.length,
+      level: levelSum / sessions.length,
+      bestScore
+    };
+  },
+
+  initGameCharts(gameId, sessions, detailed) {
+    const canvas = document.getElementById('chart-game-performance');
+    if (!canvas || sessions.length === 0) return;
+    
+    const game = this.GAMES[gameId];
+    
+    this.charts.gamePerformance = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: sessions.map((s, i) => s.date || `S${i + 1}`),
+        datasets: [
+          { 
+            label: 'Score', 
+            data: sessions.map(s => s.score || 0), 
+            borderColor: game.color, 
+            backgroundColor: game.color + '20', 
+            tension: 0.3, 
+            fill: true,
+            yAxisID: 'y' 
+          },
+          { 
+            label: 'Accuracy %', 
+            data: sessions.map(s => (s.accuracy || 0) * 100), 
+            borderColor: '#4CAF50', 
+            borderDash: [5, 5], 
+            tension: 0.3, 
+            yAxisID: 'y1' 
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { labels: { color: '#aaa' } } },
+        scales: {
+          y: { type: 'linear', position: 'left', title: { display: true, text: 'Score', color: '#888' }, ticks: { color: '#888' }, grid: { color: '#333' } },
+          y1: { type: 'linear', position: 'right', title: { display: true, text: 'Accuracy %', color: '#888' }, ticks: { color: '#888' }, grid: { display: false }, min: 0, max: 100 },
+          x: { ticks: { color: '#888', maxRotation: 45 }, grid: { color: '#222' } }
+        }
+      }
+    });
+  },
+
+  renderCategory(categoryId) {
+    const content = document.getElementById('cmd-content');
+    if (!content) return;
+    
+    Object.values(this.charts).forEach(c => c?.destroy?.());
+    this.charts = {};
+    
+    if (categoryId === 'overview') {
+      content.innerHTML = this.renderOverview();
+      this.initOverviewCharts();
+    } else {
+      content.innerHTML = this.renderCategoryDetail(categoryId);
+      this.initCategoryCharts(categoryId);
+    }
+  },
+
+  // Legacy binding for old code
+  oldBindEvents() {
     // Category tabs
     document.querySelectorAll('.cmd-tab').forEach(tab => {
       tab.addEventListener('click', () => {
@@ -1516,7 +1889,18 @@ window.CognitiveMetricsDashboard = {
         padding: 15px 0; border-bottom: 1px solid #333; margin-bottom: 15px;
         flex-wrap: wrap; gap: 10px;
       }
-      .cmd-title { color: #fff; font-size: 22px; font-weight: 600; }
+      .cmd-title { color: #fff; font-size: 20px; font-weight: 600; }
+      
+      .cmd-main-tabs {
+        display: flex; gap: 5px;
+      }
+      .cmd-main-tab {
+        background: #1a1a1a; border: 1px solid #444; color: #aaa;
+        padding: 8px 20px; border-radius: 6px; cursor: pointer;
+        font-size: 14px; font-weight: 600; transition: all 0.2s;
+      }
+      .cmd-main-tab:hover { background: #252525; color: #fff; }
+      .cmd-main-tab.active { background: #4CAF50; color: #fff; border-color: #4CAF50; }
       
       .cmd-time-filter {
         display: flex; gap: 5px;
@@ -1668,6 +2052,64 @@ window.CognitiveMetricsDashboard = {
       .cmd-game-name { flex: 1; color: #fff; font-size: 12px; }
       .cmd-game-sessions { color: #888; font-size: 10px; }
       
+      /* Game-specific styles */
+      .cmd-tab.no-data { opacity: 0.5; }
+      
+      .cmd-game-header {
+        display: flex; align-items: center; gap: 20px;
+        border-top: 3px solid #4CAF50;
+      }
+      .cmd-game-icon-large { font-size: 48px; }
+      .cmd-game-info h2 { color: #fff; margin: 0 0 5px 0; font-size: 24px; }
+      .cmd-game-info p { color: #888; margin: 0; font-size: 12px; }
+      
+      .cmd-metrics-row {
+        display: flex; flex-wrap: wrap; gap: 15px;
+      }
+      .cmd-game-metric {
+        background: #0f0f0f; border-radius: 6px; padding: 15px;
+        text-align: center; min-width: 100px; flex: 1;
+      }
+      .cmd-gm-icon { font-size: 20px; margin-bottom: 5px; }
+      .cmd-gm-value { color: #fff; font-size: 22px; font-weight: 700; }
+      .cmd-gm-label { color: #888; font-size: 10px; text-transform: uppercase; margin-top: 3px; }
+      
+      .cmd-stimuli-breakdown { margin-top: 15px; }
+      .cmd-panel-subtitle { color: #888; font-size: 12px; margin-bottom: 10px; }
+      .cmd-stimuli-grid {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 8px;
+      }
+      .cmd-stimulus-item {
+        display: flex; align-items: center; gap: 8px;
+        background: #1a1a1a; padding: 8px 10px; border-radius: 4px;
+      }
+      .cmd-stim-name { color: #aaa; font-size: 11px; min-width: 60px; text-transform: capitalize; }
+      .cmd-stim-bar { 
+        flex: 1; height: 8px; background: #333; border-radius: 4px; overflow: hidden;
+      }
+      .cmd-stim-bar span { display: block; height: 100%; border-radius: 4px; }
+      .cmd-stim-val { font-size: 11px; font-weight: 600; min-width: 35px; text-align: right; }
+      
+      .cmd-table {
+        width: 100%; border-collapse: collapse; font-size: 12px;
+      }
+      .cmd-table th {
+        text-align: left; padding: 10px; color: #888; border-bottom: 1px solid #333;
+        text-transform: uppercase; font-size: 10px;
+      }
+      .cmd-table td { padding: 10px; color: #ccc; border-bottom: 1px solid #222; }
+      .cmd-table tr:hover { background: rgba(255,255,255,0.02); }
+      
+      .cmd-empty-state {
+        display: flex; flex-direction: column; align-items: center;
+        justify-content: center; height: 300px; color: #666;
+      }
+      .cmd-empty-icon { font-size: 48px; margin-bottom: 15px; opacity: 0.5; }
+      .cmd-empty-text { font-size: 16px; margin-bottom: 5px; }
+      .cmd-empty-hint { font-size: 12px; color: #555; }
+      .cmd-no-data { color: #666; text-align: center; padding: 20px; }
+      
       /* Responsive */
       @media (min-width: 768px) {
         .cmd-grid { flex-direction: row; flex-wrap: wrap; }
@@ -1680,12 +2122,12 @@ window.CognitiveMetricsDashboard = {
 };
 
 // Global function to open the dashboard
-window.openCognitiveMetrics = function() {
-  window.CognitiveMetricsDashboard.show();
+window.openCognitiveMetrics = function(gameId) {
+  window.CognitiveMetricsDashboard.show(gameId);
 };
 
 // Also expose as UnifiedStatisticsManager for backward compatibility
 window.UnifiedStatisticsManager = {
-  show: () => window.CognitiveMetricsDashboard.show(),
+  show: (gameId) => window.CognitiveMetricsDashboard.show(gameId),
   destroy: () => window.CognitiveMetricsDashboard.destroy()
 };
