@@ -112,6 +112,11 @@
             overflow: hidden;
             position: relative;
         }
+        
+        /* Light mode: black shadow for progress tracks */
+        .progress-bar-track.light-mode {
+            background: rgba(0, 0, 0, 0.15);
+        }
 
         .progress-bar-fill {
             height: 100%;
@@ -147,7 +152,7 @@
         }
 
         .time-fill {
-            background: #a855f7 !important;
+            background: linear-gradient(90deg, #a855f7, #c084fc) !important;
             transition: width 0.1s linear !important;
         }
 

@@ -621,41 +621,37 @@ class UnifiedBrainTraining {
       }
     }
     
-    // Update timebar and bolt/number colors
+    // Update progress bar track shadows
+    const progressTracks = document.querySelectorAll('.progress-bar-track');
     const timeTrack = document.querySelector('.time-track');
-    const timeFill = document.querySelector('.time-fill');
     const headerTime = document.getElementById('header-time');
     const timeCounter = document.getElementById('time-counter');
     
     if (theme === 'light') {
-      // Light mode: transparent black timebar, dark grey bolt/number
-      if (timeTrack) {
-        timeTrack.classList.add('light-mode');
-      }
-      if (timeFill && !timeFill.classList.contains('frozen')) {
-        timeFill.style.background = 'rgba(0, 0, 0, 0.6) !important';
-      }
+      // Light mode: black shadows, dark bolt/number
+      progressTracks.forEach(track => track.classList.add('light-mode'));
+      if (timeTrack) timeTrack.classList.add('light-mode');
+      
+      // Bolt and number colors - dark grey for light mode
       if (headerTime && !headerTime.classList.contains('frozen')) {
         headerTime.style.color = '#4b5563';
         headerTime.style.opacity = '1';
       }
-      if (timeCounter) {
+      if (timeCounter && !headerTime?.classList.contains('frozen')) {
         timeCounter.style.color = '#4b5563';
       }
     } else {
-      // Dark mode: restore original purple timebar, light grey bolt/number
-      if (timeTrack) {
-        timeTrack.classList.remove('light-mode');
-      }
-      if (timeFill && !timeFill.classList.contains('frozen')) {
-        timeFill.style.background = 'linear-gradient(90deg, #a855f7, #c084fc) !important';
-      }
+      // Dark mode: white shadows, light bolt/number
+      progressTracks.forEach(track => track.classList.remove('light-mode'));
+      if (timeTrack) timeTrack.classList.remove('light-mode');
+      
+      // Bolt and number colors - light grey for dark mode
       if (headerTime && !headerTime.classList.contains('frozen')) {
-        headerTime.style.color = '#9ca3af';
+        headerTime.style.color = '#a855f7';
         headerTime.style.opacity = '1';
       }
-      if (timeCounter) {
-        timeCounter.style.color = '#9ca3af';
+      if (timeCounter && !headerTime?.classList.contains('frozen')) {
+        timeCounter.style.color = '#a855f7';
       }
     }
     
@@ -876,17 +872,11 @@ class UnifiedBrainTraining {
     
     if (dailyFill) {
       dailyFill.style.width = '100%';
-      // Apply theme color even in frozen state
-      if (currentTheme === 'light') {
-        dailyFill.style.background = 'rgba(0, 0, 0, 0.3) !important';
-      } else {
-        dailyFill.style.background = '#4b5563 !important';
-      }
+      dailyFill.classList.add('frozen');
     }
     if (dailyText) dailyText.textContent = 'Daily Goal';
     if (headerTime) {
       headerTime.classList.add('frozen');
-      // Frozen state uses grey in both themes
       headerTime.style.color = '#4b5563';
       headerTime.style.opacity = '0.5';
     }
@@ -1796,13 +1786,7 @@ class UnifiedBrainTraining {
               const invertedWidth = 100 - dailyProgressPercent;
               dailyFill.style.width = invertedWidth + '%';
               
-              // Apply theme-appropriate timebar color
-              const currentTheme = this.reactiveSettings?.theme || 'dark';
-              if (currentTheme === 'light') {
-                dailyFill.style.background = 'rgba(0, 0, 0, 0.6) !important';
-              } else {
-                dailyFill.style.background = 'linear-gradient(90deg, #a855f7, #c084fc) !important';
-              }
+              // Time bar always uses purple gradient (CSS handles it)
               
               if (dailyProgressPercent >= 100) {
                 dailyText.textContent = 'Daily Goal Complete!';
@@ -1817,13 +1801,14 @@ class UnifiedBrainTraining {
                 
                 if (dailyProgressPercent > 0 && dailyProgressPercent < 100) {
                   headerTime.classList.remove('frozen');
+                  dailyFill.classList.remove('frozen');
                   // Apply theme-appropriate color for active state
                   if (currentTheme === 'light') {
                     headerTime.style.color = '#4b5563'; // dark grey for light mode
                     timeCounter.style.color = '#4b5563';
                   } else {
-                    headerTime.style.color = '#9ca3af'; // light grey for dark mode
-                    timeCounter.style.color = '#9ca3af';
+                    headerTime.style.color = '#a855f7'; // purple for dark mode
+                    timeCounter.style.color = '#a855f7';
                   }
                   headerTime.style.opacity = '1';
                   // Invert the number: 30% progress = 70% from goal
@@ -1832,6 +1817,10 @@ class UnifiedBrainTraining {
                 } else {
                   // Frozen when at 0 or completed (100%)
                   headerTime.classList.add('frozen');
+                  dailyFill.classList.add('frozen');
+                  headerTime.style.color = '#4b5563';
+                  timeCounter.style.color = '#4b5563';
+                  headerTime.style.opacity = '0.5';
                   timeCounter.textContent = '∞';
                 }
               }
