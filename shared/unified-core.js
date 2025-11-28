@@ -650,22 +650,23 @@ class UnifiedBrainTraining {
   // Simple helper to set bolt/number colors consistently
   // DARK MODE: light grey (#9ca3af) frozen, purple (#a855f7) active
   // LIGHT MODE: dark grey (#4b5563) frozen, purple (#a855f7) active
+  // Always full opacity for visibility
   updateBoltColors(theme, isFrozen) {
     const headerTime = document.getElementById('header-time');
     const timeCounter = document.getElementById('time-counter');
     
     let color;
     if (isFrozen) {
-      // Frozen: use grey based on theme
+      // Frozen: use grey based on theme (matches timebar frozen color)
       color = theme === 'dark' ? '#9ca3af' : '#4b5563';
     } else {
-      // Active: always purple
+      // Active: always purple (matches timebar active color)
       color = '#a855f7';
     }
     
     if (headerTime) {
       headerTime.style.color = color;
-      headerTime.style.opacity = isFrozen ? '0.5' : '1';
+      headerTime.style.opacity = '1'; // Always full opacity
     }
     if (timeCounter) {
       timeCounter.style.color = color;
