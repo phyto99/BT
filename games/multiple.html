@@ -1209,56 +1209,38 @@
       setTimeout(() => { scoreEl.classList.remove("score-pulse"); }, 600);
     }
     
-    // ===
-    // tem
->dy>
-</htmlt>
-</bo/scrip
+    // ========== UNIFIED SETTINGS INTEGRATION ==========
+    // Auto-start game (bypass instructions)
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById("instructions").style.display = "none";
+      fadeIn(document.getElementById("container"));
+      fadeIn(document.getElementById("settings"));
+    });
+
+    // Listen for settings updates from unified system
+    window.addEventListener('message', (event) => {
+      if (event.data.type === 'settingsUpdate' && event.data.gameId === 'multiple') {
+        const newSettings = event.data.settings;
+        console.log('🎮 [Multiple] Received settings:', newSettings);
+        
+        Object.assign(settings, newSettings);
+        
+        const fields = ['modality', 'nValue', 'stimulusDuration', 'isiDuration', 'gaborContrast',
+                       'gaborFrequency', 'gaborSize', 'totalTrials', 'relationalComplexity'];
+        fields.forEach(field => {
+          const element = document.getElementById(field);
+          if (field in newSettings && element) {
+            element.value = newSettings[field];
+          }
+        });
+
+        console.log('🎮 [Multiple] Settings applied');
+      }
+    });
+
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'gameReady', gameId: 'multiple' }, '*');
     }
-  < '*');},
-      multiple'   gameId: '     Ready',
- 'gamee:      typage({
-  tMessnt.posow.pare     wind
- indow) { w !==ent(window.par if ready
-   me is rent that gafy pa/ Noti  /  
-  });
-  }
-    
-      fully');ss succepliedngs ape] Setti'🎮 [Multiplsole.log(con
-                }
- y;
-       alComplexits.relationewSetting = nalueexity').vomplalClationmentById('reetEleocument.g
-          dxity')) {plealComlationId('reByentt.getElemumens && doctingSetxity' in newtionalCompleela('r  if        }
-  ls;
-     gs.totalTriattinue = newSeials').valId('totalTrByentment.getElem   docu     s')) {
-  ('totalTrialyIdntBElemet.gets && documeningewSett in nls'riaf ('totalT
-        i       }ize;
- rSngs.gabo = newSetti.valueorSize')Id('gabementBytElgecument.   do    ) {
-   Size')yId('gabor.getElementBocumentings && dewSett' in nrSize  if ('gabo             }
-;
- Frequencytings.gaborSetlue = new.vaFrequency')abormentById('gt.getElecumen         do{
- cy')) equenborFrmentById('gament.getElecu& doSettings &in newcy' engaborFrequf ('      i    }
-  
-    rast;ntgs.gaborCoSettinue = newrast').val('gaborConttElementByIdent.ge      documt')) {
-    ontrasId('gaborCmentByElet.get documenngs &&in newSettirContrast' f ('gabo   i  }
-      ;
-     onsiDuratiettings.i newSn').value ='isiDuratiolementById(ent.getE     docum   on')) {
-  d('isiDuratilementByIgetEt.documenttings && ewSeration' in nif ('isiDu          }
-;
-      ionimulusDuratttings.stalue = newSeration').vsDutimuluyId('s.getElementBument         doction')) {
- ulusDuraId('stimetElementByent.gcumngs && doin newSettiuration' stimulusD   if ('     }
-   
-     ings.nValue;ett newSe').value ='nValuentById(emt.getEl    documen) {
-      lue')yId('nVaentBetElemcument.gdogs &&  newSettinlue' inf ('nVa     i    }
-   ty;
-    ings.modalie = newSettality').valuyId('modetElementBt.g     documen  )) {
-   ity'Id('modaltElementByent.gegs && documnewSettinity' in if ('modal        ist
-exthey lds if rm fieUpdate fo/ 
-        /
-        ettings);, newSn(settingsObject.assigct
-        ettings obje// Update s          
-   ngs);
-   wSettipdate:', ne usettingsived iple] Rece[Mult.log('🎮 sole       conettings;
- .data.sentgs = evinnst newSett     co  iple') {
- === 'multd .gameIvent.datapdate' && engsU === 'settia.typevent.dat
-      if (e => {, (event)'message'tListener(Evenow.addnd wi   ed sysunifim  updates frotings setisten forL
+  </script>
+</body>
+</html>

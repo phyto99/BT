@@ -575,11 +575,63 @@ class UnifiedBrainTraining {
       this.reactiveSettings.theme = newTheme;
     }
     
-    // Update the button icon
+    // Update the button icon with SVG swap
     const themeBtn = document.getElementById('theme-toggle-btn');
     if (themeBtn) {
-      themeBtn.textContent = newTheme === 'dark' ? '🌙' : '☀️';
-      themeBtn.style.background = newTheme === 'dark' ? '#333' : '#f39c12';
+      if (newTheme === 'dark') {
+        // Moon icon for dark mode
+        themeBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="display: block;">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>`;
+        themeBtn.style.background = '#333';
+        themeBtn.style.color = '#fff';
+      } else {
+        // Sun icon for light mode
+        themeBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="display: block;">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/>
+        </svg>`;
+        themeBtn.style.background = '#f39c12';
+        themeBtn.style.color = '#fff';
+      }
+    }
+    
+    // Update timebar and bolt/number colors
+    const timeTrack = document.querySelector('.time-track');
+    const timeFill = document.querySelector('.time-fill');
+    const headerTime = document.getElementById('header-time');
+    const timeCounter = document.getElementById('time-counter');
+    
+    if (newTheme === 'light') {
+      // Light mode: transparent black timebar, dark grey bolt/number
+      if (timeTrack) {
+        timeTrack.style.background = 'rgba(0, 0, 0, 0.15) !important';
+      }
+      if (timeFill && !timeFill.classList.contains('frozen')) {
+        timeFill.style.background = 'rgba(0, 0, 0, 0.6) !important';
+      }
+      if (headerTime) {
+        headerTime.style.color = '#4b5563';
+        headerTime.style.opacity = '1';
+      }
+      if (timeCounter) {
+        timeCounter.style.color = '#4b5563';
+      }
+    } else {
+      // Dark mode: restore original purple timebar, light grey bolt/number
+      if (timeTrack) {
+        timeTrack.style.background = 'transparent !important';
+      }
+      if (timeFill && !timeFill.classList.contains('frozen')) {
+        timeFill.style.background = 'linear-gradient(90deg, #a855f7, #c084fc) !important';
+      }
+      if (headerTime) {
+        headerTime.style.color = '#9ca3af';
+        headerTime.style.opacity = '1';
+      }
+      if (timeCounter) {
+        timeCounter.style.color = '#9ca3af';
+      }
     }
     
     // Apply theme to the unified sidebar
@@ -802,10 +854,29 @@ class UnifiedBrainTraining {
     const headerTime = document.getElementById('header-time');
     const timeCounter = document.getElementById('time-counter');
     
-    if (dailyFill) dailyFill.style.width = '100%';
+    // Apply theme-appropriate colors when resetting
+    const currentTheme = this.reactiveSettings?.theme || 'dark';
+    
+    if (dailyFill) {
+      dailyFill.style.width = '100%';
+      // Apply theme color even in frozen state
+      if (currentTheme === 'light') {
+        dailyFill.style.background = 'rgba(0, 0, 0, 0.3) !important';
+      } else {
+        dailyFill.style.background = '#4b5563 !important';
+      }
+    }
     if (dailyText) dailyText.textContent = 'Daily Goal';
-    if (headerTime) headerTime.classList.add('frozen');
-    if (timeCounter) timeCounter.textContent = '∞';
+    if (headerTime) {
+      headerTime.classList.add('frozen');
+      // Frozen state uses grey in both themes
+      headerTime.style.color = '#4b5563';
+      headerTime.style.opacity = '0.5';
+    }
+    if (timeCounter) {
+      timeCounter.textContent = '∞';
+      timeCounter.style.color = '#4b5563';
+    }
     
     console.log('🧹 [CLEANUP] Progress bars reset');
   }
@@ -1704,6 +1775,15 @@ class UnifiedBrainTraining {
               // Invert: 25% progress = 75% bar width (bar shrinks as you progress)
               const invertedWidth = 100 - dailyProgressPercent;
               dailyFill.style.width = invertedWidth + '%';
+              
+              // Apply theme-appropriate timebar color
+              const currentTheme = this.reactiveSettings?.theme || 'dark';
+              if (currentTheme === 'light') {
+                dailyFill.style.background = 'rgba(0, 0, 0, 0.6) !important';
+              } else {
+                dailyFill.style.background = 'linear-gradient(90deg, #a855f7, #c084fc) !important';
+              }
+              
               if (dailyProgressPercent >= 100) {
                 dailyText.textContent = 'Daily Goal Complete!';
               } else {
@@ -1711,10 +1791,21 @@ class UnifiedBrainTraining {
                 dailyText.textContent = `${Math.round(invertedPercent)}% from goal`;
               }
               
-              // Update bolt: purple when active (0 < progress < 100), grey when at 0 or completed
+              // Update bolt: colored when active (0 < progress < 100), grey when at 0 or completed
               if (headerTime && timeCounter) {
+                const currentTheme = this.reactiveSettings?.theme || 'dark';
+                
                 if (dailyProgressPercent > 0 && dailyProgressPercent < 100) {
                   headerTime.classList.remove('frozen');
+                  // Apply theme-appropriate color for active state
+                  if (currentTheme === 'light') {
+                    headerTime.style.color = '#4b5563'; // dark grey for light mode
+                    timeCounter.style.color = '#4b5563';
+                  } else {
+                    headerTime.style.color = '#9ca3af'; // light grey for dark mode
+                    timeCounter.style.color = '#9ca3af';
+                  }
+                  headerTime.style.opacity = '1';
                   // Invert the number: 30% progress = 70% from goal
                   const invertedPercent = 100 - dailyProgressPercent;
                   timeCounter.textContent = Math.round(invertedPercent);
@@ -2055,7 +2146,11 @@ class UnifiedBrainTraining {
             <button id="set-settings-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 4px 8px; margin-right: 4px; cursor: pointer; font-size: 11px;">Set Settings</button>
             <button id="keybinds-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 4px 8px; margin-right: 4px; cursor: pointer; font-size: 11px;">Keybinds</button>
             <button id="statistics-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 4px 8px; margin-right: 4px; cursor: pointer; font-size: 11px;">Statistics: ON</button>
-            <button id="theme-toggle-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 4px 8px; cursor: pointer; font-size: 11px;">🌙</button>
+            <button id="theme-toggle-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 6px 10px; cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: all 0.2s ease;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="display: block;">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+              </svg>
+            </button>
           </div>
         </div>
         <div id="unified-gui-container"></div>

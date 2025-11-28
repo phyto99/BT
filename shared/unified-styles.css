@@ -117,14 +117,25 @@ Reactive Settings Button Styling */
 
 #theme-toggle-btn {
   font-size: 14px !important;
-  min-width: 28px;
-  display: flex;
+  min-width: 36px;
+  min-height: 32px;
+  display: flex !important;
   align-items: center;
   justify-content: center;
+  border-radius: 4px !important;
+  transition: all 0.2s ease !important;
+  padding: 6px 10px !important;
 }
 
 #theme-toggle-btn:hover {
-  background: #555 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  filter: brightness(1.1);
+}
+
+#theme-toggle-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* Keybinds popup styling */
