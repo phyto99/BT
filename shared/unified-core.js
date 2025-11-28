@@ -562,6 +562,18 @@ class UnifiedBrainTraining {
     document.addEventListener('keydown', handleEscape);
   }
 
+  // Apply a specific theme (used on game load)
+  applyTheme(theme) {
+    console.log('🌙 [THEME] Applying theme:', theme);
+    
+    // Update the theme in reactive settings if available
+    if (this.reactiveSettings) {
+      this.reactiveSettings.theme = theme;
+    }
+    
+    this.updateThemeUI(theme);
+  }
+  
   // Toggle theme between dark and light
   toggleTheme() {
     console.log('🌙 [THEME] Toggling theme');
@@ -575,10 +587,23 @@ class UnifiedBrainTraining {
       this.reactiveSettings.theme = newTheme;
     }
     
+    this.updateThemeUI(newTheme);
+    
+    // Send theme change to current game
+    if (this.currentGameId) {
+      this.sendSettingToGame('theme', newTheme);
+    }
+    
+    this.showSettingChangeIndicator('Theme Changed', `Switched to ${newTheme} mode`);
+    console.log(`🌙 [THEME] Theme changed to: ${newTheme}`);
+  }
+  
+  // Update UI elements for theme (shared by applyTheme and toggleTheme)
+  updateThemeUI(theme) {
     // Update the button icon with SVG swap
     const themeBtn = document.getElementById('theme-toggle-btn');
     if (themeBtn) {
-      if (newTheme === 'dark') {
+      if (theme === 'dark') {
         // Moon icon for dark mode
         themeBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="display: block;">
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
@@ -602,15 +627,15 @@ class UnifiedBrainTraining {
     const headerTime = document.getElementById('header-time');
     const timeCounter = document.getElementById('time-counter');
     
-    if (newTheme === 'light') {
+    if (theme === 'light') {
       // Light mode: transparent black timebar, dark grey bolt/number
       if (timeTrack) {
-        timeTrack.style.background = 'rgba(0, 0, 0, 0.15) !important';
+        timeTrack.classList.add('light-mode');
       }
       if (timeFill && !timeFill.classList.contains('frozen')) {
         timeFill.style.background = 'rgba(0, 0, 0, 0.6) !important';
       }
-      if (headerTime) {
+      if (headerTime && !headerTime.classList.contains('frozen')) {
         headerTime.style.color = '#4b5563';
         headerTime.style.opacity = '1';
       }
@@ -620,12 +645,12 @@ class UnifiedBrainTraining {
     } else {
       // Dark mode: restore original purple timebar, light grey bolt/number
       if (timeTrack) {
-        timeTrack.style.background = 'transparent !important';
+        timeTrack.classList.remove('light-mode');
       }
       if (timeFill && !timeFill.classList.contains('frozen')) {
         timeFill.style.background = 'linear-gradient(90deg, #a855f7, #c084fc) !important';
       }
-      if (headerTime) {
+      if (headerTime && !headerTime.classList.contains('frozen')) {
         headerTime.style.color = '#9ca3af';
         headerTime.style.opacity = '1';
       }
@@ -637,17 +662,9 @@ class UnifiedBrainTraining {
     // Apply theme to the unified sidebar
     const sidebar = document.getElementById('unified-sidebar');
     if (sidebar) {
-      sidebar.style.background = newTheme === 'dark' ? '#1a1a1a' : '#f5f5f5';
-      sidebar.style.color = newTheme === 'dark' ? '#eee' : '#333';
+      sidebar.style.background = theme === 'dark' ? '#1a1a1a' : '#f5f5f5';
+      sidebar.style.color = theme === 'dark' ? '#eee' : '#333';
     }
-    
-    // Send theme change to current game
-    if (this.currentGameId) {
-      this.sendSettingToGame('theme', newTheme);
-    }
-    
-    this.showSettingChangeIndicator('Theme Changed', `Switched to ${newTheme} mode`);
-    console.log(`🌙 [THEME] Theme changed to: ${newTheme}`);
   }
   
   // Setup test button handlers (Task 4)
@@ -1654,6 +1671,9 @@ class UnifiedBrainTraining {
       // Create new reactive settings for the new game (functions already included)
       this.settings = this.createReactiveSettings(gameId);
       
+      // Apply the game's default theme
+      this.applyTheme(this.settings.theme || 'dark');
+      
       // Rebuild the GUI with game-specific controls for THIS game only
       this.buildGameSpecificGUI();
       this.setupReactiveSync();
@@ -2328,6 +2348,7 @@ class UnifiedBrainTraining {
   getGameSpecificSettings(gameId) {
     const settingsMap = {
       'jiggle-factorial': {
+        theme: 'dark',
         level: 2,
         movementMode: 'Combination',
         verticalRotationGroups: 2,
@@ -2371,6 +2392,7 @@ class UnifiedBrainTraining {
         trialStartDelay: 2000
       },
       '3d-hyper-nback': {
+        theme: 'dark',
         wallsEnabled: true,
         cameraEnabled: true,
         faceEnabled: true,
@@ -2394,6 +2416,7 @@ class UnifiedBrainTraining {
         nextLevelThreshold: 0.8
       },
       'dichotic-dual-nback': {
+        theme: 'light',
         nLevel: 2,
         stimulusTime: 4000,
         matchingClues: 10,
@@ -2437,6 +2460,7 @@ class UnifiedBrainTraining {
         }
       },
       'fast-sequence-nback': {
+        theme: 'light',
         rows: 4,
         cols: 4,
         numSquares: 3,
@@ -2458,6 +2482,7 @@ class UnifiedBrainTraining {
         spatialMusic: 25
       },
       'multiple': {
+        theme: 'dark',
         modality: 'gabor',
         nValue: 2,
         stimulusDuration: 500,
@@ -2469,6 +2494,7 @@ class UnifiedBrainTraining {
         relationalComplexity: '1back'
       },
       'syllogimous': {
+        theme: 'light',
         difficulty: 'medium',
         timerEnabled: true,
         soundEnabled: true,
@@ -2478,6 +2504,7 @@ class UnifiedBrainTraining {
         monthlyGoal: 1200
       },
       'syllogimous-v4': {
+        theme: 'light',
         timerType: '0',
         fillInBlank: true,
         trueFalse: false,

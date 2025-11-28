@@ -84,7 +84,7 @@
             top: 10px;
             left: 60px;
             right: 110px;
-            z-index: 1000;
+            z-index: 998;
             display: flex;
             align-items: center;
             gap: 0.75rem;
@@ -136,9 +136,14 @@
 
         /* Time bar - purple, shrinks from right to left */
         .time-track {
-            background: transparent !important;
+            background: rgba(229, 229, 229, 0.3) !important;
             display: flex;
             justify-content: flex-end;
+        }
+        
+        /* Light mode time track background */
+        .time-track.light-mode {
+            background: rgba(0, 0, 0, 0.15) !important;
         }
 
         .time-fill {
