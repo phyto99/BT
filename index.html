@@ -86,6 +86,13 @@
             right: 110px;
             z-index: 1000;
             display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .progress-bars-container {
+            flex: 1;
+            display: flex;
             flex-direction: column;
             gap: 4px;
         }
@@ -95,11 +102,6 @@
             align-items: center;
             gap: 8px;
             height: 16px;
-        }
-
-        .progress-bar-icon {
-            font-size: 16px;
-            flex-shrink: 0;
         }
 
         .progress-bar-track {
@@ -119,10 +121,6 @@
             position: relative;
         }
 
-        .progress-bar-fill.daily {
-            background: linear-gradient(90deg, #ffc800, #ffd900);
-        }
-
         .progress-bar-text {
             position: absolute;
             right: 8px;
@@ -134,6 +132,67 @@
             font-weight: bold;
             text-shadow: 0 1px 2px rgba(0,0,0,0.3);
             white-space: nowrap;
+        }
+
+        /* Time bar - purple, shrinks from right to left */
+        .time-track {
+            background: transparent !important;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .time-fill {
+            background: #a855f7 !important;
+            transition: width 0.1s linear !important;
+        }
+
+        .time-fill.frozen {
+            background: #4b5563 !important;
+        }
+
+        .header__time {
+            display: flex;
+            align-items: center;
+            font-weight: 700;
+            font-size: 1.3125rem;
+            line-height: 1.875rem;
+            color: #a855f7;
+            flex-shrink: 0;
+        }
+
+        .header__time svg {
+            width: 30px;
+            height: 30px;
+            margin-right: 0.2rem;
+        }
+
+        .header__time span {
+            font-size: 1.3125rem;
+            font-weight: 700;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        .header__time.frozen {
+            color: #4b5563;
+        }
+
+        .header__time.frozen svg {
+            opacity: 0.5;
+        }
+
+        /* Time bar - purple, shrinks from right */
+        .time-track {
+            display: flex;
+            justify-content: flex-end;
+            background: transparent !important;
+        }
+
+        .time-fill {
+            background: linear-gradient(90deg, #a855f7, #c084fc) !important;
+        }
+
+        .time-icon.frozen svg {
+            opacity: 0.5;
         }
 
         /* Custom Modal Styling - Dynamic Sizing */
@@ -383,21 +442,27 @@
 <body>
     <!-- Duolingo-style progress bars between buttons -->
     <div class="unified-progress-bars">
-        <div class="progress-bar-row">
-            <div class="progress-bar-icon">🔥</div>
-            <div class="progress-bar-track">
-                <div class="progress-bar-fill" id="questions-progress-fill" style="width: 0%">
-                    <div class="progress-bar-text" id="questions-progress-text">0 / 100</div>
+        <div class="progress-bars-container">
+            <div class="progress-bar-row">
+                <div class="progress-bar-track">
+                    <div class="progress-bar-fill" id="questions-progress-fill" style="width: 0%">
+                        <div class="progress-bar-text" id="questions-progress-text">0 / 100</div>
+                    </div>
+                </div>
+            </div>
+            <div class="progress-bar-row">
+                <div class="progress-bar-track time-track">
+                    <div class="progress-bar-fill time-fill" id="daily-progress-fill" style="width: 100%">
+                        <div class="progress-bar-text" id="daily-progress-text">Daily Goal</div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="progress-bar-row">
-            <div class="progress-bar-icon">⚡</div>
-            <div class="progress-bar-track">
-                <div class="progress-bar-fill daily" id="daily-progress-fill" style="width: 0%">
-                    <div class="progress-bar-text" id="daily-progress-text">Daily Goal</div>
-                </div>
-            </div>
+        <div class="header__time frozen" id="header-time">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z"/>
+            </svg>
+            <span id="time-counter">∞</span>
         </div>
     </div>
 
@@ -495,6 +560,38 @@
                 closeAnyOpenModal();
             });
             
+            // Timer tracking system - ONLY updates bolt and number, NOT the timebar
+            window.addEventListener('message', (event) => {
+                if (event.data && event.data.type === 'timer-update') {
+                    const { remainingSeconds, isRunning } = event.data;
+                    
+                    if (isRunning) {
+                        // Activate bolt and number (purple)
+                        document.getElementById('header-time').classList.remove('frozen');
+                        document.getElementById('time-counter').textContent = remainingSeconds;
+                    } else {
+                        // Freeze bolt and number (grey with ∞)
+                        document.getElementById('header-time').classList.add('frozen');
+                        document.getElementById('time-counter').textContent = '∞';
+                    }
+                }
+            });
+            
+            // Test function - press T key to test timer
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 't' || e.key === 'T') {
+                    let time = 30;
+                    const interval = setInterval(() => {
+                        window.postMessage({ type: 'timer-update', remainingSeconds: time, isRunning: true }, '*');
+                        time--;
+                        if (time < 0) {
+                            clearInterval(interval);
+                            window.postMessage({ type: 'timer-update', remainingSeconds: 0, isRunning: false }, '*');
+                        }
+                    }, 1000);
+                }
+            });
+            
             // Close modal when clicking on settings panel (dat.GUI)
             document.addEventListener('click', (e) => {
                 // Check if click is on dat.GUI elements
@@ -589,7 +686,7 @@
             buttonsHTML += '</div>';
             
             createCustomModal({
-                title: 'Syllogimous v4 - Tutorials',
+                title: 'Syllogimous v4 - Review Informatics',
                 content: `
                     <p style="margin-bottom: 15px;">Select a tutorial to learn about each question type:</p>
                     ${buttonsHTML}

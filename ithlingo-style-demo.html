@@ -40,29 +40,41 @@
 
         .header__progress { flex: 1; }
 
-        /* Progress Bar - From progress.tsx */
+        /* Progress Bar - Purple timer style */
         .progress-bar {
             position: relative;
             height: 1rem;
             width: 100%;
-            overflow: hidden;
+            overflow: visible;
             border-radius: 9999px;
-            background-color: #f1f5f9;
+            background-color: transparent;
+            display: flex;
+            justify-content: flex-end;
         }
         .progress-bar__fill {
             height: 100%;
-            background-color: #22c55e;
-            transition: all 0.3s;
+            background-color: #a855f7;
+            transition: width 0.1s linear;
             border-radius: 9999px;
         }
 
-        .header__hearts {
+        .header__time {
             display: flex;
             align-items: center;
             font-weight: 700;
-            color: #f43f5e;
+            color: #a855f7;
+            gap: 0.25rem;
         }
-        .header__hearts svg { margin-right: 0.5rem; }
+        .header__time svg { 
+            width: 20px;
+            height: 20px;
+        }
+        .header__time.frozen {
+            color: #4b5563;
+        }
+        .header__time.frozen svg {
+            opacity: 0.5;
+        }
 
         /* Main Content - From quiz.tsx */
         .content {

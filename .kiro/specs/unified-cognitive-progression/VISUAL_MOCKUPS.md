@@ -130,48 +130,6 @@ Color: #4caf50 (green)
 Animation: Pulse + Sparkle
 ```
 
-## Tier Badge
-
-### Beginner
-```
-┌──────────────┐
-│   ⚪ BEGINNER │
-└──────────────┘
-Color: #9e9e9e (gray)
-```
-
-### Intermediate
-```
-┌──────────────────┐
-│ 🔵 INTERMEDIATE  │
-└──────────────────┘
-Color: #2196f3 (blue)
-```
-
-### Advanced
-```
-┌──────────────┐
-│ 🟣 ADVANCED  │
-└──────────────┘
-Color: #9c27b0 (purple)
-```
-
-### Expert
-```
-┌──────────────┐
-│  🟠 EXPERT   │
-└──────────────┘
-Color: #ff9800 (orange)
-```
-
-### Master
-```
-┌──────────────┐
-│  ⭐ MASTER   │
-└──────────────┘
-Color: #ffd700 (gold)
-Animation: Subtle glow
-```
 
 ## Statistics Modal
 
@@ -314,7 +272,7 @@ Duration: 3 seconds (auto-dismiss)
 ┌─────────────────────────────────────┐
 │  ⭐ Tier Advanced!                  │
 │                                     │
-│  🟣 Advanced → 🟠 Expert            │
+│  111 Advanced → 011 Expert            │
 │                                     │
 │  Your skills are improving!         │
 │                                     │
@@ -364,15 +322,6 @@ Position: Below badge
 34-66%:  ████ #ff9800 (orange)   - Making progress
 67-99%:  ████ #ffc107 (yellow)   - Almost there
 100%:    ████ #4caf50 (green)    - Goal achieved
-```
-
-### Tier Colors
-```
-Beginner:     ⚪ #9e9e9e (gray)
-Intermediate: 🔵 #2196f3 (blue)
-Advanced:     🟣 #9c27b0 (purple)
-Expert:       🟠 #ff9800 (orange)
-Master:       ⭐ #ffd700 (gold)
 ```
 
 ### Achievement States

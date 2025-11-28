@@ -789,8 +789,32 @@ class UnifiedBrainTraining {
     }
   }
 
+  resetProgressBars() {
+    // Reset questions progress bar
+    const questionsFill = document.getElementById('questions-progress-fill');
+    const questionsText = document.getElementById('questions-progress-text');
+    if (questionsFill) questionsFill.style.width = '0%';
+    if (questionsText) questionsText.textContent = '0 / 100';
+    
+    // Reset time/daily progress bar to frozen state
+    const dailyFill = document.getElementById('daily-progress-fill');
+    const dailyText = document.getElementById('daily-progress-text');
+    const headerTime = document.getElementById('header-time');
+    const timeCounter = document.getElementById('time-counter');
+    
+    if (dailyFill) dailyFill.style.width = '100%';
+    if (dailyText) dailyText.textContent = 'Daily Goal';
+    if (headerTime) headerTime.classList.add('frozen');
+    if (timeCounter) timeCounter.textContent = '∞';
+    
+    console.log('🧹 [CLEANUP] Progress bars reset');
+  }
+
   cleanupCurrentGame() {
     console.log('🧹 [CLEANUP] Starting thorough game cleanup...');
+    
+    // Reset progress bars to default state
+    this.resetProgressBars();
     
     // Cleanup blob URL if exists
     if (this.currentBlobUrl) {
@@ -1671,15 +1695,34 @@ class UnifiedBrainTraining {
               questionsText.textContent = `${questionsCorrect} / ${questionGoal}`;
             }
             
-            // Update daily progress bar (XP style)
+            // Update daily progress bar (INVERTED - 25% to goal = 75% bar width)
             const dailyFill = document.getElementById('daily-progress-fill');
             const dailyText = document.getElementById('daily-progress-text');
+            const headerTime = document.getElementById('header-time');
+            const timeCounter = document.getElementById('time-counter');
             if (dailyFill && dailyText) {
-              dailyFill.style.width = dailyProgressPercent + '%';
+              // Invert: 25% progress = 75% bar width (bar shrinks as you progress)
+              const invertedWidth = 100 - dailyProgressPercent;
+              dailyFill.style.width = invertedWidth + '%';
               if (dailyProgressPercent >= 100) {
                 dailyText.textContent = 'Daily Goal Complete!';
               } else {
-                dailyText.textContent = `${Math.round(dailyProgressPercent)}% to goal`;
+                const invertedPercent = 100 - dailyProgressPercent;
+                dailyText.textContent = `${Math.round(invertedPercent)}% from goal`;
+              }
+              
+              // Update bolt: purple when active (0 < progress < 100), grey when at 0 or completed
+              if (headerTime && timeCounter) {
+                if (dailyProgressPercent > 0 && dailyProgressPercent < 100) {
+                  headerTime.classList.remove('frozen');
+                  // Invert the number: 30% progress = 70% from goal
+                  const invertedPercent = 100 - dailyProgressPercent;
+                  timeCounter.textContent = Math.round(invertedPercent);
+                } else {
+                  // Frozen when at 0 or completed (100%)
+                  headerTime.classList.add('frozen');
+                  timeCounter.textContent = '∞';
+                }
               }
             }
           }

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified Brain Training Platform - ES6 Optimized</title>
+    <meta name="description" content="High-performance brain training platform with ES6 module architecture">
+
+    <!-- Preload critical resources -->
+    <link rel="preload" href="unified-styles-v2.css" as="style">
+    <link rel="preload" href="unified-core-v2.js" as="script">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="unified-styles-v2.css">
+
+    <!-- Performance optimizations -->
+    <meta name="theme-color" content="#007bff">
+    <meta name="color-scheme" content="light dark">
+</head>
+
+<body>
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="top-bar-left">
+            <h1>Brain Training Platform <span style="font-size: 0.6em; color: var(--success-color);">ES6</span></h1>
+        </div>
+        <div class="top-bar-right">
+            <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">🌙</button>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Left Sidebar -->
+        <div class="left-sidebar">
+            <div class="game-selector">
+                <h3>Training Methods</h3>
+                <select id="game-dropdown" class="game-dropdown" aria-label="Select training method">
+                    <option value="">Select Training Method</option>
+                    <option value="3d-hyper-nback">3D Hyper N-back</option>
+                    <option value="quad-box">Quad Box</option>
+                    <option value="dichotic-dual-nback">Dichotic Dual N-back</option>
+                    <option value="jiggle-factorial">Jiggle Factorial 3D MOT</option>
+                </select>
+            </div>
+
+            <!-- Unified Settings Panel -->
+            <div class="settings-panel" id="settings-panel">
+                <h3>Settings</h3>
+                <div id="game-settings-container">
+                    <p>Select a training method to view settings</p>
+                </div>
+            </div>
+
+            <!-- Unified Data Display -->
+            <div class="data-panel">
+                <h3>Performance Data</h3>
+                <div id="performance-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Current Session:</span>
+                        <span class="stat-value" id="current-session">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">d'-Prime:</span>
+                        <span class="stat-value" id="dprime-value">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Accuracy:</span>
+                        <span class="stat-value" id="accuracy-value">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Load Time:</span>
+                        <span class="stat-value" id="load-time">-</span>
+                    </div>
+                </div>
+
+                <!-- Performance Actions -->
+                <div style="margin-top: 12px; display: flex; gap: 8px;">
+                    <button class="btn" onclick="unifiedTrainerV2.openChartModal()"
+                        style="font-size: 12px; padding: 6px 12px;">
+                        📊 Charts
+                    </button>
+                    <button class="btn" onclick="console.log(unifiedTrainerV2.getPerformanceMetrics())"
+                        style="font-size: 12px; padding: 6px 12px;">
+                        🔍 Debug
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Content Area -->
+        <div class="game-content">
+            <div id="game-frame-container" class="game-container-v2">
+                <div class="welcome-screen">
+                    <h2>Welcome to Unified Brain Training</h2>
+                    <p>Select a training method from the dropdown to begin</p>
+                    <div class="performance-info">
+                        <small>ES6 Module System - Optimized Performance</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Overlay -->
+        <div class="settings-overlay" id="settings-overlay">
+            <div class="settings-overlay-content">
+                <div class="settings-overlay-header">
+                    <h3>Advanced Settings</h3>
+                    <button class="close-overlay" id="close-settings" aria-label="Close settings">×</button>
+                </div>
+                <div class="settings-overlay-body" id="settings-overlay-body">
+                    <!-- Advanced settings will be dynamically loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Unified Chart Modal -->
+    <div class="chart-modal" id="chart-modal">
+        <div class="chart-modal-content">
+            <div class="chart-modal-header">
+                <h3>Performance Chart</h3>
+                <button class="close-modal" id="close-chart" aria-label="Close chart">×</button>
+            </div>
+            <div class="chart-modal-body">
+                <canvas id="unified-chart" width="800" height="400"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load the ES6 module system -->
+    <script type="module" src="unified-core-v2.js"></script>
+
+    <!-- Performance monitoring -->
+    <script>
+        // Monitor initial load performance
+        window.addEventListener('load', () => {
+            const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
+            const domReady = performance.timing.domContentLoadedEventEnd - performance.timing.navigationStart;
+
+            console.log(`Page loaded in ${loadTime}ms (DOM ready: ${domReady}ms)`);
+
+            // Update load time display
+            setTimeout(() => {
+                const loadTimeElement = document.getElementById('load-time');
+                if (loadTimeElement) {
+                    loadTimeElement.textContent = `${loadTime}ms`;
+                }
+            }, 100);
+        });
+
+        // Monitor memory usage (if available)
+        if ('memory' in performance) {
+            setInterval(() => {
+                const memory = performance.memory;
+                console.log(`Memory: ${Math.round(memory.usedJSHeapSize / 1024 / 1024)}MB used, ${Math.round(memory.totalJSHeapSize / 1024 / 1024)}MB total`);
+            }, 30000); // Log every 30 seconds
+        }
+    </script>
+</body>
+
+</html>
