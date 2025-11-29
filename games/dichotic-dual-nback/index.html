@@ -197,7 +197,11 @@
       };
       
       window.stopGame = function() {
-        window.game?.stop?.();
+        console.log('⏹️ [DICHOTIC] window.stopGame called, game.running:', window.game?.running);
+        if (window.game && window.game.running) {
+          window.game.stop();
+          console.log('⏹️ [DICHOTIC] game.stop() called');
+        }
       };
       
       // Message listener for unified system
@@ -214,12 +218,16 @@
           window.startGame();
         }
         
-        // Handle stopGame message from unified stop button
+        // Handle stopGame message from unified stop button - click the engine button
         if (e.data?.type === 'stopGame') {
           console.log('⏹️ [DICHOTIC] Received stopGame command');
-          if (window.game && typeof window.game.stop === 'function') {
-            window.game.stop();
-            console.log('⏹️ [DICHOTIC] Game stopped successfully');
+          // Only stop if game is running
+          if (window.game && window.game.running) {
+            const engineBtn = document.getElementById('engine-btn');
+            if (engineBtn) {
+              engineBtn.click();
+              console.log('⏹️ [DICHOTIC] Clicked engine button to stop');
+            }
           }
         }
       });

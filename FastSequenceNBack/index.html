@@ -132,7 +132,7 @@
 </head>
 <body>
   <!-- SETTINGS PAGE -->
-  <div id="settingsPage" class="page active">
+  <div id="settingsPage" class="page">
     <div id="settingsHeader">
       <h1>Fast Sequence Synesthesia N Back</h1>
       <p>created by @0xfrankensteinx0 (Discord)</p>
@@ -219,7 +219,7 @@
   </div>
 
   <!-- N-BACK TASK PAGE -->
-  <div id="nBackPage" class="page" tabindex="0">
+  <div id="nBackPage" class="page active" tabindex="0">
     <h1>Fast Sequence N Back</h1>
     <p>
       Press <strong>L</strong> if the SPATIAL sequence matches the sequence presented N trials back (feedback on RIGHT).<br>
@@ -1140,6 +1140,53 @@
           }
         }
       });
+      
+      // ============================================
+      // UNIFIED SYSTEM INTEGRATION (inside IIFE)
+      // ============================================
+      
+      let isPaused = true; // Start paused by default
+      
+      // Initialize the N-Back grid on page load (but don't start the game)
+      function initializeNBackView() {
+        console.log('🎮 [FAST-SEQ] Initializing N-Back view (paused)');
+        // Read settings from form
+        settings.rows = +document.getElementById('rows').value || 4;
+        settings.cols = +document.getElementById('cols').value || 4;
+        settings.gridColor = document.getElementById('gridColor').value || 'black';
+        
+        buildNBackGrid();
+        document.getElementById('nBackMessage').textContent = 'Press Play to Start';
+        document.getElementById('nBackScore').textContent = '';
+        document.getElementById('nBackLetterScore').textContent = '';
+        document.getElementById('nBackOverallScore').textContent = '';
+        document.getElementById('nBackDuration').textContent = '';
+      }
+      
+      // Call initialization after a short delay to ensure DOM is ready
+      setTimeout(initializeNBackView, 100);
+      
+      // Expose functions for unified system
+      window.startGame = function() {
+        console.log('▶️ [FAST-SEQ] startGame called, isPaused:', isPaused);
+        isPaused = false;
+        document.getElementById('nBackMessage').textContent = '';
+        startNBack();
+      };
+      
+      window.stopGame = function() {
+        console.log('⏹️ [FAST-SEQ] stopGame called');
+        isPaused = true;
+        clearPendingTimeouts();
+        nBackModeActive = false;
+        document.getElementById('nBackMessage').textContent = 'Paused - Press Play to Continue';
+        // Clear feedback colors
+        document.getElementById('letterFeedback').style.backgroundColor = 'transparent';
+        document.getElementById('spatialFeedback').style.backgroundColor = 'transparent';
+      };
+      
+      window.pauseGame = window.stopGame;
+      
     })();
     
     // Listen for messages from unified system
@@ -1147,34 +1194,25 @@
       // Handle startGame message from unified play button
       if (event.data && event.data.type === 'startGame') {
         console.log('▶️ [FAST-SEQ] Received startGame command');
-        if (typeof startNBack === 'function') {
-          startNBack();
-        } else if (typeof startGame === 'function') {
-          startGame();
-        }
+        window.startGame();
       }
       
       // Handle stopGame message from unified stop button
       if (event.data && event.data.type === 'stopGame') {
         console.log('⏹️ [FAST-SEQ] Received stopGame command');
-        if (typeof clearPendingTimeouts === 'function') {
-          clearPendingTimeouts();
-        }
-        // Show settings page
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.getElementById('settingsPage').classList.add('active');
+        window.stopGame();
       }
       
       // Handle settings updates
       if (event.data && event.data.type === 'settingsUpdate') {
         console.log('🎮 [FAST-SEQ] Received settings update:', event.data.settings);
         // Apply settings to form elements if they exist
-        const settings = event.data.settings;
-        if (settings) {
-          Object.keys(settings).forEach(key => {
+        const s = event.data.settings;
+        if (s) {
+          Object.keys(s).forEach(key => {
             const element = document.getElementById(key);
             if (element) {
-              element.value = settings[key];
+              element.value = s[key];
             }
           });
         }
