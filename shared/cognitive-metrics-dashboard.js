@@ -7,7 +7,7 @@ window.CognitiveMetricsDashboard = {
   activeCategory: 'overview',
   activeTab: 'cognitive', // 'cognitive' or 'games'
   activeGame: null,
-  timeRange: 'all', // 'all', '7d', '30d', '90d'
+  timeRange: 'all', // 'all', '7d', '30d', '90d', 'now'
   
   // ═══════════════════════════════════════════════════════════════════════════
   // COGNITIVE CATEGORIES - Metrics organized by brain function, not game
@@ -28,6 +28,7 @@ window.CognitiveMetricsDashboard = {
     '3d-hyper-nback': { name: '3D Hyper N-Back', icon: '🧠', color: '#2196F3' },
     'quad-box': { name: 'Quad Box', icon: '📦', color: '#FF9800' },
     'dichotic-dual-nback': { name: 'Dichotic Dual', icon: '🎧', color: '#9C27B0' },
+    'fast-sequence-nback': { name: 'Fast Sequence', icon: '⚡', color: '#FF5722' },
     'syllogimous-v4': { name: 'Syllogimous', icon: '🧩', color: '#00BCD4' },
     'multiple': { name: 'Multiple N-Back', icon: '🔢', color: '#E91E63' }
   },
@@ -306,6 +307,7 @@ window.CognitiveMetricsDashboard = {
             <button class="cmd-time-btn ${this.timeRange === '7d' ? 'active' : ''}" data-range="7d">7d</button>
             <button class="cmd-time-btn ${this.timeRange === '30d' ? 'active' : ''}" data-range="30d">30d</button>
             <button class="cmd-time-btn ${this.timeRange === '90d' ? 'active' : ''}" data-range="90d">90d</button>
+            <button class="cmd-time-btn ${this.timeRange === 'now' ? 'active' : ''}" data-range="now">Now</button>
           </div>
           <button class="cmd-close" onclick="CognitiveMetricsDashboard.destroy()">×</button>
         </div>
@@ -712,24 +714,21 @@ window.CognitiveMetricsDashboard = {
     
     return `
       <div class="cmd-grid">
-        <!-- Cognitive Profile Radar -->
-        <div class="cmd-panel cmd-panel-half">
-          <div class="cmd-panel-title">🎯 Cognitive Profile</div>
-          <canvas id="chart-cognitive-radar"></canvas>
-        </div>
-        
-        <!-- Category Summary Cards -->
-        <div class="cmd-panel cmd-panel-half">
-          <div class="cmd-panel-title">📈 Domain Scores</div>
-          <div class="cmd-domain-cards">
-            ${this.renderDomainCards(cognitiveScores, trends)}
+        <!-- Main Row: Domain Scores (left, narrow) + Cognitive Profile (right, wide) -->
+        <div class="cmd-row cmd-main-viz-row">
+          <div class="cmd-panel cmd-panel-narrow">
+            <div class="cmd-panel-title">📊 Domain Scores</div>
+            <div class="cmd-domain-cards">
+              ${this.renderDomainCards(cognitiveScores, trends)}
+            </div>
           </div>
-        </div>
-        
-        <!-- Historical Trend -->
-        <div class="cmd-panel cmd-panel-full">
-          <div class="cmd-panel-title">📊 Cognitive Progress Over Time</div>
-          <canvas id="chart-cognitive-timeline"></canvas>
+          
+          <div class="cmd-panel cmd-panel-wide">
+            <div class="cmd-panel-title">${this.timeRange === 'now' ? '🎯 Cognitive Profile' : '📈 Cognitive Profile Over Time'}</div>
+            ${this.timeRange === 'now' 
+              ? '<canvas id="chart-cognitive-radar"></canvas>' 
+              : '<canvas id="chart-cognitive-timeline"></canvas>'}
+          </div>
         </div>
         
         <!-- Top Metrics -->
@@ -1620,8 +1619,11 @@ window.CognitiveMetricsDashboard = {
   // CHART INITIALIZATION
   // ═══════════════════════════════════════════════════════════════════════════
   initOverviewCharts() {
-    this.initCognitiveRadar();
-    this.initCognitiveTimeline();
+    if (this.timeRange === 'now') {
+      this.initCognitiveRadar();
+    } else {
+      this.initCognitiveTimeline();
+    }
   },
 
   initCognitiveRadar() {
@@ -1676,7 +1678,10 @@ window.CognitiveMetricsDashboard = {
     
     const allData = this.getAllGameData();
     
-    // Aggregate all sessions by date
+    // Get all domains except overview
+    const domains = Object.entries(this.CATEGORIES).filter(([id]) => id !== 'overview');
+    
+    // Collect all sessions with timestamps
     let allSessions = [];
     Object.entries(allData).forEach(([gameId, sessions]) => {
       sessions.forEach(s => allSessions.push({ ...s, gameId }));
@@ -1684,49 +1689,63 @@ window.CognitiveMetricsDashboard = {
     
     allSessions.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
     
-    // Group by date and calculate daily scores
-    const dailyScores = {};
-    allSessions.forEach(s => {
-      const date = s.date || new Date(s.timestamp).toISOString().split('T')[0];
-      if (!dailyScores[date]) {
-        dailyScores[date] = { sessions: [], accuracy: 0, count: 0 };
-      }
-      dailyScores[date].sessions.push(s);
-      if (s.accuracy !== undefined) {
-        dailyScores[date].accuracy += s.accuracy;
-        dailyScores[date].count++;
-      }
-    });
+    // Get unique dates
+    const dates = [...new Set(allSessions.map(s => 
+      s.date || new Date(s.timestamp).toISOString().split('T')[0]
+    ))].slice(-30);
     
-    const dates = Object.keys(dailyScores).slice(-30); // Last 30 days
-    const avgAccuracies = dates.map(d => 
-      dailyScores[d].count > 0 ? (dailyScores[d].accuracy / dailyScores[d].count) * 100 : null
-    );
+    // Calculate domain scores for each date
+    const datasets = domains.map(([domainId, domain]) => {
+      const data = dates.map(date => {
+        // Get sessions up to and including this date
+        const sessionsUpToDate = allSessions.filter(s => {
+          const sDate = s.date || new Date(s.timestamp).toISOString().split('T')[0];
+          return sDate <= date;
+        });
+        
+        // Create temp data structure
+        const tempData = {};
+        Object.keys(allData).forEach(gameId => {
+          tempData[gameId] = sessionsUpToDate.filter(s => s.gameId === gameId);
+        });
+        
+        // Calculate domain score for this date
+        const score = this.calculateCategoryScore(domainId, tempData);
+        return score * 100; // Convert to percentage
+      });
+      
+      return {
+        label: domain.name,
+        data: data,
+        borderColor: domain.color,
+        backgroundColor: domain.color + '20',
+        borderWidth: 2,
+        tension: 0.3,
+        fill: false,
+        spanGaps: true
+      };
+    });
     
     this.charts.timeline = new Chart(canvas, {
       type: 'line',
       data: {
         labels: dates,
-        datasets: [{
-          label: 'Overall Performance',
-          data: avgAccuracies,
-          borderColor: '#4CAF50',
-          backgroundColor: 'rgba(76, 175, 80, 0.1)',
-          fill: true,
-          tension: 0.3,
-          spanGaps: true
-        }]
+        datasets: datasets
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
         plugins: {
-          legend: { labels: { color: '#aaa' } }
+          legend: { 
+            labels: { color: '#aaa', usePointStyle: true, padding: 15 },
+            position: 'top'
+          }
         },
         scales: {
           y: { 
             min: 0, max: 100,
-            title: { display: true, text: 'Accuracy %', color: '#888' },
+            title: { display: true, text: 'Domain Score', color: '#888' },
             ticks: { color: '#888' },
             grid: { color: 'rgba(255,255,255,0.1)' }
           },
@@ -1739,51 +1758,95 @@ window.CognitiveMetricsDashboard = {
     });
   },
 
-  initCategoryCharts(categoryId) {
+initCategoryCharts(categoryId) {
     const canvas = document.getElementById('chart-category-timeline');
     if (!canvas) return;
     
-    const historicalData = this.getCategoryHistoricalData(categoryId);
     const category = this.CATEGORIES[categoryId];
+    const metrics = Object.entries(this.METRICS).filter(([_, m]) => m.category === categoryId);
+    const allData = this.getAllGameData();
     
-    // Group by date
-    const byDate = {};
-    historicalData.forEach(s => {
-      const date = s.date || new Date(s.timestamp).toISOString().split('T')[0];
-      if (!byDate[date]) byDate[date] = [];
-      byDate[date].push(s);
+    // Collect all sessions with timestamps
+    let allSessions = [];
+    const relevantGames = new Set();
+    metrics.forEach(([_, m]) => m.sources.forEach(s => relevantGames.add(s)));
+    
+    relevantGames.forEach(gameId => {
+      const sessions = allData[gameId] || [];
+      allSessions = allSessions.concat(sessions.map(s => ({ ...s, gameId })));
     });
     
-    const dates = Object.keys(byDate).slice(-30);
-    const avgScores = dates.map(d => {
-      const sessions = byDate[d];
-      const acc = sessions.reduce((a, s) => a + (s.accuracy || 0), 0) / sessions.length;
-      return acc * 100;
+    allSessions.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+    
+    // Get unique dates
+    const dates = [...new Set(allSessions.map(s => 
+      s.date || new Date(s.timestamp).toISOString().split('T')[0]
+    ))].slice(-30);
+    
+    if (dates.length === 0) {
+      canvas.style.display = 'none';
+      return;
+    }
+    
+    // Create dataset for each metric in this category
+    const datasets = metrics.map(([metricKey, metric], idx) => {
+      const data = dates.map(date => {
+        // Get sessions up to and including this date
+        const sessionsUpToDate = allSessions.filter(s => {
+          const sDate = s.date || new Date(s.timestamp).toISOString().split('T')[0];
+          return sDate <= date;
+        });
+        
+        // Create temp data structure
+        const tempData = {};
+        relevantGames.forEach(gameId => {
+          tempData[gameId] = sessionsUpToDate.filter(s => s.gameId === gameId);
+        });
+        
+        // Calculate metric value for this date
+        const value = this.getMetricValue(metricKey, tempData);
+        if (value === null) return null;
+        
+        // Normalize to 0-100 scale for display
+        return this.normalizeMetricValue(metricKey, value) * 100;
+      });
+      
+      // Generate color variations based on category color
+      const baseColor = category.color;
+      const colors = this.generateColorVariations(baseColor, metrics.length);
+      
+      return {
+        label: metric.name,
+        data: data,
+        borderColor: colors[idx],
+        backgroundColor: colors[idx] + '20',
+        borderWidth: 2,
+        tension: 0.3,
+        fill: false,
+        spanGaps: true
+      };
     });
     
     this.charts.categoryTimeline = new Chart(canvas, {
       type: 'line',
       data: {
         labels: dates,
-        datasets: [{
-          label: `${category.name} Performance`,
-          data: avgScores,
-          borderColor: category.color,
-          backgroundColor: category.color + '20',
-          fill: true,
-          tension: 0.3
-        }]
+        datasets: datasets
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
         plugins: {
-          legend: { labels: { color: '#aaa' } }
+          legend: { 
+            labels: { color: '#aaa', usePointStyle: true, padding: 10, font: { size: 10 } },
+            position: 'top'
+          }
         },
         scales: {
           y: {
             min: 0, max: 100,
-            title: { display: true, text: 'Score', color: '#888' },
+            title: { display: true, text: 'Normalized Score', color: '#888' },
             ticks: { color: '#888' },
             grid: { color: 'rgba(255,255,255,0.1)' }
           },
@@ -1799,6 +1862,54 @@ window.CognitiveMetricsDashboard = {
     this.initMetricSparklines(categoryId);
   },
 
+  generateColorVariations(baseColor, count) {
+    // Convert hex to HSL and generate variations
+    const hex = baseColor.replace('#', '');
+    const r = parseInt(hex.substr(0, 2), 16) / 255;
+    const g = parseInt(hex.substr(2, 2), 16) / 255;
+    const b = parseInt(hex.substr(4, 2), 16) / 255;
+    
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+    
+    if (max === min) {
+      h = s = 0;
+    } else {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+        case g: h = ((b - r) / d + 2) / 6; break;
+        case b: h = ((r - g) / d + 4) / 6; break;
+      }
+    }
+    
+    // Generate variations
+    const colors = [];
+    for (let i = 0; i < count; i++) {
+      // Vary hue slightly and adjust saturation/lightness
+      const hueShift = (i / count) * 60 - 30; // +/- 30 degrees
+      const newH = (h * 360 + hueShift + 360) % 360;
+      const newS = Math.max(0.3, Math.min(1, s + (i % 2 === 0 ? 0.1 : -0.1)));
+      const newL = Math.max(0.3, Math.min(0.7, l + (i % 3 === 0 ? 0.1 : i % 3 === 1 ? -0.1 : 0)));
+      
+      colors.push(this.hslToHex(newH, newS, newL));
+    }
+    
+    return colors;
+  },
+
+  hslToHex(h, s, l) {
+    h /= 360;
+    const a = s * Math.min(l, 1 - l);
+    const f = n => {
+      const k = (n + h * 12) % 12;
+      const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+      return Math.round(255 * color).toString(16).padStart(2, '0');
+    };
+    return `#${f(0)}${f(8)}${f(4)}`;
+  },
   initMetricSparklines(categoryId) {
     const metrics = Object.entries(this.METRICS).filter(([_, m]) => m.category === categoryId);
     const allData = this.getAllGameData();
@@ -1942,6 +2053,15 @@ window.CognitiveMetricsDashboard = {
       }
       .cmd-panel-half { flex: 1; min-width: 300px; }
       .cmd-panel-full { width: 100%; }
+      .cmd-panel-narrow { flex: 0 0 280px; min-width: 280px; }
+      .cmd-panel-wide { flex: 1; min-width: 400px; }
+      
+      .cmd-main-viz-row { 
+        display: flex; 
+        gap: 15px; 
+        align-items: stretch;
+      }
+      
       .cmd-panel-title { 
         color: #4CAF50; font-size: 14px; font-weight: 600; 
         margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #333;
@@ -2114,6 +2234,11 @@ window.CognitiveMetricsDashboard = {
       @media (min-width: 768px) {
         .cmd-grid { flex-direction: row; flex-wrap: wrap; }
         .cmd-panel-half { flex: 1 1 45%; }
+      }
+      
+      @media (max-width: 1024px) {
+        .cmd-main-viz-row { flex-direction: column; }
+        .cmd-panel-narrow, .cmd-panel-wide { flex: 1 1 100%; min-width: 100%; }
       }
       
       canvas { max-height: 250px; }
