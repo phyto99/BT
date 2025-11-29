@@ -5786,6 +5786,9 @@ window.updateSettings = updateSettings;
 window.applySettings = updateSettings; // Alias for compatibility
 window.repopulateGui = repopulateGui;
 window.startGame = startGame;
+window.stopGame = stop;
+window.play = play;
+window.stop = stop;
 
 // Initialize settings object with current values (after DOM is ready)
 if (document.readyState === 'loading') {
@@ -5796,8 +5799,16 @@ if (document.readyState === 'loading') {
   updateSettings();
 }
 
-// Listen for settings updates from unified system
+// Listen for messages from unified system  
+console.log('🎮 [3D-HYPER-NBACK] Message listener installed');
 window.addEventListener('message', function(event) {
+  // Log ALL messages for debugging
+  console.log('📨 [3D-HYPER-NBACK] RAW MESSAGE RECEIVED:', event.data);
+  
+  if (event.data && event.data.type) {
+    console.log('📨 [3D-HYPER-NBACK] Message type:', event.data.type);
+  }
+  
   if (event.data && event.data.type === 'settingsUpdate') {
     console.log('🎮 [3D-HYPER-NBACK] Received settings update:', event.data.settings);
     
@@ -5810,6 +5821,22 @@ window.addEventListener('message', function(event) {
       repopulateGui();
       
       console.log('🎮 [3D-HYPER-NBACK] Settings applied to game');
+    }
+  }
+  
+  // Handle startGame message from unified play button - just call play()
+  if (event.data && event.data.type === 'startGame') {
+    console.log('▶️ [3D-HYPER-NBACK] Received startGame command - calling play()');
+    play();
+  }
+  
+  // Handle stopGame message from unified stop button - click the actual stop button
+  if (event.data && event.data.type === 'stopGame') {
+    console.log('⏹️ [3D-HYPER-NBACK] Received stopGame command - clicking stop button');
+    // Click the actual stop button - exactly the same as user clicking it
+    const stopBtn = document.querySelector('.stop');
+    if (stopBtn) {
+      stopBtn.click();
     }
   }
 });

@@ -196,12 +196,31 @@
         window.game?.start?.();
       };
       
+      window.stopGame = function() {
+        window.game?.stop?.();
+      };
+      
       // Message listener for unified system
       window.addEventListener('message', (e) => {
         if (e.data?.type === 'settingsUpdate' && e.data.settings) {
           Object.assign(window.settings, e.data.settings);
           window.updateSettings();
           window.repopulateGui();
+        }
+        
+        // Handle startGame message from unified play button
+        if (e.data?.type === 'startGame') {
+          console.log('▶️ [DICHOTIC] Received startGame command');
+          window.startGame();
+        }
+        
+        // Handle stopGame message from unified stop button
+        if (e.data?.type === 'stopGame') {
+          console.log('⏹️ [DICHOTIC] Received stopGame command');
+          if (window.game && typeof window.game.stop === 'function') {
+            window.game.stop();
+            console.log('⏹️ [DICHOTIC] Game stopped successfully');
+          }
         }
       });
     </script>

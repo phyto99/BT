@@ -1141,6 +1141,50 @@
         }
       });
     })();
+    
+    // Listen for messages from unified system
+    window.addEventListener('message', function(event) {
+      // Handle startGame message from unified play button
+      if (event.data && event.data.type === 'startGame') {
+        console.log('▶️ [FAST-SEQ] Received startGame command');
+        if (typeof startNBack === 'function') {
+          startNBack();
+        } else if (typeof startGame === 'function') {
+          startGame();
+        }
+      }
+      
+      // Handle stopGame message from unified stop button
+      if (event.data && event.data.type === 'stopGame') {
+        console.log('⏹️ [FAST-SEQ] Received stopGame command');
+        if (typeof clearPendingTimeouts === 'function') {
+          clearPendingTimeouts();
+        }
+        // Show settings page
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById('settingsPage').classList.add('active');
+      }
+      
+      // Handle settings updates
+      if (event.data && event.data.type === 'settingsUpdate') {
+        console.log('🎮 [FAST-SEQ] Received settings update:', event.data.settings);
+        // Apply settings to form elements if they exist
+        const settings = event.data.settings;
+        if (settings) {
+          Object.keys(settings).forEach(key => {
+            const element = document.getElementById(key);
+            if (element) {
+              element.value = settings[key];
+            }
+          });
+        }
+      }
+    });
+    
+    // Signal to unified system that game is ready
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'gameReady', gameId: 'fast-sequence-nback' }, '*');
+    }
   </script>
 </body>
 </html>

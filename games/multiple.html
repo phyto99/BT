@@ -1217,7 +1217,7 @@
       fadeIn(document.getElementById("settings"));
     });
 
-    // Listen for settings updates from unified system
+    // Listen for messages from unified system
     window.addEventListener('message', (event) => {
       if (event.data.type === 'settingsUpdate' && event.data.gameId === 'multiple') {
         const newSettings = event.data.settings;
@@ -1235,6 +1235,22 @@
         });
 
         console.log('🎮 [Multiple] Settings applied');
+      }
+      
+      // Handle startGame message from unified play button
+      if (event.data.type === 'startGame') {
+        console.log('▶️ [Multiple] Received startGame command');
+        if (typeof startGame === 'function') {
+          startGame();
+        }
+      }
+      
+      // Handle stopGame message from unified stop button
+      if (event.data.type === 'stopGame') {
+        console.log('⏹️ [Multiple] Received stopGame command');
+        if (typeof endGame === 'function') {
+          endGame();
+        }
       }
     });
 

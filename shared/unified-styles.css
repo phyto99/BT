@@ -200,3 +200,53 @@ ed Modality Controls - Checkbox + Dropdown on same line */
   pointer-events: none;
   cursor: not-allowed !important;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   UNIFIED PLAY/STOP BUTTON
+   ═══════════════════════════════════════════════════════════════ */
+
+.unified-play-stop-container {
+  position: fixed;
+  top: 60px;
+  right: 10px;
+  z-index: 1000;
+}
+
+.unified-play-stop-btn {
+  width: 80px;
+  height: 40px;
+  background: rgba(40, 40, 40, 0.8);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: #eee;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.unified-play-stop-btn:hover {
+  background-color: rgba(60, 60, 60, 0.9);
+}
+
+.unified-play-stop-btn.playing {
+  background: rgba(244, 67, 54, 0.8);
+}
+
+.unified-play-stop-btn.playing:hover {
+  background: rgba(244, 67, 54, 0.9);
+}
+
+/* Timer clickable state */
+.header__time.clickable {
+  cursor: pointer;
+}
+
+.header__time.clickable:hover {
+  opacity: 0.8;
+}

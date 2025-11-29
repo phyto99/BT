@@ -447,6 +447,80 @@
         .stats-panel-datgui::-webkit-scrollbar-thumb:hover {
             background: #4c4c4c;
         }
+
+        /* Unified Play/Stop Button */
+        .unified-play-stop-container {
+            position: fixed;
+            top: 60px;
+            right: 10px;
+            z-index: 1000;
+        }
+
+        .unified-play-stop-btn {
+            width: 80px;
+            height: 40px;
+            background: rgba(40, 40, 40, 0.8);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            color: #eee;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        .unified-play-stop-btn:hover {
+            background-color: rgba(60, 60, 60, 0.9);
+        }
+
+        .unified-play-stop-btn.playing {
+            background: rgba(244, 67, 54, 0.8);
+        }
+
+        .unified-play-stop-btn.playing:hover {
+            background: rgba(244, 67, 54, 0.9);
+        }
+
+        /* Timer clickable area */
+        .header__time {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .header__time:hover {
+            opacity: 0.8;
+        }
+
+        .header__time.clickable {
+            cursor: pointer;
+        }
+
+        /* Timer add time feedback */
+        .timer-add-feedback {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(168, 85, 247, 0.9);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 1001;
+            animation: fadeInOut 1s ease-out forwards;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+            20% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            80% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+        }
     </style>
 </head>
 <body>
@@ -493,6 +567,13 @@
         </button>
     </div>
 
+    <!-- Unified Play/Stop Button -->
+    <div class="unified-play-stop-container" id="unified-play-stop-container">
+        <button class="unified-play-stop-btn" id="unified-play-stop-btn">
+            <span id="play-stop-text">START</span>
+        </button>
+    </div>
+
     <div id="game-container">
         <div class="loading"><img src="Syn_Logo_A_1.gif" style="width: 333px; height: 333px;"></div>
     </div>
@@ -534,6 +615,213 @@
                 }
             });
             
+            // ═══════════════════════════════════════════════════════════════
+            // UNIFIED PLAY/STOP BUTTON & TIMER SYSTEM
+            // ═══════════════════════════════════════════════════════════════
+            
+            // Game state tracking
+            window.unifiedGameState = {
+                isPlaying: false,
+                timerInterval: null,
+                remainingSeconds: 300, // Default 5 minutes
+                defaultTime: 300,
+                sessionStartTime: null,
+                pausedTime: null // Store time when paused
+            };
+            
+            // Play/Stop button handler
+            document.getElementById('unified-play-stop-btn').addEventListener('click', () => {
+                if (window.unifiedGameState.isPlaying) {
+                    stopUnifiedGame();
+                } else {
+                    startUnifiedGame();
+                }
+            });
+            
+            // Timer click handler - add 30 seconds
+            document.getElementById('header-time').addEventListener('click', () => {
+                if (window.unifiedGameState.isPlaying) {
+                    window.unifiedGameState.remainingSeconds += 30;
+                    updateTimerDisplay();
+                    
+                    // Show feedback
+                    const feedback = document.createElement('div');
+                    feedback.className = 'timer-add-feedback';
+                    feedback.textContent = '+30 seconds';
+                    document.body.appendChild(feedback);
+                    setTimeout(() => feedback.remove(), 1000);
+                }
+            });
+            
+            function startUnifiedGame() {
+                const btn = document.getElementById('unified-play-stop-btn');
+                const btnText = document.getElementById('play-stop-text');
+                
+                // Update button state
+                btn.classList.add('playing');
+                btnText.textContent = 'STOP';
+                
+                // Update game state
+                window.unifiedGameState.isPlaying = true;
+                
+                // If resuming from pause, restore the saved time
+                if (window.unifiedGameState.pausedTime !== null) {
+                    console.log('▶️ [UNIFIED] Resuming with', window.unifiedGameState.pausedTime, 'seconds remaining');
+                    window.unifiedGameState.remainingSeconds = window.unifiedGameState.pausedTime;
+                    window.unifiedGameState.pausedTime = null;
+                } else {
+                    // Starting fresh
+                    console.log('▶️ [UNIFIED] Starting fresh with', window.unifiedGameState.defaultTime, 'seconds');
+                    window.unifiedGameState.remainingSeconds = window.unifiedGameState.defaultTime;
+                    window.unifiedGameState.sessionStartTime = Date.now();
+                }
+                
+                // Update timer display
+                const headerTime = document.getElementById('header-time');
+                const dailyFill = document.getElementById('daily-progress-fill');
+                headerTime.classList.remove('frozen');
+                headerTime.classList.add('clickable');
+                dailyFill.classList.remove('frozen');
+                
+                // Apply theme colors
+                const currentTheme = window.unifiedBrainTraining?.reactiveSettings?.theme || 'dark';
+                window.unifiedBrainTraining?.updateBoltColors(currentTheme, false);
+                
+                // Start timer
+                updateTimerDisplay();
+                window.unifiedGameState.timerInterval = setInterval(() => {
+                    window.unifiedGameState.remainingSeconds--;
+                    updateTimerDisplay();
+                    
+                    if (window.unifiedGameState.remainingSeconds <= 0) {
+                        stopUnifiedGame(true); // Auto-stop when timer runs out
+                    }
+                }, 1000);
+                
+                // Send start message to game
+                const currentGameId = window.unifiedBrainTraining?.currentGameId;
+                if (currentGameId) {
+                    const iframe = document.getElementById(`game-iframe-${currentGameId}`);
+                    if (iframe && iframe.contentWindow) {
+                        // First sync settings
+                        window.unifiedBrainTraining.syncAllCurrentSettingsToGame();
+                        
+                        // Then send start command
+                        iframe.contentWindow.postMessage({
+                            type: 'startGame',
+                            gameId: currentGameId
+                        }, '*');
+                        console.log('▶️ [UNIFIED] Started game:', currentGameId);
+                    }
+                }
+            }
+            
+            function stopUnifiedGame(timerExpired = false) {
+                const btn = document.getElementById('unified-play-stop-btn');
+                const btnText = document.getElementById('play-stop-text');
+                
+                // Update button state
+                btn.classList.remove('playing');
+                btnText.textContent = 'START';
+                
+                // Clear timer
+                if (window.unifiedGameState.timerInterval) {
+                    clearInterval(window.unifiedGameState.timerInterval);
+                    window.unifiedGameState.timerInterval = null;
+                }
+                
+                // Save current time for resume (unless timer expired)
+                if (!timerExpired && window.unifiedGameState.remainingSeconds > 0) {
+                    window.unifiedGameState.pausedTime = window.unifiedGameState.remainingSeconds;
+                    console.log('⏸️ [UNIFIED] Paused with', window.unifiedGameState.pausedTime, 'seconds remaining');
+                } else {
+                    window.unifiedGameState.pausedTime = null;
+                }
+                
+                // Calculate session duration
+                const sessionDuration = window.unifiedGameState.sessionStartTime 
+                    ? Math.floor((Date.now() - window.unifiedGameState.sessionStartTime) / 1000)
+                    : 0;
+                
+                // Update game state
+                window.unifiedGameState.isPlaying = false;
+                
+                // Update timer display (show paused time or reset)
+                const headerTime = document.getElementById('header-time');
+                const timeCounter = document.getElementById('time-counter');
+                const dailyFill = document.getElementById('daily-progress-fill');
+                
+                headerTime.classList.add('frozen');
+                headerTime.classList.remove('clickable');
+                
+                if (window.unifiedGameState.pausedTime !== null) {
+                    // Show paused time
+                    timeCounter.textContent = window.unifiedGameState.pausedTime;
+                    const percentage = (window.unifiedGameState.pausedTime / window.unifiedGameState.defaultTime) * 100;
+                    dailyFill.style.width = `${percentage}%`;
+                } else {
+                    // Reset display
+                    timeCounter.textContent = '∞';
+                    dailyFill.style.width = '100%';
+                }
+                dailyFill.classList.add('frozen');
+                
+                // Apply theme colors for frozen state
+                const currentTheme = window.unifiedBrainTraining?.reactiveSettings?.theme || 'dark';
+                window.unifiedBrainTraining?.updateBoltColors(currentTheme, true);
+                
+                // Send stop message to game
+                const currentGameId = window.unifiedBrainTraining?.currentGameId;
+                console.log('⏹️ [UNIFIED] Attempting to stop game:', currentGameId);
+                if (currentGameId) {
+                    const iframe = document.getElementById(`game-iframe-${currentGameId}`);
+                    console.log('⏹️ [UNIFIED] Found iframe:', !!iframe, 'contentWindow:', !!iframe?.contentWindow);
+                    if (iframe && iframe.contentWindow) {
+                        const message = {
+                            type: 'stopGame',
+                            gameId: currentGameId,
+                            timerExpired: timerExpired,
+                            sessionDuration: sessionDuration
+                        };
+                        console.log('⏹️ [UNIFIED] Sending message:', message);
+                        iframe.contentWindow.postMessage(message, '*');
+                        console.log('⏹️ [UNIFIED] Message sent to:', currentGameId, timerExpired ? '(timer expired)' : '(paused)');
+                    } else {
+                        console.error('⏹️ [UNIFIED] No iframe or contentWindow found!');
+                    }
+                } else {
+                    console.error('⏹️ [UNIFIED] No currentGameId!');
+                }
+                
+                // Show feedback if timer expired
+                if (timerExpired) {
+                    const feedback = document.createElement('div');
+                    feedback.className = 'timer-add-feedback';
+                    feedback.textContent = 'Time\'s up!';
+                    feedback.style.background = 'rgba(244, 67, 54, 0.9)';
+                    document.body.appendChild(feedback);
+                    setTimeout(() => feedback.remove(), 2000);
+                }
+            }
+            
+            function updateTimerDisplay() {
+                const timeCounter = document.getElementById('time-counter');
+                const dailyFill = document.getElementById('daily-progress-fill');
+                const remaining = window.unifiedGameState.remainingSeconds;
+                const total = window.unifiedGameState.defaultTime;
+                
+                // Update counter - show only seconds
+                timeCounter.textContent = remaining;
+                
+                // Update progress bar (shrinks from right to left)
+                const percentage = (remaining / total) * 100;
+                dailyFill.style.width = `${percentage}%`;
+            }
+            
+            // Expose functions globally
+            window.startUnifiedGame = startUnifiedGame;
+            window.stopUnifiedGame = stopUnifiedGame;
+            
             // Track current game to detect switches
             let lastGameId = null;
             
@@ -558,6 +846,12 @@
                 if (currentGameId && currentGameId !== lastGameId) {
                     console.log('Game switched from', lastGameId, 'to', currentGameId);
                     closeAnyOpenModal();
+                    
+                    // Reset play/stop button when switching games
+                    if (window.unifiedGameState.isPlaying) {
+                        stopUnifiedGame();
+                    }
+                    
                     lastGameId = currentGameId;
                 }
             }, 500);

@@ -175,6 +175,8 @@
     let incorrectAnswersCount = 0;
     let currentOrder = 'Ascending'; // Variable to store the current order
     let isGameStarting = false; // Prevent multiple initializations
+    let isGameRunning = false; // Track if game is actively running
+    let isPaused = false; // Track if game is paused
     let flashModeTimeouts = []; // To store timeouts related to Flash Mode
     let mistakeMade = false; // Flag to track if a mistake has been made
 
@@ -468,12 +470,16 @@
       const fontLoader = new THREE.FontLoader();
       fontLoader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function(font) {
         loadedFont = font;
-        // Start the game after the font has loaded
-        startGame();
+        // Font loaded - initialize the scene visualization
+        console.log('🎮 [JIGGLE] Font loaded, initializing scene...');
+        initializeScene();
+        messageElement.textContent = 'Press Play to Start';
       }, undefined, function(err) {
         console.error('An error happened loading the font:', err);
-        // Proceed to start the game even if font loading fails
-        startGame();
+        // Font failed but still initialize scene
+        console.log('🎮 [JIGGLE] Font failed, initializing scene anyway...');
+        initializeScene();
+        messageElement.textContent = 'Press Play to Start';
       });
 
       // Initialize the center dot
@@ -498,39 +504,83 @@
       }
     }
 
+    // Initialize the scene with bounding box and balls (but don't start the game)
+    function initializeScene() {
+      console.log('🎮 [JIGGLE] Initializing scene visualization...');
+      
+      // Clear any existing game objects
+      clearGameObjects();
+      
+      // Reset game state variables
+      isSequenceShowing = false;
+      isUserTurn = false;
+      screenRotationAngle = 0;
+      mistakeMade = false;
+      
+      // Create Bounding Box
+      createBoundingBox();
+      
+      // Create Balls (but don't highlight them yet)
+      createBalls();
+      
+      console.log('🎮 [JIGGLE] Scene initialized - ready to play');
+    }
+
     function startGame() {
       if (isGameStarting) return; // Prevent multiple initializations
       isGameStarting = true;
 
-      // Disable the Start Game button
-      gui.__controllers.forEach(controller => {
-        if (controller.property === 'startGame') {
-          controller.__li.classList.add('disabled');
-        }
-      });
+      console.log('🎮 [JIGGLE] Starting/Resuming game...');
 
-      // Clear previous timeouts and intervals
+      // If paused, resume with new sequence at same level
+      if (isPaused) {
+        console.log('🎮 [JIGGLE] Resuming from pause - regenerating sequence at level', settings.level);
+        isPaused = false;
+        isGameRunning = true;
+        isSequenceShowing = false;
+        isUserTurn = false;
+        messageElement.textContent = '';
+        
+        // Clear any existing sequences
+        targetSequence = [];
+        userSequence = [];
+        selectedBalls = [];
+        
+        // Regenerate the sequence at the current level
+        let timeout = setTimeout(highlightTargetBalls, 1000);
+        activeTimeouts.push(timeout);
+        
+        // Resume Flash Mode if enabled
+        if (settings.flashMode) {
+          startFlashMode();
+        }
+        
+        isGameStarting = false;
+        return;
+      }
+
+      // Starting fresh game
+      console.log('🎮 [JIGGLE] Starting fresh game...');
+
+      // Clear previous timeouts
       activeTimeouts.forEach(timeout => clearTimeout(timeout));
       activeTimeouts = [];
 
       // Clear Flash Mode timeouts
       clearFlashModeTimeouts();
 
-      // Clear game-specific objects
-      clearGameObjects();
-
       // Reset game state variables
       isSequenceShowing = false;
       isUserTurn = false;
+      isGameRunning = true;
+      isPaused = false;
       messageElement.textContent = '';
-      screenRotationAngle = 0;
-      mistakeMade = false; // Reset mistake flag
+      mistakeMade = false;
 
-      // Create Bounding Box
-      createBoundingBox();
-
-      // Create Balls
-      createBalls();
+      // If scene isn't initialized, initialize it first
+      if (balls.length === 0) {
+        initializeScene();
+      }
 
       // Start Sequence
       let timeout = setTimeout(highlightTargetBalls, 1000);
@@ -539,13 +589,84 @@
       // Start Flash Mode if enabled
       startFlashMode();
 
-      // Re-enable the Start Game button after initialization
       isGameStarting = false;
-      gui.__controllers.forEach(controller => {
-        if (controller.property === 'startGame') {
-          controller.__li.classList.remove('disabled');
+    }
+    
+    // Pause the game (stop timers but keep visualization and state)
+    function pauseGame() {
+      console.log('⏸️ [JIGGLE] Pausing game...');
+      
+      // Clear all active timeouts to stop the game loop
+      activeTimeouts.forEach(timeout => clearTimeout(timeout));
+      activeTimeouts = [];
+      
+      // Clear Flash Mode timeouts
+      clearFlashModeTimeouts();
+      
+      // Clear all numbers from balls
+      targetBalls.forEach(ball => {
+        if (ball.userData.label) {
+          disposeLabel(ball.userData.label);
+          ball.remove(ball.userData.label);
+          ball.userData.label = null;
         }
+        ball.userData.isCurrentlyHighlighted = false;
       });
+      
+      // Clear target sequence (will regenerate on resume)
+      targetSequence = [];
+      userSequence = [];
+      selectedBalls = [];
+      
+      // Mark as paused (don't reset game state)
+      isPaused = true;
+      isGameRunning = false;
+      isGameStarting = false;
+      isSequenceShowing = false;
+      isUserTurn = false;
+      
+      // Show paused message
+      messageElement.textContent = 'Game Paused - Press Play to Continue';
+    }
+    
+    // Reset the game completely (clear everything and start fresh)
+    function resetGame() {
+      console.log('🔄 [JIGGLE] Resetting game...');
+      
+      // Clear all timeouts
+      activeTimeouts.forEach(timeout => clearTimeout(timeout));
+      activeTimeouts = [];
+      clearFlashModeTimeouts();
+      
+      // Clear game objects
+      clearGameObjects();
+      
+      // Reset all state
+      isSequenceShowing = false;
+      isUserTurn = false;
+      isGameRunning = false;
+      isPaused = false;
+      isGameStarting = false;
+      mistakeMade = false;
+      selectedBalls = [];
+      userSequence = [];
+      targetSequence = [];
+      correctAnswersCount = 0;
+      incorrectAnswersCount = 0;
+      
+      // Reset scores
+      totalTrials = 0;
+      trialScores = [];
+      trialAccuracies = [];
+      cumulativeScore = 0;
+      cumulativeCorrectSelections = 0;
+      cumulativeTotalTargets = 0;
+      
+      // Reinitialize scene
+      initializeScene();
+      messageElement.textContent = 'Game Reset - Press Play to Start';
+      
+      console.log('🔄 [JIGGLE] Game reset complete');
     }
 
     function clearGameObjects() {
@@ -1699,7 +1820,7 @@
       return Math.random() * (max - min) + min;
     }
 
-    // Listen for settings updates from unified system
+    // Listen for messages from unified system
     window.addEventListener('message', function(event) {
       if (event.data && event.data.type === 'settingsUpdate') {
         console.log('🎮 Received settings update:', event.data.settings);
@@ -1713,6 +1834,65 @@
           repopulateGui();
           
           console.log('🎮 Settings applied to game');
+        }
+      }
+      
+      // Handle startGame message from unified play button
+      if (event.data && event.data.type === 'startGame') {
+        console.log('▶️ [JIGGLE] Received startGame command');
+        startGame();
+      }
+      
+      // Handle resetGame message from unified reset button
+      if (event.data && event.data.type === 'resetGame') {
+        console.log('🔄 [JIGGLE] Received resetGame command');
+        resetGame();
+      }
+      
+      // Handle stopGame message from unified stop button
+      if (event.data && event.data.type === 'stopGame') {
+        console.log('⏹️ [JIGGLE] Received stopGame command');
+        
+        // Pause the game (keeps visualization)
+        pauseGame();
+        
+        // Send final statistics to unified system if there are trials
+        if (window.parent !== window && window.parent.gameStats && trialScores.length > 0) {
+          const totalScore = trialScores.reduce((a, b) => a + b, 0);
+          const averageScore = totalScore / trialScores.length;
+          const averageAccuracy = cumulativeTotalTargets > 0 
+            ? (cumulativeCorrectSelections / cumulativeTotalTargets) * 100 
+            : 0;
+          
+          window.parent.gameStats.recordSession({
+            // Core metrics
+            score: averageScore,
+            averageScore: averageScore,
+            accuracy: averageAccuracy / 100,
+            level: settings.level,
+            
+            // Trial counts
+            totalTrials: totalTrials,
+            correctAnswersCount: correctAnswersCount,
+            incorrectAnswersCount: incorrectAnswersCount,
+            
+            // Cumulative metrics
+            cumulativeScore: cumulativeScore,
+            cumulativeCorrectSelections: cumulativeCorrectSelections,
+            cumulativeTotalTargets: cumulativeTotalTargets,
+            
+            // Settings/configuration
+            movementMode: settings.movementMode,
+            ballSpeed: settings.ballSpeed,
+            
+            // Session info
+            sessionId: sessionId,
+            sessionEnded: true,
+            timerExpired: event.data.timerExpired || false,
+            duration: event.data.sessionDuration || 0
+          });
+          
+          console.log('📊 [JIGGLE] Final session stats sent to unified system');
         }
       }
     });

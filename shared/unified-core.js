@@ -353,34 +353,55 @@ class UnifiedBrainTraining {
     console.log('Test settings sent to game');
   }
   
-  // Apply current settings and start game (like Start Game button in sidebar)
+  // Apply current settings to game (without starting - use unified play button to start)
   setCurrentSettings() {
     if (!this.currentGameId) {
       console.warn('⚙️ [SET-SETTINGS] No game loaded');
       return;
     }
     
-    console.log(`⚙️ [SET-SETTINGS] Applying current settings and starting ${this.currentGameId}`);
+    console.log(`⚙️ [SET-SETTINGS] Applying current settings to ${this.currentGameId}`);
     
-    // First, sync all current settings to the game
+    // Sync all current settings to the game (but don't start it)
     const syncedSettings = this.syncAllCurrentSettingsToGame();
     
     if (syncedSettings) {
-      // Then call the game's startGame function (like the Start Game button does)
-      const iframe = document.getElementById(`game-iframe-${this.currentGameId}`);
-      if (iframe && iframe.contentWindow) {
-        // Send a special message to call startGame
-        iframe.contentWindow.postMessage({
-          type: 'startGame',
-          gameId: this.currentGameId
-        }, '*');
-        
-        this.showSettingChangeIndicator('Starting Game', `${Object.keys(syncedSettings).length} settings applied`);
-        console.log(`⚙️ [SET-SETTINGS] Called startGame() with ${Object.keys(syncedSettings).length} settings`);
-      }
+      this.showSettingChangeIndicator('Settings Applied', `${Object.keys(syncedSettings).length} settings synced`);
+      console.log(`⚙️ [SET-SETTINGS] Applied ${Object.keys(syncedSettings).length} settings to ${this.currentGameId}`);
     } else {
       this.showSettingChangeIndicator('Settings Failed', 'No game found');
       console.warn('⚙️ [SET-SETTINGS] Failed to apply settings');
+    }
+  }
+  
+  // Reset the current game (clear state and restart fresh)
+  resetGame() {
+    if (!this.currentGameId) {
+      console.warn('🔄 [RESET-GAME] No game loaded');
+      return;
+    }
+    
+    console.log(`🔄 [RESET-GAME] Resetting ${this.currentGameId}`);
+    
+    // Send reset message to game
+    const iframe = document.getElementById(`game-iframe-${this.currentGameId}`);
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage({
+        type: 'resetGame',
+        gameId: this.currentGameId
+      }, '*');
+      
+      this.showSettingChangeIndicator('Game Reset', 'Starting fresh');
+      console.log(`🔄 [RESET-GAME] Reset command sent to ${this.currentGameId}`);
+    } else {
+      this.showSettingChangeIndicator('Reset Failed', 'No game found');
+      console.warn('🔄 [RESET-GAME] Failed to reset game');
+    }
+    
+    // Also reset the unified timer state
+    if (window.unifiedGameState) {
+      window.unifiedGameState.pausedTime = null;
+      window.unifiedGameState.remainingSeconds = window.unifiedGameState.defaultTime;
     }
   }
 
@@ -713,6 +734,14 @@ class UnifiedBrainTraining {
         });
       }
       
+      // Reset Game button
+      const resetGameBtn = document.getElementById('reset-game-btn');
+      if (resetGameBtn) {
+        resetGameBtn.addEventListener('click', () => {
+          this.resetGame();
+        });
+      }
+      
       // Statistics button
       const statisticsBtn = document.getElementById('statistics-btn');
       if (statisticsBtn) {
@@ -944,10 +973,10 @@ class UnifiedBrainTraining {
       console.log('🧹 [CLEANUP] Container cleared');
     }
     
-    // Clear any cached game data
+    // Clear cached game data to ensure fresh load next time
     if (this.gameCache && this.currentGameId) {
-      // Keep cache but could clear it here if memory is a concern
-      // this.gameCache.delete(this.currentGameId);
+      this.gameCache.delete(this.currentGameId);
+      console.log(`🧹 [CLEANUP] Cleared cache for ${this.currentGameId}`);
     }
     
     // Reset current game reference
@@ -988,6 +1017,25 @@ class UnifiedBrainTraining {
       this.gameCache.clear();
       console.log(`🧹 [CLEANUP] Cleared game cache (${cacheSize} games)`);
     }
+  }
+  
+  // Force reload current game without cache
+  async forceReloadGame() {
+    const gameId = this.currentGameId;
+    if (!gameId) {
+      console.warn('No game to reload');
+      return;
+    }
+    
+    console.log('🔄 [FORCE-RELOAD] Clearing cache and reloading:', gameId);
+    
+    // Clear from cache
+    if (this.gameCache) {
+      this.gameCache.delete(gameId);
+    }
+    
+    // Reload the game
+    await this.loadGame(gameId);
   }
   
   // Get memory usage info
@@ -1315,6 +1363,17 @@ class UnifiedBrainTraining {
                 window.startGame();
               } else {
                 console.warn('🎮 [GAME-BRIDGE] No startGame() function found');
+              }
+            } else if (event.data.type === 'stopGame') {
+              console.log('🎮 [GAME-BRIDGE] Received stopGame message');
+              if (window.stopGame) {
+                console.log('🎮 [GAME-BRIDGE] Calling stopGame() function');
+                window.stopGame();
+              } else if (window.stop) {
+                console.log('🎮 [GAME-BRIDGE] Calling stop() function');
+                window.stop();
+              } else {
+                console.warn('🎮 [GAME-BRIDGE] No stopGame() or stop() function found');
               }
             }
           }
@@ -2161,11 +2220,12 @@ class UnifiedBrainTraining {
             Reactive Settings: <span id="reactive-status-text" style="color: #4CAF50;">Connected</span>
           </div>
           <div id="reactive-test-buttons" style="margin-top: 8px;">
-            <button id="test-reactive-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 4px 8px; margin-right: 4px; cursor: pointer; font-size: 11px;">Test Reactive</button>
-            <button id="test-sync-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 4px 8px; margin-right: 4px; cursor: pointer; font-size: 11px;">Test Sync</button>
-            <button id="set-settings-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 4px 8px; margin-right: 4px; cursor: pointer; font-size: 11px;">Set Settings</button>
-            <button id="keybinds-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 4px 8px; margin-right: 4px; cursor: pointer; font-size: 11px;">Keybinds</button>
-            <button id="statistics-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 4px 8px; margin-right: 4px; cursor: pointer; font-size: 11px;">Statistics: ON</button>
+            <button id="test-reactive-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 4px 8px; margin-right: 4px; margin-bottom: 4px; cursor: pointer; font-size: 11px;">Test Reactive</button>
+            <button id="test-sync-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 4px 8px; margin-right: 4px; margin-bottom: 4px; cursor: pointer; font-size: 11px;">Test Sync</button>
+            <button id="set-settings-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 4px 8px; margin-right: 4px; margin-bottom: 4px; cursor: pointer; font-size: 11px;">Set Settings</button>
+            <button id="reset-game-btn" style="background: #d32f2f; border: 1px solid #b71c1c; color: #fff; padding: 4px 8px; margin-right: 4px; margin-bottom: 4px; cursor: pointer; font-size: 11px; font-weight: bold;">Reset Game</button>
+            <button id="keybinds-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 4px 8px; margin-right: 4px; margin-bottom: 4px; cursor: pointer; font-size: 11px;">Keybinds</button>
+            <button id="statistics-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 4px 8px; margin-right: 4px; margin-bottom: 4px; cursor: pointer; font-size: 11px;">Statistics: ON</button>
             <button id="theme-toggle-btn" style="background: #333; border: 1px solid #666; color: #fff; padding: 6px 10px; cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: all 0.2s ease;">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="display: block;">
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>

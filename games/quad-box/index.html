@@ -74,7 +74,13 @@
       };
       
       window.startGame = function() {
+        console.log('▶️ [QUAD-BOX] startGame called, dispatching event');
         window.dispatchEvent(new CustomEvent('unifiedStartGame'));
+      };
+      
+      window.stopGame = function() {
+        console.log('⏹️ [QUAD-BOX] stopGame called, dispatching event');
+        window.dispatchEvent(new CustomEvent('unifiedStopGame'));
       };
       
       // Message listener for unified system
@@ -83,6 +89,18 @@
           Object.assign(window.settings, e.data.settings);
           window.updateSettings(e.data.settings);
           window.repopulateGui();
+        }
+        
+        // Handle startGame message from unified play button
+        if (e.data?.type === 'startGame') {
+          console.log('▶️ [QUAD-BOX] Received startGame message from unified system');
+          window.startGame();
+        }
+        
+        // Handle stopGame message from unified stop button
+        if (e.data?.type === 'stopGame') {
+          console.log('⏹️ [QUAD-BOX] Received stopGame message from unified system');
+          window.stopGame();
         }
       });
       
