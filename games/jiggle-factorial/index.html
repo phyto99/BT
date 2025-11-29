@@ -532,31 +532,11 @@
 
       console.log('🎮 [JIGGLE] Starting/Resuming game...');
 
-      // If paused, resume with new sequence at same level
+      // If paused, resume by starting a fresh round (like original)
       if (isPaused) {
-        console.log('🎮 [JIGGLE] Resuming from pause - regenerating sequence at level', settings.level);
+        console.log('🎮 [JIGGLE] Resuming from pause - starting fresh round at level', settings.level);
         isPaused = false;
-        isGameRunning = true;
-        isSequenceShowing = false;
-        isUserTurn = false;
-        messageElement.textContent = '';
-        
-        // Clear any existing sequences
-        targetSequence = [];
-        userSequence = [];
-        selectedBalls = [];
-        
-        // Regenerate the sequence at the current level
-        let timeout = setTimeout(highlightTargetBalls, 1000);
-        activeTimeouts.push(timeout);
-        
-        // Resume Flash Mode if enabled
-        if (settings.flashMode) {
-          startFlashMode();
-        }
-        
-        isGameStarting = false;
-        return;
+        // Fall through to normal start logic - don't return early
       }
 
       // Starting fresh game
@@ -569,18 +549,23 @@
       // Clear Flash Mode timeouts
       clearFlashModeTimeouts();
 
+      // Clear game objects and reinitialize (like original)
+      clearGameObjects();
+
       // Reset game state variables
       isSequenceShowing = false;
       isUserTurn = false;
       isGameRunning = true;
       isPaused = false;
       messageElement.textContent = '';
+      screenRotationAngle = 0;
       mistakeMade = false;
 
-      // If scene isn't initialized, initialize it first
-      if (balls.length === 0) {
-        initializeScene();
-      }
+      // Create Bounding Box
+      createBoundingBox();
+
+      // Create Balls
+      createBalls();
 
       // Start Sequence
       let timeout = setTimeout(highlightTargetBalls, 1000);
@@ -937,7 +922,8 @@
 
       // Assign numbers to target balls
       targetSequence = [];
-      for (let i = 0; i < targetBalls.length; i++) {
+      const maxIndex = Math.min(targetBalls.length, numbers.length);
+      for (let i = 0; i < maxIndex; i++) {
         targetSequence.push({ ball: targetBalls[i], number: numbers[i] });
       }
 
@@ -1076,6 +1062,7 @@
     function addNumberLabel(ball, number) {
       if (!loadedFont) return; // Ensure the font is loaded
       if (settings.isRegular3DMOT) return;
+      if (number === undefined || number === null) return; // Safety check
 
       const geometry = new THREE.TextGeometry(number.toString(), {
         font: loadedFont,
