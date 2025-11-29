@@ -1147,24 +1147,51 @@
       
       let isPaused = true; // Start paused by default
       
-      // Initialize the N-Back grid on page load (but don't start the game)
+      // Initialize the N-Back view on page load (show grid but don't start game)
       function initializeNBackView() {
         console.log('🎮 [FAST-SEQ] Initializing N-Back view (paused)');
-        // Read settings from form
+        
+        // Hide settings page, show nBack page
+        document.getElementById('settingsPage').classList.remove('active');
+        document.getElementById('gamePage').classList.remove('active');
+        document.getElementById('nBackPage').classList.add('active');
+        
+        // Read ALL settings from form (same as nBackBtn click handler)
         settings.rows = +document.getElementById('rows').value || 4;
         settings.cols = +document.getElementById('cols').value || 4;
+        settings.numSquares = +document.getElementById('numSquares').value || 5;
+        settings.flashTime = +document.getElementById('flashTime').value || 150;
         settings.gridColor = document.getElementById('gridColor').value || 'black';
+        settings.squareColor = document.getElementById('squareColor').value || 'white';
+        settings.flashDelay = +document.getElementById('flashDelay').value || 50;
         
+        nLevel = +document.getElementById('nLevel').value || 2;
+        secTrialMs = (+document.getElementById('secTrial').value || 3) * 1000;
+        totalTrials = +document.getElementById('trialNum').value || 20;
+        percentMatch = +document.getElementById('percentMatch').value || 30;
+        interferenceControl = +document.getElementById('interferenceControl').value || 0;
+        letterStimulus = document.getElementById('letterStimulus')?.checked || false;
+        graphemeColor = document.getElementById('graphemeColor')?.checked || false;
+        
+        // Build the grid (but don't start the game)
         buildNBackGrid();
+        
+        // Show paused message
         document.getElementById('nBackMessage').textContent = 'Press Play to Start';
         document.getElementById('nBackScore').textContent = '';
         document.getElementById('nBackLetterScore').textContent = '';
         document.getElementById('nBackOverallScore').textContent = '';
         document.getElementById('nBackDuration').textContent = '';
+        
+        console.log('🎮 [FAST-SEQ] Grid initialized, waiting for start command');
       }
       
-      // Call initialization after a short delay to ensure DOM is ready
-      setTimeout(initializeNBackView, 100);
+      // Call initialization after DOM is ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeNBackView);
+      } else {
+        setTimeout(initializeNBackView, 50);
+      }
       
       // Expose functions for unified system
       window.startGame = function() {

@@ -198,9 +198,11 @@
       
       window.stopGame = function() {
         console.log('⏹️ [DICHOTIC] window.stopGame called, game.running:', window.game?.running);
-        if (window.game && window.game.running) {
-          window.game.stop();
-          console.log('⏹️ [DICHOTIC] game.stop() called');
+        // Click the engine button directly - same as user clicking Stop
+        const engineBtn = document.getElementById('engine-btn');
+        if (engineBtn && window.game && window.game.running) {
+          engineBtn.click();
+          console.log('⏹️ [DICHOTIC] Clicked engine-btn to stop');
         }
       };
       
