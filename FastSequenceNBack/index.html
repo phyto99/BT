@@ -1149,7 +1149,6 @@
       
       // Initialize the N-Back view on page load (show grid but don't start game)
       function initializeNBackView() {
-        console.log('🎮 [FAST-SEQ] Initializing N-Back view (paused)');
         
         // Hide settings page, show nBack page
         document.getElementById('settingsPage').classList.remove('active');
@@ -1182,8 +1181,6 @@
         document.getElementById('nBackLetterScore').textContent = '';
         document.getElementById('nBackOverallScore').textContent = '';
         document.getElementById('nBackDuration').textContent = '';
-        
-        console.log('🎮 [FAST-SEQ] Grid initialized, waiting for start command');
       }
       
       // Call initialization after DOM is ready
@@ -1195,19 +1192,16 @@
       
       // Expose functions for unified system
       window.startGame = function() {
-        console.log('▶️ [FAST-SEQ] startGame called, isPaused:', isPaused);
         isPaused = false;
         document.getElementById('nBackMessage').textContent = '';
         startNBack();
       };
       
       window.stopGame = function() {
-        console.log('⏹️ [FAST-SEQ] stopGame called');
         isPaused = true;
         clearPendingTimeouts();
         nBackModeActive = false;
-        document.getElementById('nBackMessage').textContent = 'Paused - Press Play to Continue';
-        // Clear feedback colors
+        document.getElementById('nBackMessage').textContent = 'Paused';
         document.getElementById('letterFeedback').style.backgroundColor = 'transparent';
         document.getElementById('spatialFeedback').style.backgroundColor = 'transparent';
       };

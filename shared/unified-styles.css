@@ -234,14 +234,6 @@ ed Modality Controls - Checkbox + Dropdown on same line */
   background-color: rgba(60, 60, 60, 0.9);
 }
 
-.unified-play-stop-btn.playing {
-  background: rgba(244, 67, 54, 0.8);
-}
-
-.unified-play-stop-btn.playing:hover {
-  background: rgba(244, 67, 54, 0.9);
-}
-
 /* Timer clickable state */
 .header__time.clickable {
   cursor: pointer;

@@ -790,9 +790,9 @@ class UnifiedBrainTraining {
         return;
       }
       
-      // Try to load from cache first, then fetch if not available
+      // Always fetch fresh (disable cache for development)
       let html;
-      if (this.gameCache && this.gameCache.has(gameId)) {
+      if (false && this.gameCache && this.gameCache.has(gameId)) {
         console.log('Loading game from cache:', gameId);
         html = this.gameCache.get(gameId);
       } else {
@@ -816,8 +816,11 @@ class UnifiedBrainTraining {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout per attempt
             
-            response = await fetch(path, {
-              signal: controller.signal
+            // Add cache-busting timestamp
+            const cacheBustPath = path + (path.includes('?') ? '&' : '?') + '_cb=' + Date.now();
+            response = await fetch(cacheBustPath, {
+              signal: controller.signal,
+              cache: 'no-store'
             });
             clearTimeout(timeoutId);
             
