@@ -193,14 +193,56 @@
       };
       
       window.startGame = function() {
-        window.game?.start?.();
+        if (window.game && !window.game.running) {
+          window.game.start();
+        }
       };
       
       window.stopGame = function() {
-        // Click the engine button directly - same as user clicking Stop
-        const engineBtn = document.getElementById('engine-btn');
-        if (engineBtn) {
-          engineBtn.click();
+        if (window.game && window.game.running) {
+          // Record stats BEFORE stopping (which resets the score)
+          if (window.parent !== window && window.parent.gameStats) {
+            var totalCorrect = window.game.score[0] + window.game.score[9] + window.game.score[3] + window.game.score[6];
+            var totalMissed = window.game.score[1] + window.game.score[10] + window.game.score[4] + window.game.score[7];
+            var totalWrong = window.game.score[2] + window.game.score[11] + window.game.score[5] + window.game.score[8];
+            var totalAttempts = totalCorrect + totalMissed + totalWrong;
+            var accuracy = totalAttempts > 0 ? totalCorrect / totalAttempts : 0;
+            var wrongPositions = window.game.score[1] + window.game.score[2] + window.game.score[10] + window.game.score[11];
+            var wrongSounds = window.game.score[4] + window.game.score[5] + window.game.score[7] + window.game.score[8];
+            
+            window.parent.gameStats.recordSession({
+              score: totalCorrect,
+              accuracy: accuracy,
+              level: window.game.n,
+              nBack: window.game.n,
+              visualLeftCorrect: window.game.score[0],
+              visualLeftMissed: window.game.score[1],
+              visualLeftWrong: window.game.score[2],
+              audioLeftCorrect: window.game.score[3],
+              audioLeftMissed: window.game.score[4],
+              audioLeftWrong: window.game.score[5],
+              audioRightCorrect: window.game.score[6],
+              audioRightMissed: window.game.score[7],
+              audioRightWrong: window.game.score[8],
+              visualRightCorrect: window.game.score[9],
+              visualRightMissed: window.game.score[10],
+              visualRightWrong: window.game.score[11],
+              totalCorrect: totalCorrect,
+              totalMissed: totalMissed,
+              totalWrong: totalWrong,
+              wrongPositions: wrongPositions,
+              wrongSounds: wrongSounds,
+              stimulusTime: window.game.time,
+              matchingClues: window.game.clues,
+              soundsLeft: window.settings?.soundsLeft || 'Letters English (USA)',
+              soundsRight: window.settings?.soundsRight || 'Numbers English (USA)',
+              feedback: window.game.feedback,
+              sessionEnded: true,
+              manualStop: true
+            });
+          }
+          
+          window.game.stop();
         }
       };
       
@@ -212,12 +254,10 @@
           window.repopulateGui();
         }
         
-        // Handle startGame message from unified play button
         if (e.data?.type === 'startGame') {
           window.startGame();
         }
         
-        // Handle stopGame message from unified stop button
         if (e.data?.type === 'stopGame') {
           window.stopGame();
         }

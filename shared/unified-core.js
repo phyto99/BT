@@ -1369,6 +1369,11 @@ class UnifiedBrainTraining {
               }
             } else if (event.data.type === 'stopGame') {
               console.log('🎮 [GAME-BRIDGE] Received stopGame message');
+              // For dichotic, let the game's own listener handle it
+              if ('${gameId}' === 'dichotic-dual-nback') {
+                console.log('🎮 [GAME-BRIDGE] Skipping bridge handling for dichotic - letting game handle it');
+                return;
+              }
               if (window.stopGame) {
                 console.log('🎮 [GAME-BRIDGE] Calling stopGame() function');
                 window.stopGame();
@@ -2141,6 +2146,12 @@ class UnifiedBrainTraining {
   }
 
   injectCommunicationBridge(iframe, gameId) {
+    // Skip bridge injection for dichotic - it has its own message handling
+    if (gameId === 'dichotic-dual-nback') {
+      console.log('Skipping bridge injection for dichotic-dual-nback - using native handlers');
+      return;
+    }
+    
     // Inject communication bridge into the directly loaded iframe
     try {
       const bridgeScript = this.createCommunicationBridge(gameId);
@@ -3151,6 +3162,8 @@ window.gameStats = {
         return window.gameStats.getQuadBoxAnalytics(sessions);
       case 'dichotic-dual-nback':
         return window.gameStats.getDichoticAnalytics(sessions);
+      case 'fast-sequence-nback':
+        return window.gameStats.getFastSequenceAnalytics(sessions);
       default:
         return window.gameStats.getGenericAnalytics(sessions);
     }
@@ -3235,6 +3248,122 @@ window.gameStats = {
         levels: sessions.map(s => s.level || 0),
         ballSpeeds: sessions.map(s => s.ballSpeed || 0),
         scores: sessions.map(s => s.score || 0)
+      }
+    };
+  },
+  
+  // Quad Box specific analytics
+  getQuadBoxAnalytics: (sessions) => {
+    const latest = sessions[sessions.length - 1];
+    const avgScore = sessions.map(s => s.score || 0).reduce((a, b) => a + b, 0) / sessions.length;
+    const avgAccuracy = sessions.map(s => s.accuracy || 0).reduce((a, b) => a + b, 0) / sessions.length;
+    const avgLevel = sessions.map(s => s.nBack || s.level || 0).reduce((a, b) => a + b, 0) / sessions.length;
+    
+    return {
+      type: 'quad-box',
+      sessions: sessions.length,
+      latest: latest,
+      averages: {
+        score: avgScore,
+        accuracy: avgAccuracy,
+        level: avgLevel,
+        trialTime: sessions.map(s => s.trialTime || 0).filter(t => t > 0).reduce((a, b) => a + b, 0) / sessions.filter(s => s.trialTime).length || 0
+      },
+      totals: {
+        trials: sessions.reduce((a, s) => a + (s.completedTrials || 0), 0),
+        hits: sessions.reduce((a, s) => a + (s.score || 0), 0)
+      },
+      settings: {
+        mode: latest?.mode || 'N/A',
+        matchChance: latest?.matchChance || 'N/A',
+        tags: latest?.tags || []
+      }
+    };
+  },
+  
+  // Dichotic Dual N-Back specific analytics
+  getDichoticAnalytics: (sessions) => {
+    const latest = sessions[sessions.length - 1];
+    const avgScore = sessions.map(s => s.score || 0).reduce((a, b) => a + b, 0) / sessions.length;
+    const avgAccuracy = sessions.map(s => s.accuracy || 0).reduce((a, b) => a + b, 0) / sessions.length;
+    const avgLevel = sessions.map(s => s.nBack || s.level || 0).reduce((a, b) => a + b, 0) / sessions.length;
+    
+    return {
+      type: 'dichotic-dual-nback',
+      sessions: sessions.length,
+      latest: latest,
+      averages: {
+        score: avgScore,
+        accuracy: avgAccuracy,
+        level: avgLevel,
+        stimulusTime: sessions.map(s => s.stimulusTime || 0).filter(t => t > 0).reduce((a, b) => a + b, 0) / sessions.filter(s => s.stimulusTime).length || 0
+      },
+      totals: {
+        correct: sessions.reduce((a, s) => a + (s.totalCorrect || 0), 0),
+        missed: sessions.reduce((a, s) => a + (s.totalMissed || 0), 0),
+        wrong: sessions.reduce((a, s) => a + (s.totalWrong || 0), 0)
+      },
+      byModality: {
+        visualLeft: {
+          correct: sessions.reduce((a, s) => a + (s.visualLeftCorrect || 0), 0),
+          missed: sessions.reduce((a, s) => a + (s.visualLeftMissed || 0), 0),
+          wrong: sessions.reduce((a, s) => a + (s.visualLeftWrong || 0), 0)
+        },
+        visualRight: {
+          correct: sessions.reduce((a, s) => a + (s.visualRightCorrect || 0), 0),
+          missed: sessions.reduce((a, s) => a + (s.visualRightMissed || 0), 0),
+          wrong: sessions.reduce((a, s) => a + (s.visualRightWrong || 0), 0)
+        },
+        audioLeft: {
+          correct: sessions.reduce((a, s) => a + (s.audioLeftCorrect || 0), 0),
+          missed: sessions.reduce((a, s) => a + (s.audioLeftMissed || 0), 0),
+          wrong: sessions.reduce((a, s) => a + (s.audioLeftWrong || 0), 0)
+        },
+        audioRight: {
+          correct: sessions.reduce((a, s) => a + (s.audioRightCorrect || 0), 0),
+          missed: sessions.reduce((a, s) => a + (s.audioRightMissed || 0), 0),
+          wrong: sessions.reduce((a, s) => a + (s.audioRightWrong || 0), 0)
+        }
+      },
+      settings: {
+        soundsLeft: latest?.soundsLeft || 'N/A',
+        soundsRight: latest?.soundsRight || 'N/A',
+        feedback: latest?.feedback || false
+      }
+    };
+  },
+  
+  // Fast Sequence N-Back specific analytics
+  getFastSequenceAnalytics: (sessions) => {
+    const latest = sessions[sessions.length - 1];
+    const avgScore = sessions.map(s => s.score || 0).reduce((a, b) => a + b, 0) / sessions.length;
+    const avgAccuracy = sessions.map(s => s.accuracy || 0).reduce((a, b) => a + b, 0) / sessions.length;
+    const avgLevel = sessions.map(s => s.nBack || s.level || 0).reduce((a, b) => a + b, 0) / sessions.length;
+    
+    return {
+      type: 'fast-sequence-nback',
+      sessions: sessions.length,
+      latest: latest,
+      averages: {
+        score: avgScore,
+        accuracy: avgAccuracy,
+        level: avgLevel,
+        flashTime: sessions.map(s => s.flashTime || 0).filter(t => t > 0).reduce((a, b) => a + b, 0) / sessions.filter(s => s.flashTime).length || 0,
+        flashDelay: sessions.map(s => s.flashDelay || 0).filter(t => t > 0).reduce((a, b) => a + b, 0) / sessions.filter(s => s.flashDelay).length || 0
+      },
+      totals: {
+        spatialCorrect: sessions.reduce((a, s) => a + (s.spatialCorrect || 0), 0),
+        spatialIncorrect: sessions.reduce((a, s) => a + (s.spatialIncorrect || 0), 0),
+        letterCorrect: sessions.reduce((a, s) => a + (s.letterCorrect || 0), 0),
+        letterIncorrect: sessions.reduce((a, s) => a + (s.letterIncorrect || 0), 0)
+      },
+      settings: {
+        rows: latest?.rows || 'N/A',
+        cols: latest?.cols || 'N/A',
+        numSquares: latest?.numSquares || 'N/A',
+        letterStimulus: latest?.letterStimulus || false,
+        graphemeColor: latest?.graphemeColor || false,
+        spatialMusicChance: latest?.spatialMusicChance || 0
       }
     };
   },

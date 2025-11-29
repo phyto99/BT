@@ -80,7 +80,14 @@
       
       window.stopGame = function() {
         console.log('⏹️ [QUAD-BOX] stopGame called, dispatching event');
+        
+        // Try to record current session stats if game is in progress
+        // The Svelte app will handle the actual stopping via the event
         window.dispatchEvent(new CustomEvent('unifiedStopGame'));
+        
+        // Note: Quad-box records stats automatically when sessions complete
+        // The unifiedStopGame event should trigger the Svelte app to end the session
+        // which will then call scoreTagTrials or scoreTallyTrials
       };
       
       // Message listener for unified system

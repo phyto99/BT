@@ -50,17 +50,12 @@
             background: #000;
         }
 
-        /* Right side buttons matching sidebar button style */
-        .unified-right-buttons {
+        /* Info button positioned after sidebar button */
+        .unified-info-btn {
             position: fixed;
             top: 10px;
-            right: 10px;
+            left: 60px;
             z-index: 1000;
-            display: flex;
-            gap: 8px;
-        }
-
-        .unified-info-btn, .unified-stats-btn {
             width: 40px;
             height: 40px;
             background: rgba(40, 40, 40, 0.8);
@@ -74,16 +69,44 @@
             transition: background-color 0.2s;
         }
 
-        .unified-info-btn:hover, .unified-stats-btn:hover {
+        .unified-info-btn:hover {
             background-color: rgba(60, 60, 60, 0.9);
         }
 
-        /* Duolingo-style progress bars between buttons */
+        /* Stats button on the right side */
+        .unified-right-buttons {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            display: flex;
+            gap: 8px;
+        }
+
+        .unified-stats-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(40, 40, 40, 0.8);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            color: #eee;
+            transition: background-color 0.2s;
+        }
+
+        .unified-stats-btn:hover {
+            background-color: rgba(60, 60, 60, 0.9);
+        }
+
+        /* Duolingo-style progress bars between info button and stats button */
         .unified-progress-bars {
             position: fixed;
             top: 10px;
-            left: 60px;
-            right: 110px;
+            left: 110px;
+            right: 60px;
             z-index: 998;
             display: flex;
             align-items: center;
@@ -515,7 +538,16 @@
     </style>
 </head>
 <body>
-    <!-- Duolingo-style progress bars between buttons -->
+    <!-- Info button positioned after sidebar button -->
+    <button class="unified-info-btn" id="unified-info-btn" title="Information">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 16v-4"/>
+            <path d="M12 8h.01"/>
+        </svg>
+    </button>
+
+    <!-- Duolingo-style progress bars between info button and stats button -->
     <div class="unified-progress-bars">
         <div class="progress-bars-container">
             <div class="progress-bar-row">
@@ -541,15 +573,8 @@
         </div>
     </div>
 
-    <!-- Right side buttons -->
+    <!-- Stats button on the right side -->
     <div class="unified-right-buttons">
-        <button class="unified-info-btn" id="unified-info-btn" title="Information">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M12 16v-4"/>
-                <path d="M12 8h.01"/>
-            </svg>
-        </button>
         <button class="unified-stats-btn" id="unified-stats-btn" title="Statistics">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M3 3v18h18"/>
@@ -768,15 +793,35 @@
                     const iframe = document.getElementById(`game-iframe-${currentGameId}`);
                     console.log('⏹️ [UNIFIED] Found iframe:', !!iframe, 'contentWindow:', !!iframe?.contentWindow);
                     if (iframe && iframe.contentWindow) {
-                        const message = {
-                            type: 'stopGame',
-                            gameId: currentGameId,
-                            timerExpired: timerExpired,
-                            sessionDuration: sessionDuration
-                        };
-                        console.log('⏹️ [UNIFIED] Sending message:', message);
-                        iframe.contentWindow.postMessage(message, '*');
-                        console.log('⏹️ [UNIFIED] Message sent to:', currentGameId, timerExpired ? '(timer expired)' : '(paused)');
+                        // Try direct function call first (most reliable for same-origin iframes)
+                        try {
+                            const iframeWin = iframe.contentWindow;
+                            if (typeof iframeWin.stopGame === 'function') {
+                                console.log('⏹️ [UNIFIED] Calling stopGame() directly on iframe');
+                                iframeWin.stopGame();
+                            } else if (iframeWin.game && typeof iframeWin.game.stop === 'function') {
+                                console.log('⏹️ [UNIFIED] Calling game.stop() directly on iframe');
+                                iframeWin.game.stop();
+                            } else {
+                                // Fallback to postMessage
+                                console.log('⏹️ [UNIFIED] No direct function, using postMessage');
+                                iframe.contentWindow.postMessage({
+                                    type: 'stopGame',
+                                    gameId: currentGameId,
+                                    timerExpired: timerExpired,
+                                    sessionDuration: sessionDuration
+                                }, '*');
+                            }
+                            console.log('⏹️ [UNIFIED] Stop sent to:', currentGameId);
+                        } catch (e) {
+                            console.error('⏹️ [UNIFIED] Direct call failed, using postMessage:', e);
+                            iframe.contentWindow.postMessage({
+                                type: 'stopGame',
+                                gameId: currentGameId,
+                                timerExpired: timerExpired,
+                                sessionDuration: sessionDuration
+                            }, '*');
+                        }
                     } else {
                         console.error('⏹️ [UNIFIED] No iframe or contentWindow found!');
                     }

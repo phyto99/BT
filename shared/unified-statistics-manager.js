@@ -335,14 +335,6 @@ window.UnifiedStatisticsManager = {
   // ═══════════════════════════════════════════════════════════════
   initOverviewCharts() {
     const allStats = this.getAllGameStats();
-    const cognitiveScores = this.calculateCognitiveScores(allStats);
-    
-    // Main cognitive visualization
-    if (this.timeRange === 'now') {
-      this.initCognitiveHex(cognitiveScores);
-    } else {
-      this.initCognitiveTimeline(allStats);
-    }
     
     // Sessions by Game (Doughnut)
     const sessionsCtx = document.getElementById('chart-sessions-by-game');
@@ -402,156 +394,40 @@ window.UnifiedStatisticsManager = {
         }
       });
     }
-  },
-  
-  initCognitiveHex(scores) {
-    const canvas = document.getElementById('chart-cognitive-hex');
-    if (!canvas) return;
     
-    const domains = Object.entries(this.COGNITIVE_DOMAINS);
-    const labels = domains.map(([_, d]) => d.name);
-    const data = domains.map(([id]) => (scores[id] || 0) * 100);
-    const colors = domains.map(([_, d]) => d.color);
-    
-    this.charts.cognitiveHex = new Chart(canvas, {
-      type: 'radar',
-      data: {
-        labels,
-        datasets: [{
-          label: 'Current Performance',
-          data,
-          backgroundColor: 'rgba(76, 175, 80, 0.2)',
-          borderColor: '#4CAF50',
-          borderWidth: 3,
-          pointBackgroundColor: colors,
-          pointBorderColor: '#fff',
-          pointBorderWidth: 2,
-          pointRadius: 6,
-          pointHoverRadius: 8
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          r: {
-            beginAtZero: true,
-            max: 100,
-            min: 0,
-            ticks: { 
-              stepSize: 20,
-              color: '#888', 
-              backdropColor: 'transparent',
-              font: { size: 11 }
-            },
-            grid: { color: 'rgba(255,255,255,0.1)' },
-            pointLabels: { 
-              color: '#eee', 
-              font: { size: 13, weight: 'bold' }
-            },
-            angleLines: { color: 'rgba(255,255,255,0.1)' }
-          }
-        },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                return context.label + ': ' + context.parsed.r.toFixed(1) + '%';
-              }
-            }
-          }
+    // Combined Timeline (Line)
+    const timelineCtx = document.getElementById('chart-combined-timeline');
+    if (timelineCtx) {
+      const datasets = [];
+      Object.entries(this.GAMES).forEach(([id, game]) => {
+        const sessions = allStats[id]?.sessions || [];
+        if (sessions.length > 0) {
+          datasets.push({
+            label: game.name,
+            data: sessions.map((s, i) => ({ x: i, y: (s.accuracy || 0) * 100 })),
+            borderColor: game.color,
+            backgroundColor: game.color + '20',
+            tension: 0.3,
+            fill: false,
+            pointRadius: 2
+          });
         }
-      }
-    });
-  },
-  
-  initCognitiveTimeline(allStats) {
-    const canvas = document.getElementById('chart-cognitive-timeline');
-    if (!canvas) return;
-    
-    // Collect all sessions with timestamps
-    let allSessions = [];
-    Object.entries(allStats).forEach(([gameId, data]) => {
-      data.sessions.forEach(s => allSessions.push({ ...s, gameId }));
-    });
-    
-    allSessions.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-    
-    // Get unique dates
-    const dates = [...new Set(allSessions.map(s => 
-      s.date || new Date(s.timestamp || Date.now()).toISOString().split('T')[0]
-    ))].slice(-30);
-    
-    if (dates.length === 0) {
-      canvas.style.display = 'none';
-      return;
-    }
-    
-    // Calculate domain scores for each date
-    const domains = Object.entries(this.COGNITIVE_DOMAINS);
-    const datasets = domains.map(([domainId, domain]) => {
-      const data = dates.map(date => {
-        // Get sessions up to and including this date
-        const sessionsUpToDate = allSessions.filter(s => {
-          const sDate = s.date || new Date(s.timestamp || Date.now()).toISOString().split('T')[0];
-          return sDate <= date;
-        });
-        
-        // Create temp data structure
-        const tempData = {};
-        Object.keys(allStats).forEach(gameId => {
-          tempData[gameId] = { sessions: sessionsUpToDate.filter(s => s.gameId === gameId) };
-        });
-        
-        // Calculate domain score for this date
-        const score = this[`calculate${domainId.charAt(0).toUpperCase() + domainId.slice(1)}Score`](tempData);
-        return score * 100;
       });
       
-      return {
-        label: domain.name,
-        data: data,
-        borderColor: domain.color,
-        backgroundColor: domain.color + '20',
-        borderWidth: 2,
-        tension: 0.3,
-        fill: false,
-        pointRadius: 3,
-        pointHoverRadius: 5
-      };
-    });
-    
-    this.charts.cognitiveTimeline = new Chart(canvas, {
-      type: 'line',
-      data: {
-        labels: dates,
-        datasets: datasets
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: { 
-            labels: { color: '#aaa', usePointStyle: true, padding: 15, font: { size: 11 } },
-            position: 'top'
-          }
-        },
-        scales: {
-          y: { 
-            min: 0, max: 100,
-            title: { display: true, text: 'Domain Score (%)', color: '#888' },
-            ticks: { color: '#888' },
-            grid: { color: 'rgba(255,255,255,0.1)' }
-          },
-          x: {
-            ticks: { color: '#888', maxRotation: 45, font: { size: 10 } },
-            grid: { color: 'rgba(255,255,255,0.05)' }
+      this.charts.combinedTimeline = new Chart(timelineCtx, {
+        type: 'line',
+        data: { datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#aaa', font: { size: 10 } } } },
+          scales: {
+            y: { title: { display: true, text: 'Accuracy %', color: '#888' }, ticks: { color: '#888' }, grid: { color: '#333' }, min: 0, max: 100 },
+            x: { title: { display: true, text: 'Session', color: '#888' }, ticks: { color: '#888' }, grid: { color: '#222' } }
           }
         }
-      }
-    });
+      });
+    }
   },
 
   initGameCharts(gameId) {
@@ -632,151 +508,6 @@ window.UnifiedStatisticsManager = {
     }
   },
 
-  // ═══════════════════════════════════════════════════════════════
-  // COGNITIVE DOMAIN CALCULATIONS
-  // ═══════════════════════════════════════════════════════════════
-  calculateCognitiveScores(allStats) {
-    const scores = {};
-    
-    // Calculate each domain score based on game performance
-    scores.memory = this.calculateMemoryScore(allStats);
-    scores.attention = this.calculateAttentionScore(allStats);
-    scores.speed = this.calculateSpeedScore(allStats);
-    scores.reasoning = this.calculateReasoningScore(allStats);
-    scores.spatial = this.calculateSpatialScore(allStats);
-    scores.signal = this.calculateSignalScore(allStats);
-    
-    return scores;
-  },
-  
-  calculateMemoryScore(allStats) {
-    const nbackGames = ['3d-hyper-nback', 'quad-box', 'dichotic-dual-nback', 'multiple', 'fast-sequence-nback'];
-    let total = 0, count = 0;
-    
-    nbackGames.forEach(gameId => {
-      const sessions = allStats[gameId]?.sessions || [];
-      sessions.forEach(s => {
-        const level = s.level || s.microLevel || s.nBack || 0;
-        const accuracy = s.accuracy || 0;
-        if (level > 0 && accuracy > 0) {
-          total += (level * accuracy) / 10; // Normalize
-          count++;
-        }
-      });
-    });
-    
-    return count > 0 ? Math.min(1, total / count) : 0;
-  },
-  
-  calculateAttentionScore(allStats) {
-    const games = ['jiggle-factorial', '3d-hyper-nback', 'quad-box'];
-    let total = 0, count = 0;
-    
-    games.forEach(gameId => {
-      const sessions = allStats[gameId]?.sessions || [];
-      sessions.forEach(s => {
-        if (s.accuracy !== undefined) {
-          total += s.accuracy;
-          count++;
-        }
-      });
-    });
-    
-    return count > 0 ? total / count : 0;
-  },
-  
-  calculateSpeedScore(allStats) {
-    const games = ['fast-sequence-nback', '3d-hyper-nback'];
-    let total = 0, count = 0;
-    
-    games.forEach(gameId => {
-      const sessions = allStats[gameId]?.sessions || [];
-      sessions.forEach(s => {
-        if (s.avgResponseTime && s.avgResponseTime > 0) {
-          // Lower response time = higher score
-          const speedScore = Math.max(0, 1 - (s.avgResponseTime / 2000));
-          total += speedScore;
-          count++;
-        }
-      });
-    });
-    
-    return count > 0 ? total / count : 0;
-  },
-  
-  calculateReasoningScore(allStats) {
-    const sessions = allStats['syllogimous-v4']?.sessions || [];
-    let total = 0, count = 0;
-    
-    sessions.forEach(s => {
-      if (s.accuracy !== undefined) {
-        total += s.accuracy;
-        count++;
-      }
-    });
-    
-    return count > 0 ? total / count : 0;
-  },
-  
-  calculateSpatialScore(allStats) {
-    const games = ['jiggle-factorial', '3d-hyper-nback'];
-    let total = 0, count = 0;
-    
-    games.forEach(gameId => {
-      const sessions = allStats[gameId]?.sessions || [];
-      sessions.forEach(s => {
-        const posAcc = s.positionAccuracy || s.accuracy || 0;
-        if (posAcc > 0) {
-          total += posAcc;
-          count++;
-        }
-      });
-    });
-    
-    return count > 0 ? total / count : 0;
-  },
-  
-  calculateSignalScore(allStats) {
-    const nbackGames = ['3d-hyper-nback', 'quad-box', 'dichotic-dual-nback'];
-    let total = 0, count = 0;
-    
-    nbackGames.forEach(gameId => {
-      const sessions = allStats[gameId]?.sessions || [];
-      sessions.forEach(s => {
-        if (s.dPrime !== undefined && s.dPrime > 0) {
-          // Normalize d-prime (typically 0-4 range)
-          total += Math.min(1, s.dPrime / 4);
-          count++;
-        } else if (s.accuracy !== undefined) {
-          total += s.accuracy;
-          count++;
-        }
-      });
-    });
-    
-    return count > 0 ? total / count : 0;
-  },
-  
-  renderDomainScores(scores) {
-    return Object.entries(this.COGNITIVE_DOMAINS).map(([id, domain]) => {
-      const score = scores[id] || 0;
-      const percentage = (score * 100).toFixed(0);
-      
-      return `
-        <div class="usm-domain-item">
-          <div class="usm-domain-header">
-            <span class="usm-domain-icon">${domain.icon}</span>
-            <span class="usm-domain-name">${domain.name}</span>
-          </div>
-          <div class="usm-domain-bar-container">
-            <div class="usm-domain-bar" style="width: ${percentage}%; background: ${domain.color}"></div>
-          </div>
-          <div class="usm-domain-value" style="color: ${domain.color}">${percentage}%</div>
-        </div>
-      `;
-    }).join('');
-  },
-  
   // ═══════════════════════════════════════════════════════════════
   // DATA HELPERS
   // ═══════════════════════════════════════════════════════════════
@@ -985,51 +716,6 @@ window.UnifiedStatisticsManager = {
       .usm-empty { color: #666; text-align: center; padding: 20px; }
       
       canvas { max-height: 200px; }
-      
-      /* Time selector */
-      .usm-time-selector {
-        display: flex; gap: 8px; justify-content: center;
-        padding: 10px; background: #1a1a1a; border-radius: 6px;
-      }
-      .usm-time-btn {
-        background: #252525; border: 1px solid #333; color: #888;
-        padding: 8px 16px; border-radius: 4px; cursor: pointer;
-        font-size: 12px; transition: all 0.2s;
-      }
-      .usm-time-btn:hover { background: #333; color: #fff; }
-      .usm-time-btn.active { background: #4CAF50; color: #fff; border-color: #4CAF50; }
-      
-      /* Main content layout */
-      .usm-main-content { align-items: stretch; }
-      .usm-panel-third { flex: 0 0 280px; min-width: 280px; }
-      .usm-panel-twothirds { flex: 1; min-width: 400px; }
-      
-      /* Domain scores */
-      .usm-domain-scores { display: flex; flex-direction: column; gap: 15px; }
-      .usm-domain-item {
-        background: #0f0f0f; border-radius: 6px; padding: 12px;
-      }
-      .usm-domain-header {
-        display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
-      }
-      .usm-domain-icon { font-size: 18px; }
-      .usm-domain-name { color: #aaa; font-size: 12px; font-weight: 600; }
-      .usm-domain-bar-container {
-        width: 100%; height: 8px; background: #222; border-radius: 4px;
-        overflow: hidden; margin-bottom: 6px;
-      }
-      .usm-domain-bar {
-        height: 100%; border-radius: 4px; transition: width 0.3s ease;
-      }
-      .usm-domain-value {
-        text-align: right; font-size: 14px; font-weight: 700;
-      }
-      
-      /* Responsive adjustments */
-      @media (max-width: 1024px) {
-        .usm-main-content { flex-direction: column; }
-        .usm-panel-third, .usm-panel-twothirds { flex: 1 1 100%; min-width: 100%; }
-      }
     `;
   }
 };

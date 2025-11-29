@@ -1032,6 +1032,51 @@
             `<strong>Daily Average Score:</strong> ${avg}% &nbsp;&nbsp; <strong>Daily Total Training Time:</strong> ${formattedTime}<br>
              <em>daily averaged % scores do NOT account for changes in settings etc. For consistency, it is recommended to keep settings the same within each training day</em>`;
 
+          // 📊 Send comprehensive statistics to unified system
+          if (window.parent !== window && window.parent.gameStats) {
+            const accuracy = totalResponses > 0 ? totalCorrect / totalResponses : 0;
+            
+            window.parent.gameStats.recordSession({
+              // Core metrics
+              score: totalCorrect,
+              accuracy: accuracy,
+              level: nLevel,
+              nBack: nLevel,
+              
+              // Detailed scores
+              spatialCorrect: nBackCorrectCount,
+              spatialIncorrect: nBackIncorrectCount,
+              letterCorrect: nBackLetterCorrectCount,
+              letterIncorrect: nBackLetterIncorrectCount,
+              totalCorrect: totalCorrect,
+              totalIncorrect: totalIncorrect,
+              
+              // Configuration
+              rows: settings.rows,
+              cols: settings.cols,
+              numSquares: settings.numSquares,
+              flashTime: settings.flashTime,
+              flashDelay: settings.flashDelay,
+              gridColor: settings.gridColor,
+              squareColor: settings.squareColor,
+              secTrial: secTrialMs / 1000,
+              totalTrials: totalTrials,
+              percentMatch: percentMatch,
+              interferenceControl: interferenceControl,
+              letterStimulus: letterStimulus,
+              
+              // Synesthesia settings
+              graphemeColor: graphemeColor,
+              gcTestPercentage: gcTestPercentage,
+              uncoloredLetterPercentage: uncoloredLetterPercentage,
+              spatialMusicChance: spatialMusicChance,
+              
+              // Session info
+              duration: sessionDurationMs,
+              durationSeconds: sessionSeconds
+            });
+          }
+
           nBackModeActive = false;
         }
       }
@@ -1198,6 +1243,49 @@
       };
       
       window.stopGame = function() {
+        // Record stats if there's any data
+        if (window.parent !== window && window.parent.gameStats && currentTrialIndex > 0) {
+          const totalCorrect = nBackCorrectCount + nBackLetterCorrectCount;
+          const totalIncorrect = nBackIncorrectCount + nBackLetterIncorrectCount;
+          const totalResponses = totalCorrect + totalIncorrect;
+          const accuracy = totalResponses > 0 ? totalCorrect / totalResponses : 0;
+          const sessionDurationMs = Date.now() - nBackSessionStartTime;
+          
+          window.parent.gameStats.recordSession({
+            score: totalCorrect,
+            accuracy: accuracy,
+            level: nLevel,
+            nBack: nLevel,
+            spatialCorrect: nBackCorrectCount,
+            spatialIncorrect: nBackIncorrectCount,
+            letterCorrect: nBackLetterCorrectCount,
+            letterIncorrect: nBackLetterIncorrectCount,
+            totalCorrect: totalCorrect,
+            totalIncorrect: totalIncorrect,
+            rows: settings.rows,
+            cols: settings.cols,
+            numSquares: settings.numSquares,
+            flashTime: settings.flashTime,
+            flashDelay: settings.flashDelay,
+            gridColor: settings.gridColor,
+            squareColor: settings.squareColor,
+            secTrial: secTrialMs / 1000,
+            totalTrials: totalTrials,
+            completedTrials: currentTrialIndex,
+            percentMatch: percentMatch,
+            interferenceControl: interferenceControl,
+            letterStimulus: letterStimulus,
+            graphemeColor: graphemeColor,
+            gcTestPercentage: gcTestPercentage,
+            uncoloredLetterPercentage: uncoloredLetterPercentage,
+            spatialMusicChance: spatialMusicChance,
+            duration: sessionDurationMs,
+            durationSeconds: Math.floor(sessionDurationMs / 1000),
+            sessionEnded: true,
+            manualStop: true
+          });
+        }
+        
         isPaused = true;
         clearPendingTimeouts();
         nBackModeActive = false;
