@@ -526,17 +526,47 @@
       console.log('🎮 [JIGGLE] Scene initialized - ready to play');
     }
 
+    // State to preserve during pause
+    let pausedState = null;
+    
     function startGame() {
       if (isGameStarting) return; // Prevent multiple initializations
       isGameStarting = true;
 
       console.log('🎮 [JIGGLE] Starting/Resuming game...');
 
-      // If paused, resume by starting a fresh round (like original)
-      if (isPaused) {
-        console.log('🎮 [JIGGLE] Resuming from pause - starting fresh round at level', settings.level);
+      // If paused, resume from where we left off
+      if (isPaused && pausedState) {
+        console.log('🎮 [JIGGLE] Resuming from pause at level', settings.level);
         isPaused = false;
-        // Fall through to normal start logic - don't return early
+        isGameRunning = true;
+        messageElement.textContent = '';
+        
+        // Restore state
+        if (pausedState.wasUserTurn) {
+          // Resume user turn - they can continue clicking
+          isUserTurn = true;
+          isSequenceShowing = false;
+        } else if (pausedState.wasShowingSequence) {
+          // Was showing sequence - restart the sequence display
+          isSequenceShowing = false;
+          isUserTurn = false;
+          let timeout = setTimeout(highlightTargetBalls, 500);
+          activeTimeouts.push(timeout);
+        } else {
+          // Start a new round
+          let timeout = setTimeout(highlightTargetBalls, 500);
+          activeTimeouts.push(timeout);
+        }
+        
+        // Resume Flash Mode if it was enabled
+        if (settings.flashMode) {
+          startFlashMode();
+        }
+        
+        pausedState = null;
+        isGameStarting = false;
+        return;
       }
 
       // Starting fresh game
@@ -581,6 +611,13 @@
     function pauseGame() {
       console.log('⏸️ [JIGGLE] Pausing game...');
       
+      // Save current state before pausing
+      pausedState = {
+        wasUserTurn: isUserTurn,
+        wasShowingSequence: isSequenceShowing,
+        level: settings.level
+      };
+      
       // Clear all active timeouts to stop the game loop
       activeTimeouts.forEach(timeout => clearTimeout(timeout));
       activeTimeouts = [];
@@ -588,27 +625,10 @@
       // Clear Flash Mode timeouts
       clearFlashModeTimeouts();
       
-      // Clear all numbers from balls
-      targetBalls.forEach(ball => {
-        if (ball.userData.label) {
-          disposeLabel(ball.userData.label);
-          ball.remove(ball.userData.label);
-          ball.userData.label = null;
-        }
-        ball.userData.isCurrentlyHighlighted = false;
-      });
-      
-      // Clear target sequence (will regenerate on resume)
-      targetSequence = [];
-      userSequence = [];
-      selectedBalls = [];
-      
-      // Mark as paused (don't reset game state)
+      // Mark as paused (keep balls and visualization intact)
       isPaused = true;
       isGameRunning = false;
       isGameStarting = false;
-      isSequenceShowing = false;
-      isUserTurn = false;
       
       // Show paused message
       messageElement.textContent = 'Game Paused - Press Play to Continue';
